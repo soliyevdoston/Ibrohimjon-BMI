@@ -1,0 +1,17 @@
+{
+  "name": "ibrohimjon-bmi-platform",
+  "private": true,
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend",
+    "apps/admin"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/backend & npm run dev -w apps/frontend",
+    "dev:backend": "npm run dev -w apps/backend",
+    "dev:frontend": "npm run dev -w apps/frontend",
+    "dev:admin": "npm run dev -w apps/admin",
+    "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
+    "build:admin": "npm run build -w apps/admin"
+  }
+}
