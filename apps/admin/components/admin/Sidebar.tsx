@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   IconChart,
+  IconClose,
   IconDashboard,
   IconLive,
   IconLogout,
@@ -13,6 +14,7 @@ import {
   IconTruck,
   IconUsers,
 } from './Icon';
+import { useNav } from './NavContext';
 
 type Item = {
   href: string;
@@ -51,60 +53,78 @@ const groups: Group[] = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { isOpen, close } = useNav();
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-brand">
-        <div className="sidebar-brand-mark">LC</div>
-        <div>
-          <div className="sidebar-brand-name">Lochin</div>
-          <div className="sidebar-brand-role">Admin Console</div>
+    <>
+      <aside className={`sidebar${isOpen ? ' is-open' : ''}`}>
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-mark">LC</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="sidebar-brand-name">Lochin</div>
+            <div className="sidebar-brand-role">Admin Console</div>
+          </div>
+          <button
+            type="button"
+            className="icon-btn only-mobile"
+            aria-label="Close menu"
+            onClick={close}
+            style={{ width: 32, height: 32 }}
+          >
+            <IconClose size={16} />
+          </button>
         </div>
-      </div>
 
-      {groups.map((group) => (
-        <div key={group.label}>
-          <div className="sidebar-group-label">{group.label}</div>
-          <nav style={{ display: 'grid', gap: 2 }}>
-            {group.items.map((item) => {
-              const Icon = item.icon;
-              const active =
-                item.href === '/'
-                  ? pathname === '/'
-                  : pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`sidebar-link${active ? ' is-active' : ''}`}
-                >
-                  <span className="sb-ico">
-                    <Icon size={18} />
-                  </span>
-                  <span>{item.label}</span>
-                  {item.badge ? <span className="sb-count">{item.badge}</span> : null}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      ))}
+        {groups.map((group) => (
+          <div key={group.label}>
+            <div className="sidebar-group-label">{group.label}</div>
+            <nav style={{ display: 'grid', gap: 2 }}>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active =
+                  item.href === '/'
+                    ? pathname === '/'
+                    : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`sidebar-link${active ? ' is-active' : ''}`}
+                  >
+                    <span className="sb-ico">
+                      <Icon size={18} />
+                    </span>
+                    <span>{item.label}</span>
+                    {item.badge ? <span className="sb-count">{item.badge}</span> : null}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        ))}
 
-      <div className="sidebar-footer">
-        <div className="avatar">AD</div>
-        <div className="avatar-label" style={{ minWidth: 0, flex: 1 }}>
-          <strong>Admin User</strong>
-          <span>admin@lochin.uz</span>
+        <div className="sidebar-footer">
+          <div className="avatar">AD</div>
+          <div className="avatar-label" style={{ minWidth: 0, flex: 1 }}>
+            <strong>Admin User</strong>
+            <span>admin@lochin.uz</span>
+          </div>
+          <button
+            aria-label="Sign out"
+            title="Sign out"
+            className="icon-btn"
+            style={{ width: 32, height: 32 }}
+          >
+            <IconLogout size={16} />
+          </button>
         </div>
-        <button
-          aria-label="Sign out"
-          title="Sign out"
-          className="icon-btn"
-          style={{ width: 32, height: 32 }}
-        >
-          <IconLogout size={16} />
-        </button>
-      </div>
-    </aside>
+      </aside>
+
+      <div
+        className={`nav-backdrop${isOpen ? ' show' : ''}`}
+        onClick={close}
+        aria-hidden
+      />
+    </>
   );
 }

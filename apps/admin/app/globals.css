@@ -954,12 +954,136 @@ p {
   .grid-2-3 { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 720px) {
+/* ============ Mobile nav drawer ============ */
+
+.mobile-menu-btn {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  cursor: pointer;
+  flex: none;
+}
+
+.mobile-menu-btn:hover {
+  background: var(--surface-2);
+}
+
+.nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 40;
+  animation: fadeIn 160ms ease;
+}
+
+.nav-backdrop.show {
+  display: block;
+}
+
+/* hide things explicitly on small screens */
+.only-desktop { display: inherit; }
+.only-mobile  { display: none; }
+
+@media (max-width: 960px) {
   :root { --sidebar-w: 0px; }
-  .app-shell { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
-  .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
-  .app-content { padding: 16px; }
-  .topbar { padding: 0 16px; }
-  .topbar-search { min-width: 0; width: 100%; }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 260ms ease;
+    z-index: 50;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+    border-right: 1px solid var(--border);
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-btn {
+    display: inline-flex;
+  }
+
+  .only-desktop { display: none !important; }
+  .only-mobile  { display: inline-flex; }
+
+  .grid-4, .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-2-3 { grid-template-columns: 1fr; }
+
+  .topbar {
+    padding: 0 16px;
+    gap: 10px;
+  }
+
+  .topbar-h1 { font-size: 16px; }
+  .topbar-crumb { font-size: 11px; }
+  .topbar-search { min-width: 0; flex: 1; }
+  .topbar-search .kbd { display: none; }
+  .topbar-search input::placeholder { font-size: 12px; }
+
+  .card-h {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .app-content {
+    padding: 18px 14px 32px;
+  }
+
+  .kpi { padding: 14px; }
+  .kpi-value { font-size: 22px; }
+
+  .toast {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .grid-4, .grid-3 { grid-template-columns: 1fr; }
+
+  .topbar-title { display: none; }
+  .topbar-search { min-width: 0; }
+
+  .app-content { padding: 14px 12px 28px; }
+
+  .sparkline { display: none; }
+
+  .donut-wrap { flex-direction: column; align-items: stretch; }
+
+  .table thead th,
+  .table tbody td {
+    padding: 10px 10px;
+    font-size: 12.5px;
+  }
+
+  .btn, .btn.ghost, .btn.soft { padding: 8px 12px; }
+
+  /* iOS zooms when input font-size < 16px — keep inputs at 16px on small screens */
+  .input, .select, .textarea, .topbar-search input {
+    font-size: 16px;
+  }
+}
+
+/* lock body scroll when mobile drawer is open */
+body.nav-open {
+  overflow: hidden;
 }

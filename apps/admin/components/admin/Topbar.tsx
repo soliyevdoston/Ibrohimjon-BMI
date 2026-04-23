@@ -1,7 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { IconBell, IconSearch } from './Icon';
+import { IconBell, IconMenu, IconSearch } from './Icon';
+import { useNav } from './NavContext';
 
 const routeMeta: Record<string, { title: string; crumb: string }> = {
   '/':          { title: 'Dashboard',       crumb: 'Admin / Overview' },
@@ -17,9 +18,19 @@ const routeMeta: Record<string, { title: string; crumb: string }> = {
 export function AdminTopbar() {
   const pathname = usePathname();
   const meta = routeMeta[pathname] || { title: 'Admin', crumb: 'Admin' };
+  const { open } = useNav();
 
   return (
     <header className="topbar">
+      <button
+        type="button"
+        className="mobile-menu-btn"
+        aria-label="Open menu"
+        onClick={open}
+      >
+        <IconMenu size={18} />
+      </button>
+
       <div className="topbar-title">
         <span className="topbar-crumb">{meta.crumb}</span>
         <span className="topbar-h1">{meta.title}</span>
@@ -36,7 +47,7 @@ export function AdminTopbar() {
           <IconBell size={16} />
           <span className="dot" />
         </button>
-        <div className="avatar" title="Admin User">AD</div>
+        <div className="avatar only-desktop" title="Admin User">AD</div>
       </div>
     </header>
   );

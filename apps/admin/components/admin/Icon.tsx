@@ -135,3 +135,18 @@ export const IconLogout = make(
 );
 
 export const IconCheck = make(<path d="M5 12l5 5 9-11" />);
+
+export const IconMenu = make(
+  <>
+    <path d="M4 7h16" />
+    <path d="M4 12h16" />
+    <path d="M4 17h16" />
+  </>,
+);
+
+export const IconClose = make(
+  <>
+    <path d="M6 6l12 12" />
+    <path d="M18 6L6 18" />
+  </>,
+);
