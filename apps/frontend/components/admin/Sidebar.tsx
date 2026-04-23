@@ -55,9 +55,9 @@ export function AdminSidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <div className="sidebar-brand-mark">IB</div>
+        <div className="sidebar-brand-mark">LC</div>
         <div>
-          <div className="sidebar-brand-name">Ibrohimjon BMI</div>
+          <div className="sidebar-brand-name">Lochin</div>
           <div className="sidebar-brand-role">Admin Console</div>
         </div>
       </div>
@@ -93,7 +93,7 @@ export function AdminSidebar() {
         <div className="avatar">AD</div>
         <div className="avatar-label" style={{ minWidth: 0, flex: 1 }}>
           <strong>Admin User</strong>
-          <span>admin@ibrohimjon.uz</span>
+          <span>admin@lochin.uz</span>
         </div>
         <Link
           href="/login"

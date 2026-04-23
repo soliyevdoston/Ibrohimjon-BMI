@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Ibrohimjon BMI · Admin Console',
+  title: 'Lochin · Admin Console',
   description: 'Operations control surface for the delivery platform',
 };
 
