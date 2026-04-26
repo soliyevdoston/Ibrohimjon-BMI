@@ -1,0 +1,108 @@
+'use client';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
+import { useEffect } from 'react';
+
+// Fix default Leaflet icon URLs
+delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const COURIER_PULSE_STYLE = `
+  @keyframes courierPulse {
+    0%,100% { box-shadow: 0 4px 20px rgba(79,70,229,.35); }
+    50%      { box-shadow: 0 4px 30px rgba(79,70,229,.6), 0 0 0 10px rgba(79,70,229,.1); }
+  }
+`;
+
+const courierIcon = L.divIcon({
+  html: `<style>${COURIER_PULSE_STYLE}</style>
+    <div style="
+      width:44px;height:44px;background:#fff;
+      border-radius:50%;border:3px solid #4f46e5;
+      box-shadow:0 4px 20px rgba(79,70,229,.35);
+      display:flex;align-items:center;justify-content:center;
+      font-size:22px;
+      animation:courierPulse 2s ease-in-out infinite;
+    ">🛵</div>`,
+  className: '',
+  iconSize: [44, 44],
+  iconAnchor: [22, 22],
+});
+
+const destinationIcon = L.divIcon({
+  html: `<div style="
+    width:38px;height:38px;background:#10b981;
+    border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+    border:3px solid #fff;box-shadow:0 4px 16px rgba(16,185,129,.45);
+    display:flex;align-items:center;justify-content:center;
+  "><span style="transform:rotate(45deg);font-size:18px;display:block;line-height:1;">🏠</span></div>`,
+  className: '',
+  iconSize: [38, 38],
+  iconAnchor: [19, 38],
+});
+
+const sellerIcon = L.divIcon({
+  html: `<div style="
+    width:38px;height:38px;background:#f59e0b;
+    border-radius:10px;border:3px solid #fff;
+    box-shadow:0 4px 16px rgba(245,158,11,.45);
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+  ">🏪</div>`,
+  className: '',
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+});
+
+function MapAutofit({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points as L.LatLngTuple[]);
+      map.fitBounds(bounds.pad(0.2), { animate: true });
+    }
+  }, [map, points]);
+  return null;
+}
+
+export default function DeliveryTrackerMap({
+  courierPos,
+  destination,
+  sellerPos,
+}: {
+  courierPos: [number, number];
+  destination: [number, number];
+  sellerPos: [number, number];
+}) {
+  const routePoints: [number, number][] = [sellerPos, courierPos, destination];
+
+  return (
+    <MapContainer
+      center={courierPos}
+      zoom={14}
+      style={{ height: '100%', width: '100%' }}
+      zoomControl={false}
+    >
+      <TileLayer
+        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+        maxZoom={19}
+      />
+      <MapAutofit points={routePoints} />
+      <Polyline
+        positions={routePoints}
+        color="#4f46e5"
+        weight={3}
+        opacity={0.7}
+        dashArray="8 4"
+      />
+      <Marker position={sellerPos} icon={sellerIcon} />
+      <Marker position={courierPos} icon={courierIcon} />
+      <Marker position={destination} icon={destinationIcon} />
+    </MapContainer>
+  );
+}

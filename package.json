@@ -3,15 +3,21 @@
   "private": true,
   "workspaces": [
     "apps/backend",
-    "apps/frontend",
-    "apps/admin"
+    "apps/admin",
+    "apps/customer",
+    "apps/seller",
+    "apps/courier"
   ],
   "scripts": {
-    "dev": "npm run dev -w apps/backend & npm run dev -w apps/frontend",
     "dev:backend": "npm run dev -w apps/backend",
-    "dev:frontend": "npm run dev -w apps/frontend",
+    "dev:customer": "npm run dev -w apps/customer",
+    "dev:seller": "npm run dev -w apps/seller",
+    "dev:courier": "npm run dev -w apps/courier",
     "dev:admin": "npm run dev -w apps/admin",
-    "build": "npm run build -w apps/backend && npm run build -w apps/frontend",
-    "build:admin": "npm run build -w apps/admin"
+    "build:customer": "npm run build -w apps/customer",
+    "build:seller": "npm run build -w apps/seller",
+    "build:courier": "npm run build -w apps/courier",
+    "build:admin": "npm run build -w apps/admin",
+    "build:backend": "npm run build -w apps/backend"
   }
 }

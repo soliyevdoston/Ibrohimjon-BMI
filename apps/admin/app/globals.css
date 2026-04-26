@@ -1057,6 +1057,50 @@ p {
   }
 }
 
+/* ============ Leaflet overrides ============ */
+
+.leaflet-container {
+  font-family: inherit;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  opacity: 0.6;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(255,255,255,0.95) !important;
+  color: var(--text) !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-size: 16px !important;
+  line-height: 28px !important;
+  width: 30px !important;
+  height: 30px !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--surface-2) !important;
+}
+
+.leaflet-tooltip {
+  font-family: inherit !important;
+  font-size: 12px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 6px 10px !important;
+}
+
 @media (max-width: 520px) {
   .grid-4, .grid-3 { grid-template-columns: 1fr; }
 
