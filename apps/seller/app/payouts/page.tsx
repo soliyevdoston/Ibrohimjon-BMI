@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SellerSidebar } from '@/components/Sidebar';
+import { IconCard, IconWallet, IconCheck, IconClock } from '@/components/Icons';
 import { money } from '@/lib/api';
 
 type Payout = {
@@ -21,11 +22,6 @@ const PAYOUTS: Payout[] = [
 const PENDING_AMOUNT = 1_470_000;
 const PENDING_ORDERS = 23;
 
-const STATUS_COLOR: Record<string, string> = {
-  paid: 'var(--success)',
-  pending: 'var(--warning)',
-  processing: 'var(--primary)',
-};
 const STATUS_LABEL: Record<string, string> = {
   paid: "To'landi",
   pending: "Kutilmoqda",
@@ -64,30 +60,31 @@ export default function PayoutsPage() {
 
           {/* Pending payout card */}
           <div style={{
-            background: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)',
-            borderRadius: 20, padding: 24, color: '#fff', marginBottom: 24,
+            background: 'var(--text)',
+            borderRadius: 20, padding: 24, color: 'var(--surface)', marginBottom: 24,
           }}>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 600, marginBottom: 6 }}>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', fontWeight: 600, marginBottom: 6, letterSpacing: '0.5px' }}>
               KEYINGI TO'LOV
             </div>
             <div style={{ fontSize: 34, fontWeight: 900, letterSpacing: '-1px', marginBottom: 4 }}>
               {money(PENDING_AMOUNT)} so'm
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', marginBottom: 20 }}>
               {PENDING_ORDERS} ta buyurtmadan · Dushanba, 4 May
             </div>
             <button
               onClick={handleRequest}
               disabled={requesting || requested}
               style={{
-                background: requested ? 'rgba(255,255,255,0.3)' : '#fff',
-                color: requested ? '#fff' : '#10b981',
-                border: 'none', borderRadius: 12, padding: '12px 24px',
-                fontWeight: 700, fontSize: 14, cursor: requesting || requested ? 'default' : 'pointer',
+                background: requested ? 'rgba(255,255,255,0.18)' : 'var(--surface)',
+                color: requested ? 'var(--surface)' : 'var(--text)',
+                border: 'none', borderRadius: 10, padding: '11px 20px',
+                fontWeight: 700, fontSize: 13, cursor: requesting || requested ? 'default' : 'pointer',
                 transition: 'all 200ms',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
               }}
             >
-              {requesting ? 'Yuborilmoqda…' : requested ? '✓ Soʻrov yuborildi' : 'Erta olish soʻrovi'}
+              {requesting ? 'Yuborilmoqda…' : requested ? <><IconCheck size={16} stroke={2.2} /> Soʻrov yuborildi</> : 'Erta olish soʻrovi'}
             </button>
           </div>
 
@@ -115,11 +112,13 @@ export default function PayoutsPage() {
             display: 'flex', alignItems: 'center', gap: 14,
           }}>
             <div style={{
-              width: 48, height: 48, borderRadius: 14,
-              background: 'linear-gradient(135deg, #1e1b4b, #4f46e5)',
-              display: 'grid', placeItems: 'center', fontSize: 22, flexShrink: 0,
+              width: 44, height: 44, borderRadius: 12,
+              background: 'var(--surface-2)',
+              border: '1px solid var(--border)',
+              display: 'grid', placeItems: 'center', flexShrink: 0,
+              color: 'var(--text)',
             }}>
-              💳
+              <IconCard size={20} stroke={1.7} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 15 }}>Uzcard *7821</div>
@@ -143,10 +142,12 @@ export default function PayoutsPage() {
                 border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 14,
               }}>
                 <div style={{
-                  width: 44, height: 44, borderRadius: 12, background: 'var(--success-light)',
-                  display: 'grid', placeItems: 'center', fontSize: 20, flexShrink: 0,
+                  width: 42, height: 42, borderRadius: 12, background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
+                  display: 'grid', placeItems: 'center', flexShrink: 0,
+                  color: 'var(--text)',
                 }}>
-                  💰
+                  <IconWallet size={18} stroke={1.7} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{p.ref}</div>
@@ -154,15 +155,18 @@ export default function PayoutsPage() {
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{p.method}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--success)' }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
                     +{money(p.amount)}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>so'm</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>so'm</div>
                   <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 6,
-                    background: p.status === 'paid' ? 'var(--success-light)' : 'var(--warning-light)',
-                    color: STATUS_COLOR[p.status],
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    fontSize: 10, fontWeight: 700, padding: '3px 7px', borderRadius: 6,
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-muted)',
                   }}>
+                    {p.status === 'paid' ? <IconCheck size={10} stroke={2.4} /> : <IconClock size={10} stroke={1.8} />}
                     {STATUS_LABEL[p.status]}
                   </span>
                 </div>

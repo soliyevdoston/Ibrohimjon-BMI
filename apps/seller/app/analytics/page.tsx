@@ -34,7 +34,7 @@ const AREAS: AreaData[] = [
   { area: 'Boshqalar', orders: 43, pct: 14 },
 ];
 
-const AREA_COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#94a3b8'];
+const AREA_SHADES = ['var(--text)', '#525252', '#737373', '#a3a3a3', '#d4d4d4'];
 
 const totalRevenue = WEEK.reduce((s, d) => s + d.revenue, 0);
 const totalOrders = WEEK.reduce((s, d) => s + d.orders, 0);
@@ -84,17 +84,17 @@ export default function AnalyticsPage() {
           {/* KPI cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
             {[
-              { label: 'Jami daromad', value: money(totalRevenue) + " so'm", delta: '+12%', color: 'var(--success)' },
-              { label: 'Buyurtmalar', value: totalOrders + ' ta', delta: '+8%', color: 'var(--success)' },
-              { label: "O'rt. buyurtma", value: money(avgOrder) + " so'm", delta: '+4%', color: 'var(--success)' },
+              { label: 'Jami daromad', value: money(totalRevenue) + " so'm", delta: '+12%' },
+              { label: 'Buyurtmalar', value: totalOrders + ' ta', delta: '+8%' },
+              { label: "O'rt. buyurtma", value: money(avgOrder) + " so'm", delta: '+4%' },
             ].map(k => (
               <div key={k.label} style={{
                 background: 'var(--surface)', borderRadius: 16, padding: '16px',
                 border: '1px solid var(--border)',
               }}>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6 }}>{k.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{k.value}</div>
-                <div style={{ fontSize: 12, color: k.color, fontWeight: 600 }}>{k.delta} o'tgan haftaga nisbatan</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{k.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4, letterSpacing: '-0.3px' }}>{k.value}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{k.delta} o'tgan haftaga nisbatan</div>
               </div>
             ))}
           </div>
@@ -112,8 +112,8 @@ export default function AnalyticsPage() {
                   <div style={{
                     width: '100%',
                     height: `${Math.max(8, (d.revenue / maxBar) * 108)}px`,
-                    background: 'linear-gradient(180deg, #4f46e5 0%, #7c3aed 100%)',
-                    borderRadius: '6px 6px 0 0',
+                    background: 'var(--text)',
+                    borderRadius: '4px 4px 0 0',
                     transition: 'height 400ms ease',
                     cursor: 'default',
                     position: 'relative',
@@ -142,9 +142,10 @@ export default function AnalyticsPage() {
                 {TOP_PRODUCTS.map((p, i) => (
                   <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{
-                      width: 24, height: 24, borderRadius: 8, background: 'var(--primary-50)',
+                      width: 24, height: 24, borderRadius: 7, background: 'var(--surface-2)',
+                      border: '1px solid var(--border)',
                       display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 800,
-                      color: 'var(--primary)', flexShrink: 0,
+                      color: 'var(--text)', flexShrink: 0,
                     }}>
                       {i + 1}
                     </div>
@@ -152,7 +153,7 @@ export default function AnalyticsPage() {
                       <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.sold} ta sotildi</div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', flexShrink: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', flexShrink: 0 }}>
                       {money(p.revenue)}
                     </div>
                   </div>
@@ -173,10 +174,10 @@ export default function AnalyticsPage() {
                       <span style={{ fontSize: 13, fontWeight: 600 }}>{a.area}</span>
                       <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{a.orders} ta ({a.pct}%)</span>
                     </div>
-                    <div style={{ height: 6, background: 'var(--surface-2)', borderRadius: 3, overflow: 'hidden' }}>
+                    <div style={{ height: 6, background: 'var(--surface-2)', borderRadius: 3, overflow: 'hidden', border: '1px solid var(--border)' }}>
                       <div style={{
                         height: '100%', width: `${a.pct}%`,
-                        background: AREA_COLORS[i], borderRadius: 3,
+                        background: AREA_SHADES[i], borderRadius: 3,
                         transition: 'width 600ms ease',
                       }} />
                     </div>
@@ -188,8 +189,8 @@ export default function AnalyticsPage() {
 
           {/* Conversion rate */}
           <div style={{
-            background: 'linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%)',
-            borderRadius: 16, padding: 20, color: '#fff',
+            background: 'var(--text)',
+            borderRadius: 16, padding: 20, color: 'var(--surface)',
           }}>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Konversiya ko'rsatkichlari</div>
             <div style={{ display: 'flex', gap: 16 }}>
@@ -200,8 +201,8 @@ export default function AnalyticsPage() {
                 { label: 'Konversiya', value: ((totalOrders / 1248) * 100).toFixed(1) + '%' },
               ].map(s => (
                 <div key={s.label} style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{s.value}</div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{s.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--surface)', letterSpacing: '-0.5px' }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontWeight: 500 }}>{s.label}</div>
                 </div>
               ))}
             </div>

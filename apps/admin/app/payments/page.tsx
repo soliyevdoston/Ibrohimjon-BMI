@@ -1,7 +1,18 @@
 'use client';
 import { useState } from 'react';
 import { AdminSidebar } from '@/components/admin/Sidebar';
+import { IconCheck, IconMoney } from '@/components/admin/Icon';
+
 const money = (n: number) => new Intl.NumberFormat('uz-UZ').format(Math.round(n / 1000)) + 'K';
+
+function IconClockI({ size = 20, stroke = 1.75 }: { size?: number; stroke?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  );
+}
 
 type Tx = {
   id: string; date: string; seller: string; amount: number; commission: number;
@@ -19,16 +30,6 @@ const TRANSACTIONS: Tx[] = [
   { id: 'TX-008', date: '25 Apr, 17:00', seller: 'Sushi Art', amount: 5_900_000, commission: 472_000, orders: 71, status: 'paid', method: 'Humo' },
 ];
 
-const STATUS_COLOR: Record<string, string> = {
-  paid: 'var(--success)',
-  pending: 'var(--warning)',
-  processing: 'var(--primary)',
-};
-const STATUS_BG: Record<string, string> = {
-  paid: 'var(--success-light)',
-  pending: 'var(--warning-light)',
-  processing: 'var(--primary-50)',
-};
 const STATUS_LABEL: Record<string, string> = {
   paid: "To'landi",
   pending: "Kutilmoqda",
@@ -60,11 +61,11 @@ export default function PaymentsPage() {
 
           {/* KPI cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
-            {[
-              { label: "To'langan", value: money(totalPaid) + " so'm", color: 'var(--success)', bg: 'var(--success-light)', icon: '✅' },
-              { label: "Kutilmoqda", value: money(totalPending) + " so'm", color: 'var(--warning)', bg: 'var(--warning-light)', icon: '⏳' },
-              { label: "Komissiya", value: money(totalCommission) + " so'm", color: 'var(--primary)', bg: 'var(--primary-50)', icon: '💰' },
-            ].map(k => (
+            {([
+              { label: "To'langan", value: money(totalPaid) + " so'm", Icon: IconCheck },
+              { label: "Kutilmoqda", value: money(totalPending) + " so'm", Icon: IconClockI },
+              { label: "Komissiya", value: money(totalCommission) + " so'm", Icon: IconMoney },
+            ] as const).map(k => (
               <div key={k.label} style={{
                 background: 'var(--surface)', borderRadius: 16, padding: '20px',
                 border: '1px solid var(--border)',
@@ -72,13 +73,14 @@ export default function PaymentsPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{
                     width: 40, height: 40, borderRadius: 12,
-                    background: k.bg, display: 'grid', placeItems: 'center', fontSize: 18,
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    display: 'grid', placeItems: 'center', color: 'var(--text)',
                   }}>
-                    {k.icon}
+                    <k.Icon size={18} stroke={1.7} />
                   </div>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>{k.label}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{k.label}</div>
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: k.color }}>{k.value}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.3px' }}>{k.value}</div>
               </div>
             ))}
           </div>
@@ -93,14 +95,14 @@ export default function PaymentsPage() {
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <div style={{ display: 'flex', gap: 8, background: 'var(--surface-2)', borderRadius: 12, padding: 4 }}>
+            <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 12, padding: 4, border: '1px solid var(--border)' }}>
               {(['all', 'paid', 'pending', 'processing'] as const).map(f => (
                 <button key={f} onClick={() => setFilter(f)} style={{
-                  padding: '7px 14px', borderRadius: 9, border: 'none',
-                  background: filter === f ? '#fff' : 'transparent',
-                  color: filter === f ? 'var(--primary)' : 'var(--text-muted)',
+                  padding: '7px 14px', borderRadius: 8, border: 'none',
+                  background: filter === f ? 'var(--surface)' : 'transparent',
+                  color: filter === f ? 'var(--text)' : 'var(--text-muted)',
                   fontWeight: filter === f ? 700 : 500, fontSize: 13,
-                  cursor: 'pointer', boxShadow: filter === f ? '0 1px 4px rgba(0,0,0,.1)' : 'none',
+                  cursor: 'pointer', boxShadow: filter === f ? '0 1px 3px rgba(0,0,0,.06)' : 'none',
                   transition: 'all 200ms', whiteSpace: 'nowrap',
                 }}>
                   {f === 'all' ? 'Barchasi' : STATUS_LABEL[f]}
@@ -135,16 +137,19 @@ export default function PaymentsPage() {
                 borderTop: i === 0 ? 'none' : '1px solid var(--border)',
                 alignItems: 'center', fontSize: 13,
               }}>
-                <div style={{ fontWeight: 700, color: 'var(--primary)' }}>{tx.id}</div>
+                <div style={{ fontWeight: 700, color: 'var(--text)' }}>{tx.id}</div>
                 <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tx.seller}</div>
                 <div style={{ fontWeight: 700 }}>{money(tx.amount)}</div>
-                <div style={{ color: 'var(--success)', fontWeight: 600 }}>{money(tx.commission)}</div>
+                <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{money(tx.commission)}</div>
                 <div style={{ color: 'var(--text-muted)' }}>{tx.orders} ta</div>
                 <div>
                   <span style={{
                     fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6,
-                    background: STATUS_BG[tx.status], color: STATUS_COLOR[tx.status],
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
                   }}>
+                    {tx.status === 'paid' ? <IconCheck size={11} stroke={2.4} /> : <IconClockI size={11} stroke={1.8} />}
                     {STATUS_LABEL[tx.status]}
                   </span>
                 </div>

@@ -2,9 +2,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CourierBottomNav } from '@/components/BottomNav';
+import { IconScooter, IconMotorcycle, IconBike, IconCar, IconWalk, IconLock, IconShield, IconLogout, IconCheck } from '@/components/Icons';
 import { api } from '@/lib/api';
 
-const VEHICLES = ['Skuter', 'Motosikl', 'Velosiped', 'Mashina', 'Piyoda'];
+const VEHICLES: { id: string; label: string; Icon: React.ComponentType<{ size?: number; stroke?: number }> }[] = [
+  { id: 'Skuter', label: 'Skuter', Icon: IconScooter },
+  { id: 'Motosikl', label: 'Motosikl', Icon: IconMotorcycle },
+  { id: 'Velosiped', label: 'Velosiped', Icon: IconBike },
+  { id: 'Mashina', label: 'Mashina', Icon: IconCar },
+  { id: 'Piyoda', label: 'Piyoda', Icon: IconWalk },
+];
 
 export default function CourierProfilePage() {
   const router = useRouter();
@@ -61,34 +68,36 @@ export default function CourierProfilePage() {
     <div style={{ background: 'var(--canvas)', minHeight: '100dvh', paddingBottom: 80 }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(160deg, #1e1b4b 0%, #4f46e5 100%)',
-        padding: '48px 20px 28px',
-        paddingTop: 'max(48px, calc(env(safe-area-inset-top) + 20px))',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+        padding: '32px 20px 22px',
+        paddingTop: 'max(32px, calc(env(safe-area-inset-top) + 16px))',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
       }}>
         <div style={{
-          width: 76, height: 76, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.4)',
-          display: 'grid', placeItems: 'center', fontSize: 30, fontWeight: 800, color: '#fff',
+          width: 72, height: 72, borderRadius: '50%',
+          background: 'var(--surface-2)', border: '1.5px solid var(--border)',
+          display: 'grid', placeItems: 'center', fontSize: 26, fontWeight: 800, color: 'var(--text)',
+          letterSpacing: '-0.5px',
         }}>
           {initials(name)}
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ color: '#fff', fontSize: 20, fontWeight: 800 }}>{name}</div>
-          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{phone}</div>
+          <div style={{ color: 'var(--text)', fontSize: 19, fontWeight: 800, letterSpacing: '-0.3px' }}>{name}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{phone}</div>
         </div>
-        <div style={{ display: 'flex', gap: 10, width: '100%', maxWidth: 340 }}>
+        <div style={{ display: 'flex', gap: 8, width: '100%', maxWidth: 340, marginTop: 4 }}>
           {[
-            { label: 'Reyting', value: `${rating.toFixed(1)} ★` },
+            { label: 'Reyting', value: rating.toFixed(1) },
             { label: 'Bugun', value: `${deliveriesToday} ta` },
             { label: 'Zona', value: zone },
           ].map(s => (
             <div key={s.label} style={{
-              flex: 1, background: 'rgba(255,255,255,0.15)', borderRadius: 12,
-              padding: '10px 8px', textAlign: 'center', backdropFilter: 'blur(8px)',
+              flex: 1, background: 'var(--surface-2)', borderRadius: 10,
+              padding: '10px 8px', textAlign: 'center', border: '1px solid var(--border)',
             }}>
-              <div style={{ color: '#fff', fontWeight: 800, fontSize: 15 }}>{s.value}</div>
-              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 2 }}>{s.label}</div>
+              <div style={{ color: 'var(--text)', fontWeight: 800, fontSize: 15 }}>{s.value}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 10, marginTop: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -119,17 +128,19 @@ export default function CourierProfilePage() {
           {/* Vehicle */}
           <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 16, border: '1px solid var(--border)' }}>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>Transport vositasi</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {VEHICLES.map(v => (
-                <button key={v} onClick={() => setVehicle(v)} style={{
-                  padding: '8px 14px', borderRadius: 10, border: '2px solid',
-                  borderColor: vehicle === v ? 'var(--primary)' : 'var(--border)',
-                  background: vehicle === v ? 'var(--primary-50)' : 'var(--surface-2)',
-                  color: vehicle === v ? 'var(--primary)' : 'var(--text)',
-                  fontWeight: vehicle === v ? 700 : 500, fontSize: 13, cursor: 'pointer',
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 8 }}>
+              {VEHICLES.map(({ id, label, Icon }) => (
+                <button key={id} onClick={() => setVehicle(id)} style={{
+                  padding: '14px 8px', borderRadius: 12, border: '1.5px solid',
+                  borderColor: vehicle === id ? 'var(--text)' : 'var(--border)',
+                  background: vehicle === id ? 'var(--text)' : 'var(--surface-2)',
+                  color: vehicle === id ? 'var(--surface)' : 'var(--text-muted)',
+                  fontWeight: vehicle === id ? 600 : 500, fontSize: 12, cursor: 'pointer',
                   transition: 'all 150ms',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
                 }}>
-                  {v === 'Skuter' ? '🛵' : v === 'Motosikl' ? '🏍' : v === 'Velosiped' ? '🚲' : v === 'Mashina' ? '🚗' : '🚶'} {v}
+                  <Icon size={26} stroke={1.5} />
+                  <span>{label}</span>
                 </button>
               ))}
             </div>
@@ -140,22 +151,34 @@ export default function CourierProfilePage() {
             background: 'var(--surface-2)', borderRadius: 14, padding: '14px 16px',
             display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--border)',
           }}>
-            <span style={{ fontSize: 22 }}>🔐</span>
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              display: 'grid', placeItems: 'center', color: 'var(--text)',
+            }}>
+              <IconLock size={18} stroke={1.6} />
+            </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: 14 }}>OTP autentifikatsiya</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>SMS kod orqali himoyalangan</div>
             </div>
-            <span className="chip green">Xavfsiz</span>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
+              padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)',
+            }}>
+              <IconShield size={12} stroke={1.8} /> Xavfsiz
+            </div>
           </div>
 
           {/* Save button */}
-          <button className="btn" onClick={handleSave} disabled={saving} style={{ height: 50, fontSize: 15 }}>
-            {saving ? 'Saqlanmoqda…' : saved ? '✓ Saqlandi' : 'Saqlash'}
+          <button className="btn" onClick={handleSave} disabled={saving} style={{ height: 50, fontSize: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            {saving ? 'Saqlanmoqda…' : saved ? <><IconCheck size={18} stroke={2.2} /> Saqlandi</> : 'Saqlash'}
           </button>
 
           {/* Logout */}
-          <button className="btn danger" onClick={handleLogout} style={{ height: 50, fontSize: 15 }}>
-            Chiqish
+          <button className="btn danger" onClick={handleLogout} style={{ height: 50, fontSize: 15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <IconLogout size={18} stroke={1.8} /> Chiqish
           </button>
         </div>
       </div>

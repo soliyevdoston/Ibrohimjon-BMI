@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CourierBottomNav } from '@/components/BottomNav';
+import { IconCheck, IconClock } from '@/components/Icons';
 import { api, money } from '@/lib/api';
 
 type DayEarning = { day: string; amount: number; deliveries: number };
@@ -44,27 +45,28 @@ export default function EarningsPage() {
 
   return (
     <div style={{ background: 'var(--canvas)', minHeight: '100dvh', paddingBottom: 80 }}>
-      {/* Header gradient */}
+      {/* Header */}
       <div style={{
-        background: 'linear-gradient(160deg, #064e3b 0%, #10b981 100%)',
-        padding: '48px 20px 28px',
-        paddingTop: 'max(48px, calc(env(safe-area-inset-top) + 20px))',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+        padding: '32px 20px 20px',
+        paddingTop: 'max(32px, calc(env(safe-area-inset-top) + 16px))',
       }}>
-        <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, marginBottom: 20 }}>Daromadim</h1>
+        <h1 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 800, marginBottom: 18, letterSpacing: '-0.3px' }}>Daromadim</h1>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
           {[
             { label: 'Bugun', value: money(todayEarnings) + " so'm" },
             { label: 'Bu hafta', value: money(weekTotal) + " so'm" },
             { label: 'Kutilmoqda', value: money(pending) + " so'm" },
           ].map(s => (
             <div key={s.label} style={{
-              flex: 1, background: 'rgba(255,255,255,0.15)',
-              borderRadius: 14, padding: '12px 10px', backdropFilter: 'blur(8px)',
+              flex: 1, background: 'var(--surface-2)',
+              borderRadius: 12, padding: '12px 10px', border: '1px solid var(--border)',
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600, marginBottom: 4 }}>{s.label.toUpperCase()}</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4, letterSpacing: '0.5px' }}>{s.label.toUpperCase()}</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2 }}>{s.value}</div>
             </div>
           ))}
         </div>
@@ -100,8 +102,8 @@ export default function EarningsPage() {
                 <div style={{
                   width: '100%',
                   height: `${Math.max(8, (d.amount / maxBar) * 88)}px`,
-                  background: 'linear-gradient(180deg, #10b981 0%, #059669 100%)',
-                  borderRadius: '6px 6px 0 0',
+                  background: 'var(--text)',
+                  borderRadius: '4px 4px 0 0',
                   transition: 'height 400ms ease',
                   position: 'relative',
                 }}>
@@ -130,17 +132,19 @@ export default function EarningsPage() {
             }}>
               <div style={{
                 width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-                background: tx.status === 'paid' ? 'var(--success-light)' : 'var(--warning-light)',
-                display: 'grid', placeItems: 'center', fontSize: 18,
+                background: 'var(--surface-2)',
+                border: '1px solid var(--border)',
+                display: 'grid', placeItems: 'center',
+                color: tx.status === 'paid' ? 'var(--text)' : 'var(--text-muted)',
               }}>
-                {tx.status === 'paid' ? '✅' : '⏳'}
+                {tx.status === 'paid' ? <IconCheck size={18} stroke={2.2} /> : <IconClock size={18} stroke={1.8} />}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{tx.orderId}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{tx.date}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontWeight: 800, fontSize: 16, color: tx.status === 'paid' ? 'var(--success)' : 'var(--warning)' }}>
+                <div style={{ fontWeight: 800, fontSize: 16, color: tx.status === 'paid' ? 'var(--text)' : 'var(--text-muted)' }}>
                   +{money(tx.amount)}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>so'm</div>

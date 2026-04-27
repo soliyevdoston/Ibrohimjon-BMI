@@ -3,14 +3,17 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth';
 import { useEffect } from 'react';
+import { IconChart, IconBox, IconCart, IconTrendUp, IconCard, IconSettings } from './Icons';
 
-const NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { href: '/products', label: 'Products', icon: '📦' },
-  { href: '/orders', label: 'Orders', icon: '🛒', badge: true },
-  { href: '/analytics', label: 'Tahlil', icon: '📈' },
-  { href: '/payouts', label: "To'lovlar", icon: '💳' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
+type IconCmp = React.ComponentType<{ size?: number; stroke?: number }>;
+
+const NAV: { href: string; label: string; Icon: IconCmp; badge?: boolean }[] = [
+  { href: '/dashboard', label: 'Dashboard', Icon: IconChart },
+  { href: '/products', label: 'Products', Icon: IconBox },
+  { href: '/orders', label: 'Orders', Icon: IconCart, badge: true },
+  { href: '/analytics', label: 'Tahlil', Icon: IconTrendUp },
+  { href: '/payouts', label: "To'lovlar", Icon: IconCard },
+  { href: '/settings', label: 'Settings', Icon: IconSettings },
 ];
 
 export function SellerSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
@@ -41,9 +44,10 @@ export function SellerSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
 
       {NAV.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+        const Icon = item.Icon;
         return (
           <Link key={item.href} href={item.href} className={`sidebar-link ${isActive ? 'is-active' : ''}`}>
-            <span className="sb-ico">{item.icon}</span>
+            <span className="sb-ico"><Icon size={18} stroke={1.7} /></span>
             <span>{item.label}</span>
             {item.badge && pendingCount > 0 && (
               <span className="sb-count">{pendingCount}</span>

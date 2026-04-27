@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CourierBottomNav } from '@/components/BottomNav';
+import { IconCheck, IconX, IconStore, IconMapPin, IconClock } from '@/components/Icons';
 import { money } from '@/lib/api';
 
 type Delivery = {
@@ -38,23 +39,24 @@ export default function HistoryPage() {
     <div style={{ background: 'var(--canvas)', minHeight: '100dvh', paddingBottom: 80 }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(160deg, #1e1b4b 0%, #4f46e5 100%)',
-        padding: '48px 20px 24px',
-        paddingTop: 'max(48px, calc(env(safe-area-inset-top) + 20px))',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+        padding: '32px 20px 20px',
+        paddingTop: 'max(32px, calc(env(safe-area-inset-top) + 16px))',
       }}>
-        <h1 style={{ color: '#fff', fontSize: 22, fontWeight: 800, marginBottom: 20 }}>Yetkazishlar tarixi</h1>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <h1 style={{ color: 'var(--text)', fontSize: 22, fontWeight: 800, marginBottom: 18, letterSpacing: '-0.3px' }}>Yetkazishlar tarixi</h1>
+        <div style={{ display: 'flex', gap: 10 }}>
           {[
             { label: 'Jami', value: totalDeliveries + ' ta' },
             { label: 'Daromad', value: money(totalEarnings / 1000) + 'K' },
             { label: 'O\'rt. masofa', value: avgDistance + ' km' },
           ].map(s => (
             <div key={s.label} style={{
-              flex: 1, background: 'rgba(255,255,255,0.15)', borderRadius: 14,
-              padding: '12px 10px', backdropFilter: 'blur(8px)', textAlign: 'center',
+              flex: 1, background: 'var(--surface-2)', borderRadius: 12,
+              padding: '12px 10px', textAlign: 'center', border: '1px solid var(--border)',
             }}>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: 600, marginBottom: 4 }}>{s.label}</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>{s.value}</div>
             </div>
           ))}
         </div>
@@ -86,27 +88,39 @@ export default function HistoryPage() {
               opacity: d.status === 'cancelled' ? 0.65 : 1,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 20 }}>{d.status === 'delivered' ? '✅' : '❌'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 10,
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    display: 'grid', placeItems: 'center',
+                    color: d.status === 'delivered' ? 'var(--text)' : 'var(--text-muted)',
+                  }}>
+                    {d.status === 'delivered' ? <IconCheck size={16} stroke={2.2} /> : <IconX size={16} stroke={2.2} />}
+                  </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{d.code}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{d.date}</div>
                   </div>
                 </div>
                 {d.status === 'delivered' && (
-                  <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--success)' }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
                     +{money(d.earnings)} so'm
                   </div>
                 )}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                  <span>🏪</span><span style={{ color: 'var(--text-secondary)' }}>{d.sellerName}</span>
+                  <IconStore size={14} stroke={1.8} style={{ color: 'var(--text-muted)' }} />
+                  <span style={{ color: 'var(--text-secondary)' }}>{d.sellerName}</span>
                   <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>→ {d.customerArea}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-muted)', paddingTop: 4, borderTop: '1px solid var(--border)', marginTop: 4 }}>
-                  <span>📍 {d.distanceKm} km</span>
-                  <span>⏱ {d.durationMin} daq</span>
+                <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-muted)', paddingTop: 6, borderTop: '1px solid var(--border)', marginTop: 4, alignItems: 'center' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconMapPin size={12} stroke={1.8} /> {d.distanceKm} km
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <IconClock size={12} stroke={1.8} /> {d.durationMin} daq
+                  </span>
                 </div>
               </div>
             </div>
