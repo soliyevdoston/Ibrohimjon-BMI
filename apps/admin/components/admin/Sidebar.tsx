@@ -8,6 +8,7 @@ import {
   IconDashboard,
   IconLive,
   IconLogout,
+  IconMoney,
   IconOrders,
   IconSettings,
   IconStore,
@@ -41,6 +42,7 @@ const groups: Group[] = [
       { href: '/couriers',   label: 'Couriers',  icon: IconTruck },
       { href: '/sellers',    label: 'Sellers',   icon: IconStore },
       { href: '/users',      label: 'Customers', icon: IconUsers },
+      { href: '/payments',   label: "To'lovlar", icon: IconMoney },
     ],
   },
   {
