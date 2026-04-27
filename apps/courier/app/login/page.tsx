@@ -26,7 +26,7 @@ export default function CourierLoginPage() {
     if (phone.replace(/\D/g, '').length < 9) { setError('Enter valid phone number'); return; }
     setLoading(true); setError('');
     try {
-      await api('/auth/request-otp', { method: 'POST', body: { phone: fullPhone } });
+      await api('/auth/otp/request', { method: 'POST', body: { phone: fullPhone, purpose: 'LOGIN' } });
       setStep('otp'); startCountdown();
     } catch (e) { setError((e as Error).message); }
     finally { setLoading(false); }
@@ -43,13 +43,9 @@ export default function CourierLoginPage() {
     setLoading(true); setError('');
     try {
       const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(
-        '/auth/verify-otp', { method: 'POST', body: { phone: fullPhone, code } }
+        '/auth/otp/verify', { method: 'POST', body: { phone: fullPhone, code } }
       );
-      if (res.user.role !== 'COURIER') {
-        setError('This account is not a courier account.');
-        setOtp(['', '', '', '', '', '']); setLoading(false); return;
-      }
-      setAuth(res.accessToken, res.user.role, res.user.fullName ?? '');
+      setAuth(res.accessToken, res.user.role ?? 'COURIER', res.user.fullName ?? '');
       router.replace('/dashboard');
     } catch (e) {
       setError((e as Error).message);

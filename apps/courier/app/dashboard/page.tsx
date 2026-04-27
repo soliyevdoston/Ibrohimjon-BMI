@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { CourierMap } from '@/components/map/CourierMap';
+import { CourierBottomNav } from '@/components/BottomNav';
 import { api, money } from '@/lib/api';
 import { startSimulatedTracking, sendLocationToBackend } from '@/lib/gps';
 import { io, Socket } from 'socket.io-client';
@@ -47,6 +48,23 @@ const STATUS_STEPS: { status: DeliveryStatus; label: string; nextLabel: string; 
 const STATUS_COLORS: Record<DeliveryStatus, string> = {
   accepted: 'indigo', picked_up: 'amber', on_the_way: 'sky', delivered: 'green',
 };
+
+function haversineKm(a: [number, number], b: [number, number]): number {
+  const R = 6371;
+  const dLat = (b[0] - a[0]) * Math.PI / 180;
+  const dLng = (b[1] - a[1]) * Math.PI / 180;
+  const lat1 = a[0] * Math.PI / 180;
+  const lat2 = b[0] * Math.PI / 180;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(x));
+}
+
+function etaLabel(km: number): string {
+  const minutes = Math.round((km / 25) * 60); // assume ~25 km/h
+  if (minutes <= 0) return 'Yetib keldim!';
+  if (minutes < 60) return `~${minutes} daq`;
+  return `~${Math.floor(minutes / 60)}h ${minutes % 60}daq`;
+}
 
 export default function CourierDashboard() {
   const router = useRouter();
@@ -141,7 +159,7 @@ export default function CourierDashboard() {
   /* ── Available orders view ── */
   if (!activeDelivery) {
     return (
-      <div style={{ background: 'var(--canvas)', minHeight: '100vh' }}>
+      <div style={{ background: 'var(--canvas)', minHeight: '100dvh', paddingBottom: 80 }}>
         {/* Header */}
         <div style={{
           background: 'linear-gradient(160deg, #1e1b4b 0%, #4f46e5 100%)',
@@ -266,6 +284,7 @@ export default function CourierDashboard() {
             </div>
           )}
         </div>
+        <CourierBottomNav />
       </div>
     );
   }
@@ -320,6 +339,42 @@ export default function CourierDashboard() {
             </div>
           ) : (
             <div className="stack-sm">
+              {/* Live distance + ETA strip */}
+              {(() => {
+                const target = deliveryStatus === 'accepted' || deliveryStatus === 'picked_up'
+                  ? activeDelivery.sellerPos
+                  : activeDelivery.customerPos;
+                const distKm = haversineKm(courierPos, target);
+                return (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                    borderRadius: 14, padding: '12px 16px',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 600, marginBottom: 2 }}>MASOFA</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+                        {distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`}
+                      </div>
+                    </div>
+                    <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,.25)' }} />
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 600, marginBottom: 2 }}>YETIB KELISH</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+                        {etaLabel(distKm)}
+                      </div>
+                    </div>
+                    <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,.25)' }} />
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 600, marginBottom: 2 }}>MANZIL</div>
+                      <div style={{ fontSize: 16, color: '#fff', lineHeight: 1 }}>
+                        {deliveryStatus === 'accepted' || deliveryStatus === 'picked_up' ? '🏪' : '🏠'}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Route summary */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div className="hstack">
@@ -333,7 +388,7 @@ export default function CourierDashboard() {
                 <div className="hstack">
                   <span style={{ fontSize: 18 }}>🏠</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>Customer</div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>Mijoz</div>
                     <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{activeDelivery.customerAddress}</div>
                   </div>
                 </div>

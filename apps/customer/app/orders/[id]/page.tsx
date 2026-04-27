@@ -58,6 +58,16 @@ function lerp(a: [number, number], b: [number, number], t: number): [number, num
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
 }
 
+function haversineKm(a: [number, number], b: [number, number]): number {
+  const R = 6371;
+  const dLat = (b[0] - a[0]) * Math.PI / 180;
+  const dLng = (b[1] - a[1]) * Math.PI / 180;
+  const lat1 = a[0] * Math.PI / 180;
+  const lat2 = b[0] * Math.PI / 180;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(x));
+}
+
 function formatDate(iso: string) {
   try {
     return new Intl.DateTimeFormat('uz-UZ', {
@@ -313,17 +323,36 @@ export default function OrderTrackingPage() {
       )}
 
       <div style={{ padding: '16px', maxWidth: 680, margin: '0 auto', width: '100%', flex: 1 }}>
-        {/* ETA card */}
-        {isActiveOrder && eta !== null && eta > 0 && (
-          <div className="card" style={{ marginBottom: 16, background: 'var(--primary)', border: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 12, color: 'rgba(255,255,255,.75)', fontWeight: 600 }}>TAXMINIY VAQT</div>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', marginTop: 2 }}>
-                  {formatEta(eta)}
-                </div>
+        {/* ETA + Distance card */}
+        {isActiveOrder && (
+          <div style={{
+            marginBottom: 16,
+            background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+            borderRadius: 18, padding: '16px 20px',
+            display: 'flex', alignItems: 'center', gap: 0,
+          }}>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>MASOFA</div>
+              {(() => {
+                const dest = getDestination();
+                const km = haversineKm(courierPos, dest);
+                return (
+                  <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+                    {km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`}
+                  </div>
+                );
+              })()}
+            </div>
+            <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,.25)', flexShrink: 0 }} />
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>YETIB KELISH</div>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
+                {eta !== null && eta > 0 ? formatEta(eta) : '🛵 Yo\'lda'}
               </div>
-              <div style={{ fontSize: 36, animation: 'pulse 1.5s ease-in-out infinite' }}>🛵</div>
+            </div>
+            <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,.25)', flexShrink: 0 }} />
+            <div style={{ flex: 0.7, textAlign: 'center' }}>
+              <div style={{ fontSize: 32, animation: 'pulse 1.5s ease-in-out infinite' }}>🛵</div>
             </div>
           </div>
         )}

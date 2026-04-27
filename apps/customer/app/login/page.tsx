@@ -61,9 +61,9 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await api('/auth/request-otp', {
+      await api('/auth/otp/request', {
         method: 'POST',
-        body: { phone: `+998${digits}` },
+        body: { phone: `+998${digits}`, purpose: 'LOGIN' },
       });
       setStep('otp');
       startCountdown();
@@ -121,14 +121,14 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await api<{ access_token: string; role: string }>(
-        '/auth/verify-otp',
+      const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(
+        '/auth/otp/verify',
         {
           method: 'POST',
-          body: { phone: `+998${phone.replace(/\D/g, '')}`, otp: code },
+          body: { phone: `+998${phone.replace(/\D/g, '')}`, code },
         }
       );
-      setAuth(res.access_token, res.role ?? 'customer');
+      setAuth(res.accessToken, res.user?.role ?? 'CUSTOMER');
       router.replace('/home');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Noto\'g\'ri kod');
@@ -147,9 +147,9 @@ export default function LoginPage() {
     setOtp(['', '', '', '', '', '']);
     setLoading(true);
     try {
-      await api('/auth/request-otp', {
+      await api('/auth/otp/request', {
         method: 'POST',
-        body: { phone: `+998${phone.replace(/\D/g, '')}` },
+        body: { phone: `+998${phone.replace(/\D/g, '')}`, purpose: 'LOGIN' },
       });
       startCountdown();
       setTimeout(() => otpRefs.current[0]?.focus(), 100);

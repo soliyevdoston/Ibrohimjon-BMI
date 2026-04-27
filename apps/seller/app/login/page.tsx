@@ -33,7 +33,7 @@ export default function SellerLoginPage() {
     if (phone.replace(/\D/g, '').length < 9) { setError('Enter a valid phone number'); return; }
     setLoading(true); setError('');
     try {
-      await api('/auth/request-otp', { method: 'POST', body: { phone: fullPhone } });
+      await api('/auth/otp/request', { method: 'POST', body: { phone: fullPhone, purpose: 'LOGIN' } });
       setStep('otp');
       startCountdown();
     } catch (e) {
@@ -60,16 +60,10 @@ export default function SellerLoginPage() {
     setLoading(true); setError('');
     try {
       const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(
-        '/auth/verify-otp',
+        '/auth/otp/verify',
         { method: 'POST', body: { phone: fullPhone, code } }
       );
-      if (res.user.role !== 'SELLER') {
-        setError('This account is not registered as a seller.');
-        setOtp(['', '', '', '', '', '']);
-        setLoading(false);
-        return;
-      }
-      setAuth(res.accessToken, res.user.role, res.user.fullName ?? '');
+      setAuth(res.accessToken, res.user.role ?? 'SELLER', res.user.fullName ?? '');
       router.replace('/dashboard');
     } catch (e) {
       setError((e as Error).message);
