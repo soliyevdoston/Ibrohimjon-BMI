@@ -37,13 +37,13 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 const STATUS_CHIP: Record<OrderStatus, string> = {
-  pending: 'chip chip-amber',
-  confirmed: 'chip chip-blue',
-  preparing: 'chip chip-indigo',
-  picked_up: 'chip chip-indigo',
-  on_the_way: 'chip chip-indigo',
-  delivered: 'chip chip-green',
-  cancelled: 'chip chip-rose',
+  pending: 'chip chip-gray',
+  confirmed: 'chip chip-gray',
+  preparing: 'chip chip-gray',
+  picked_up: 'chip chip-gray',
+  on_the_way: 'chip chip-gray',
+  delivered: 'chip chip-gray',
+  cancelled: 'chip chip-gray',
 };
 
 function formatDate(iso: string) {
@@ -235,7 +235,7 @@ function OrderCard({ order }: { order: Order }) {
         <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
           {itemsCount > 0 ? `${itemsCount} ta mahsulot` : ''}
         </div>
-        <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--primary)' }}>
+        <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
           {total > 0 ? `${money(total)} so'm` : ''}
         </div>
       </div>
@@ -243,17 +243,17 @@ function OrderCard({ order }: { order: Order }) {
       {/* Track button for active orders */}
       {['on_the_way', 'picked_up'].includes(order.status) && (
         <div style={{
-          background: 'var(--primary-light)',
+          background: 'var(--surface-alt)',
           borderRadius: 10,
+          border: '1px solid var(--border)',
           padding: '8px 12px',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
           fontSize: 13,
-          color: 'var(--primary)',
+          color: 'var(--text)',
           fontWeight: 600,
         }}>
-          <span style={{ animation: 'pulse 1.5s ease-in-out infinite', display: 'inline-block' }}>🛵</span>
           Kuryer yo&apos;lda — kuzatish
         </div>
       )}

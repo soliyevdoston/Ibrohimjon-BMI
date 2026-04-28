@@ -35,8 +35,8 @@ export function RevenueChart({ points }: { points: Point[] }) {
       >
         <defs>
           <linearGradient id="rev-grad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#4f46e5" stopOpacity="0" />
+            <stop offset="0%" stopColor="#0f172a" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -56,7 +56,7 @@ export function RevenueChart({ points }: { points: Point[] }) {
         <path
           d={line}
           fill="none"
-          stroke="#4f46e5"
+          stroke="#0f172a"
           strokeWidth={2.4}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -79,7 +79,7 @@ export function RevenueChart({ points }: { points: Point[] }) {
               cy={c.y}
               r={hover === i ? 5 : 3}
               fill="#fff"
-              stroke="#4f46e5"
+              stroke="#0f172a"
               strokeWidth={2}
               style={{ transition: 'r 120ms ease' }}
             />
@@ -92,7 +92,7 @@ export function RevenueChart({ points }: { points: Point[] }) {
             x2={coords[hover].x}
             y1={padY}
             y2={h - padY}
-            stroke="#4f46e5"
+            stroke="#0f172a"
             strokeDasharray="3 3"
             strokeOpacity="0.4"
           />

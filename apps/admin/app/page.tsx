@@ -30,11 +30,11 @@ export default function DashboardPage() {
   const latestOrders = mockOrders.slice(0, 6);
 
   const statusSegments = [
-    { label: 'Delivered',   value: 186, color: '#10b981' },
-    { label: 'On the way',  value: 37,  color: '#4f46e5' },
-    { label: 'Preparing',   value: 18,  color: '#f59e0b' },
-    { label: 'Pending',     value: 4,   color: '#94a3b8' },
-    { label: 'Canceled',    value: 3,   color: '#ef4444' },
+    { label: 'Delivered',   value: 186, color: '#0f172a' },
+    { label: 'On the way',  value: 37,  color: '#374151' },
+    { label: 'Preparing',   value: 18,  color: '#6b7280' },
+    { label: 'Pending',     value: 4,   color: '#9ca3af' },
+    { label: 'Canceled',    value: 3,   color: '#d1d5db' },
   ];
 
   return (
@@ -203,7 +203,7 @@ export default function DashboardPage() {
                         style={{
                           width: `${pct}%`,
                           height: '100%',
-                          background: 'linear-gradient(90deg, #4f46e5, #7c3aed)',
+                          background: 'var(--text)',
                           transition: 'width 400ms ease',
                         }}
                       />

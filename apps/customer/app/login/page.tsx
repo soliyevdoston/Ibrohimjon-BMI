@@ -1,15 +1,21 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
 type Step = 'phone' | 'otp';
 
-const OTP_RESEND_DELAY = 120; // seconds
+const OTP_RESEND_DELAY = 120;
 
 export default function LoginPage() {
+  return <Suspense><LoginForm /></Suspense>;
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const [step, setStep] = useState<Step>('phone');
@@ -22,24 +28,21 @@ export default function LoginPage() {
   const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const redirectTo = searchParams.get('redirect') ?? '/home';
+
   const startCountdown = useCallback(() => {
     setCountdown(OTP_RESEND_DELAY);
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          return 0;
-        }
+        if (prev <= 1) { clearInterval(timerRef.current!); return 0; }
         return prev - 1;
       });
     }, 1000);
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
   const formatCountdown = (s: number) => {
@@ -48,16 +51,11 @@ export default function LoginPage() {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const formatPhone = (raw: string) => {
-    return raw.replace(/\D/g, '').slice(0, 9);
-  };
+  const formatPhone = (raw: string) => raw.replace(/\D/g, '').slice(0, 9);
 
   const handleSendOtp = async () => {
     const digits = phone.replace(/\D/g, '');
-    if (digits.length !== 9) {
-      setError('Telefon raqamini to\'liq kiriting');
-      return;
-    }
+    if (digits.length !== 9) { setError("Telefon raqamini to'liq kiriting"); return; }
     setError('');
     setLoading(true);
     try {
@@ -81,24 +79,15 @@ export default function LoginPage() {
     next[idx] = char;
     setOtp(next);
     setError('');
-
-    if (char && idx < 5) {
-      otpRefs.current[idx + 1]?.focus();
-    }
-
-    // Auto-submit when all filled
+    if (char && idx < 5) otpRefs.current[idx + 1]?.focus();
     if (char && idx === 5) {
       const code = [...next].join('');
-      if (code.length === 6) {
-        submitOtp([...next]);
-      }
+      if (code.length === 6) submitOtp([...next]);
     }
   };
 
   const handleOtpKeyDown = (idx: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[idx] && idx > 0) {
-      otpRefs.current[idx - 1]?.focus();
-    }
+    if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus();
     if (e.key === 'ArrowLeft' && idx > 0) otpRefs.current[idx - 1]?.focus();
     if (e.key === 'ArrowRight' && idx < 5) otpRefs.current[idx + 1]?.focus();
   };
@@ -106,7 +95,7 @@ export default function LoginPage() {
   const handleOtpPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length === 0) return;
+    if (!pasted.length) return;
     const next = [...otp];
     for (let i = 0; i < 6; i++) next[i] = pasted[i] ?? '';
     setOtp(next);
@@ -123,23 +112,18 @@ export default function LoginPage() {
     try {
       const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(
         '/auth/otp/verify',
-        {
-          method: 'POST',
-          body: { phone: `+998${phone.replace(/\D/g, '')}`, code },
-        }
+        { method: 'POST', body: { phone: `+998${phone.replace(/\D/g, '')}`, code } }
       );
       setAuth(res.accessToken, res.user?.role ?? 'CUSTOMER');
-      router.replace('/home');
+      router.replace(redirectTo);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Noto\'g\'ri kod');
+      setError(e instanceof Error ? e.message : "Noto'g'ri kod");
       setOtp(['', '', '', '', '', '']);
       setTimeout(() => otpRefs.current[0]?.focus(), 50);
     } finally {
       setLoading(false);
     }
   };
-
-  const handleVerify = () => submitOtp(otp);
 
   const handleResend = async () => {
     if (countdown > 0) return;
@@ -161,39 +145,50 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={styles.bg}>
-      <div style={styles.card} className="fade-in">
+    <div style={{
+      minHeight: '100dvh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px 16px',
+      background: 'var(--bg)',
+    }}>
+      <div className="card fade-in" style={{ width: '100%', maxWidth: 420, padding: '36px 32px' }}>
         {/* Logo */}
-        <div style={styles.logoArea}>
-          <div style={styles.logoIcon}>🛵</div>
-          <div style={styles.logoText}>Lochin</div>
-          <div style={styles.logoSub}>Tez yetkazib berish xizmati</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28, gap: 6 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 18,
+            background: 'var(--text)', color: 'var(--surface)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 28, fontWeight: 800, letterSpacing: '-1px', marginBottom: 4,
+          }}>
+            L
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>Lochin</div>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
+            Tez yetkazib berish xizmati
+          </div>
         </div>
 
         {step === 'phone' ? (
           <>
-            <h2 style={styles.heading}>Kirish</h2>
-            <p style={styles.subheading}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>Kirish</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center', lineHeight: 1.6, marginBottom: 24 }}>
               Telefon raqamingizni kiriting, biz sizga SMS kod yuboramiz
             </p>
 
-            <div className="input-group" style={{ marginTop: 24 }}>
+            <div className="input-group">
               <label className="label">Telefon raqam</label>
               <div className="input-prefix">
-                <span className="input-prefix-label">🇺🇿 +998</span>
+                <span className="input-prefix-label">+998</span>
                 <input
                   className="input"
                   type="tel"
                   inputMode="numeric"
                   placeholder="90 123 45 67"
                   value={phone}
-                  onChange={(e) => {
-                    setError('');
-                    setPhone(formatPhone(e.target.value));
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSendOtp();
-                  }}
+                  onChange={(e) => { setError(''); setPhone(formatPhone(e.target.value)); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSendOtp(); }}
                   maxLength={9}
                   autoFocus
                 />
@@ -211,35 +206,28 @@ export default function LoginPage() {
               {loading ? 'Yuborilmoqda…' : 'Kod yuborish'}
             </button>
 
-            <p style={styles.terms}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', marginTop: 16, lineHeight: 1.6 }}>
               Davom etish orqali siz{' '}
-              <a href="#" style={{ color: 'var(--primary)' }}>foydalanish shartlari</a>ga
+              <a href="#" style={{ color: 'var(--text)', textDecoration: 'underline' }}>foydalanish shartlari</a>ga
               rozilik bildirasiz
             </p>
           </>
         ) : (
           <>
             <button
-              style={styles.backBtn}
-              onClick={() => {
-                setStep('phone');
-                setOtp(['', '', '', '', '', '']);
-                setError('');
-              }}
+              style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: 14, fontWeight: 600, cursor: 'pointer', padding: 0, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 4 }}
+              onClick={() => { setStep('phone'); setOtp(['', '', '', '', '', '']); setError(''); }}
             >
               ← Orqaga
             </button>
 
-            <h2 style={styles.heading}>SMS kodni kiriting</h2>
-            <p style={styles.subheading}>
+            <h2 style={{ fontSize: 22, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>SMS kodni kiriting</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center', lineHeight: 1.6, marginBottom: 28 }}>
               +998 {phone.slice(0, 2)} {phone.slice(2, 5)} {phone.slice(5, 7)} {phone.slice(7, 9)} raqamiga 6 xonali kod yuborildi
             </p>
 
-            <div style={{ marginTop: 28 }}>
-              <div
-                className="otp-group"
-                onPaste={handleOtpPaste}
-              >
+            <div onPaste={handleOtpPaste}>
+              <div className="otp-group">
                 {otp.map((digit, idx) => (
                   <input
                     key={idx}
@@ -255,30 +243,29 @@ export default function LoginPage() {
                 ))}
               </div>
               {error && (
-                <p style={{ textAlign: 'center', marginTop: 12 }} className="error-text">
-                  {error}
-                </p>
+                <p style={{ textAlign: 'center', marginTop: 12 }} className="error-text">{error}</p>
               )}
             </div>
 
             <button
               className="btn btn-full"
               style={{ marginTop: 28, height: 52 }}
-              onClick={handleVerify}
+              onClick={() => submitOtp(otp)}
               disabled={loading || otp.join('').length !== 6}
             >
               {loading ? <span className="spinner" /> : null}
               {loading ? 'Tekshirilmoqda…' : 'Tasdiqlash'}
             </button>
 
-            <div style={styles.resendArea}>
+            <div style={{ marginTop: 20, textAlign: 'center' }}>
               {countdown > 0 ? (
                 <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-                  Qayta yuborish: <strong style={{ color: 'var(--primary)' }}>{formatCountdown(countdown)}</strong>
+                  Qayta yuborish:{' '}
+                  <strong style={{ color: 'var(--text)' }}>{formatCountdown(countdown)}</strong>
                 </span>
               ) : (
                 <button
-                  style={styles.resendBtn}
+                  style={{ background: 'none', border: 'none', color: 'var(--text)', fontSize: 14, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                   onClick={handleResend}
                   disabled={loading}
                 >
@@ -292,94 +279,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  bg: {
-    minHeight: '100dvh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '24px 16px',
-    background: 'linear-gradient(135deg, #f0f0ff 0%, #faf7ff 50%, #f0f7ff 100%)',
-  },
-  card: {
-    background: '#fff',
-    borderRadius: 24,
-    padding: '36px 32px',
-    width: '100%',
-    maxWidth: 420,
-    boxShadow: '0 16px 60px rgba(79,70,229,.12)',
-  },
-  logoArea: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginBottom: 28,
-    gap: 4,
-  },
-  logoIcon: {
-    fontSize: 48,
-    lineHeight: 1,
-    marginBottom: 4,
-  },
-  logoText: {
-    fontSize: 28,
-    fontWeight: 800,
-    color: '#4f46e5',
-    letterSpacing: '-0.5px',
-  },
-  logoSub: {
-    fontSize: 13,
-    color: '#94a3b8',
-    fontWeight: 500,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: 700,
-    color: '#0f172a',
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  subheading: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 1.6,
-  },
-  terms: {
-    fontSize: 12,
-    color: '#94a3b8',
-    textAlign: 'center',
-    marginTop: 16,
-    lineHeight: 1.6,
-  },
-  backBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#4f46e5',
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    padding: 0,
-    marginBottom: 20,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 4,
-  },
-  resendArea: {
-    marginTop: 20,
-    textAlign: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  resendBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#4f46e5',
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    textDecoration: 'underline',
-    padding: 0,
-  },
-};

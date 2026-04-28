@@ -25,7 +25,7 @@ export default function AdminLivePage() {
               <h3>Fleet map</h3>
               <div className="card-sub">Live positions · updates every ~1.6s</div>
             </div>
-            <div className="chip indigo"><IconLive size={12} /> Live</div>
+            <div className="chip gray"><IconLive size={12} /> Live</div>
           </div>
           <LiveMap />
         </div>
@@ -48,8 +48,8 @@ export default function AdminLivePage() {
                   className="card"
                   style={{
                     padding: 12,
-                    border: isSel ? '1px solid var(--primary)' : '1px solid var(--border)',
-                    background: isSel ? 'var(--primary-50)' : 'var(--surface)',
+                    border: isSel ? '1px solid var(--text)' : '1px solid var(--border)',
+                    background: isSel ? 'var(--surface-2)' : 'var(--surface)',
                     textAlign: 'left',
                     cursor: 'pointer',
                   }}
@@ -95,7 +95,7 @@ export default function AdminLivePage() {
                       <div className="muted" style={{ fontSize: 11 }}>{c.vehicle} · {c.zone}</div>
                     </div>
                   </div>
-                  <span className={`chip ${c.isBusy ? 'amber' : 'green'}`}>
+                  <span className="chip gray">
                     {c.isBusy ? 'On delivery' : 'Available'}
                   </span>
                 </div>
@@ -105,9 +105,7 @@ export default function AdminLivePage() {
                 </div>
                 <div className="hstack" style={{ justifyContent: 'space-between', fontSize: 12, marginTop: 2 }}>
                   <span className="muted">Rating</span>
-                  <span>
-                    <span style={{ color: '#f59e0b' }}>★</span> {c.rating.toFixed(1)}
-                  </span>
+                  <span style={{ fontWeight: 600 }}>★ {c.rating.toFixed(1)}</span>
                 </div>
               </div>
             ))}

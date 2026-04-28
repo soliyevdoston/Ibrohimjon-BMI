@@ -70,16 +70,17 @@ export default function ProfilePage() {
     <div className="page" style={{ paddingBottom: 88 }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(160deg, #1e1b4b 0%, #4f46e5 100%)',
-        padding: '48px 20px 28px',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+        padding: '48px 20px 24px',
         paddingTop: 'max(48px, calc(env(safe-area-inset-top) + 24px))',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
       }}>
         <div style={{
           width: 72, height: 72, borderRadius: '50%',
-          background: 'rgba(255,255,255,0.18)', border: '3px solid rgba(255,255,255,0.4)',
+          background: 'var(--surface-alt)', border: '2px solid var(--border)',
           display: 'grid', placeItems: 'center',
-          fontSize: 28, fontWeight: 800, color: '#fff',
+          fontSize: 28, fontWeight: 800, color: 'var(--text)',
         }}>
           {initials(profile.name)}
         </div>
@@ -87,7 +88,7 @@ export default function ProfilePage() {
           <div className="hstack" style={{ gap: 8 }}>
             <input
               className="input"
-              style={{ textAlign: 'center', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,.3)', color: '#fff', maxWidth: 200 }}
+              style={{ textAlign: 'center', maxWidth: 200 }}
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               autoFocus
@@ -95,15 +96,15 @@ export default function ProfilePage() {
             />
             <button
               className="btn"
-              style={{ background: '#fff', color: '#4f46e5', height: 40 }}
+              style={{ height: 40, padding: '0 14px' }}
               onClick={handleSaveName}
               disabled={saving}
             >
               {saving ? '…' : '✓'}
             </button>
             <button
-              className="btn ghost"
-              style={{ color: '#fff', border: '1px solid rgba(255,255,255,.3)', height: 40 }}
+              className="btn-ghost"
+              style={{ height: 40, padding: '0 14px', fontSize: 15, fontWeight: 600, borderRadius: 12 }}
               onClick={() => { setEditing(false); setEditName(profile.name); }}
             >
               ✕
@@ -112,28 +113,29 @@ export default function ProfilePage() {
         ) : (
           <div style={{ textAlign: 'center' }}>
             <div
-              style={{ color: '#fff', fontSize: 20, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              style={{ fontSize: 20, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
               onClick={() => setEditing(true)}
             >
               {profile.name}
-              <span style={{ fontSize: 14, opacity: 0.6 }}>✏️</span>
+              <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>✎</span>
             </div>
-            <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, marginTop: 2 }}>{profile.phone}</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 2 }}>{profile.phone}</div>
           </div>
         )}
 
         {/* Stats */}
-        <div style={{ display: 'flex', gap: 12, marginTop: 4, width: '100%', maxWidth: 360 }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 4, width: '100%', maxWidth: 360 }}>
           {[
             { label: "Buyurtmalar", value: profile.ordersCount ?? 0 },
             { label: "Xarajatlar", value: `${money(profile.totalSpent ?? 0)} so'm` },
           ].map((s) => (
             <div key={s.label} style={{
-              flex: 1, background: 'rgba(255,255,255,0.12)', borderRadius: 12,
-              padding: '10px 12px', textAlign: 'center', backdropFilter: 'blur(8px)',
+              flex: 1, background: 'var(--surface-alt)', borderRadius: 12,
+              border: '1px solid var(--border)',
+              padding: '10px 12px', textAlign: 'center',
             }}>
-              <div style={{ color: '#fff', fontWeight: 800, fontSize: 18 }}>{s.value}</div>
-              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 2 }}>{s.label}</div>
+              <div style={{ fontWeight: 800, fontSize: 18 }}>{s.value}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -144,8 +146,8 @@ export default function ProfilePage() {
 
           {/* Quick links */}
           {[
-            { icon: '📋', label: "Barcha buyurtmalar", href: '/orders' },
-            { icon: '📍', label: "Saqlangan manzillar", href: '/orders' },
+            { label: "Barcha buyurtmalar", href: '/orders' },
+            { label: "Saqlangan manzillar", href: '/orders' },
           ].map((item) => (
             <button
               key={item.label}
@@ -153,7 +155,6 @@ export default function ProfilePage() {
               style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left', width: '100%', border: '1px solid var(--border)' }}
               onClick={() => router.push(item.href)}
             >
-              <span style={{ fontSize: 22 }}>{item.icon}</span>
               <span style={{ fontWeight: 600, fontSize: 15, flex: 1 }}>{item.label}</span>
               <span style={{ color: 'var(--text-muted)', fontSize: 18 }}>›</span>
             </button>
@@ -161,16 +162,15 @@ export default function ProfilePage() {
 
           {/* OTP security note */}
           <div style={{
-            background: 'var(--surface-2)', borderRadius: 14, padding: '14px 16px',
+            background: 'var(--surface-alt)', borderRadius: 14, padding: '14px 16px',
             display: 'flex', alignItems: 'center', gap: 12,
             border: '1px solid var(--border)',
           }}>
-            <span style={{ fontSize: 22 }}>🔐</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: 14 }}>OTP autentifikatsiya</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Akkaunt SMS kod orqali himoyalangan</div>
             </div>
-            <span className="chip green">Xavfsiz</span>
+            <span className="chip chip-gray">Xavfsiz</span>
           </div>
 
           {/* App version */}

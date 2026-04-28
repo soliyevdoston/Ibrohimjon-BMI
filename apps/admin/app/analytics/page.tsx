@@ -17,11 +17,11 @@ const daily = [
 export default function AdminAnalyticsPage() {
   const topSellers = [...mockSellers].sort((a, b) => b.revenueToday - a.revenueToday).slice(0, 5);
   const statusSegments = [
-    { label: 'Delivered',  value: 186, color: '#10b981' },
-    { label: 'On the way', value: 37,  color: '#4f46e5' },
-    { label: 'Preparing',  value: 18,  color: '#f59e0b' },
-    { label: 'Pending',    value: 4,   color: '#94a3b8' },
-    { label: 'Canceled',   value: 3,   color: '#ef4444' },
+    { label: 'Delivered',  value: 186, color: '#0f172a' },
+    { label: 'On the way', value: 37,  color: '#374151' },
+    { label: 'Preparing',  value: 18,  color: '#6b7280' },
+    { label: 'Pending',    value: 4,   color: '#9ca3af' },
+    { label: 'Canceled',   value: 3,   color: '#d1d5db' },
   ];
   const total = statusSegments.reduce((s, x) => s + x.value, 0);
 
@@ -31,7 +31,6 @@ export default function AdminAnalyticsPage() {
         <div className="kpi">
           <div className="kpi-row">
             <span className="kpi-label">Revenue MTD</span>
-            <span className="kpi-ico indigo">💳</span>
           </div>
           <div className="kpi-value">{uzs(mockKPIs.revenueToday * 14)}</div>
           <div className="kpi-meta">April 1 → today</div>
@@ -39,7 +38,6 @@ export default function AdminAnalyticsPage() {
         <div className="kpi">
           <div className="kpi-row">
             <span className="kpi-label">Conversion rate</span>
-            <span className="kpi-ico green">📈</span>
           </div>
           <div className="kpi-value">7.8%</div>
           <div className="kpi-meta">Visitors → orders</div>
@@ -47,7 +45,6 @@ export default function AdminAnalyticsPage() {
         <div className="kpi">
           <div className="kpi-row">
             <span className="kpi-label">Avg. delivery time</span>
-            <span className="kpi-ico amber">⏱</span>
           </div>
           <div className="kpi-value">28 min</div>
           <div className="kpi-meta">From accept to drop-off</div>

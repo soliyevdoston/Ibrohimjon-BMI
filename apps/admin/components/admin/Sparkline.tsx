@@ -1,11 +1,11 @@
 type Props = { points: number[]; tone?: 'indigo' | 'green' | 'amber' | 'rose' | 'sky' };
 
 const toneToStroke: Record<NonNullable<Props['tone']>, string> = {
-  indigo: '#4f46e5',
-  green:  '#10b981',
-  amber:  '#f59e0b',
-  rose:   '#ef4444',
-  sky:    '#0ea5e9',
+  indigo: '#0f172a',
+  green:  '#0f172a',
+  amber:  '#0f172a',
+  rose:   '#0f172a',
+  sky:    '#0f172a',
 };
 
 export function Sparkline({ points, tone = 'indigo' }: Props) {

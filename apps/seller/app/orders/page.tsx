@@ -23,8 +23,8 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 const STATUS_COLOR: Record<string, string> = {
-  PENDING: 'amber', ACCEPTED: 'sky', PREPARING: 'indigo',
-  READY_FOR_PICKUP: 'green', DELIVERED: 'green', CANCELED: 'rose', FAILED: 'rose',
+  PENDING: 'gray', ACCEPTED: 'gray', PREPARING: 'gray',
+  READY_FOR_PICKUP: 'gray', DELIVERED: 'gray', CANCELED: 'gray', FAILED: 'gray',
 };
 
 const DEMO_ORDERS: Order[] = [
@@ -154,7 +154,7 @@ export default function OrdersPage() {
                   {t.label}
                   {t.id === 'pending' && pendingCount > 0 && (
                     <span style={{
-                      marginLeft: 6, background: 'var(--warning)', color: '#fff',
+                      marginLeft: 6, background: 'var(--text)', color: 'var(--surface)',
                       borderRadius: 999, padding: '1px 6px', fontSize: 11, fontWeight: 700,
                     }}>{pendingCount}</span>
                   )}
@@ -187,7 +187,7 @@ export default function OrdersPage() {
 
                       <div>
                         <div style={{ fontWeight: 600, marginBottom: 2 }}>{order.customerName}</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>📍 {order.deliveryAddressText}</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{order.deliveryAddressText}</div>
                       </div>
 
                       <div style={{
@@ -226,10 +226,11 @@ export default function OrdersPage() {
                           ) : (
                             <div style={{
                               flex: 1, textAlign: 'center', padding: '7px 10px',
-                              background: 'var(--success-50)', borderRadius: 8,
-                              fontSize: 12, color: 'var(--success)', fontWeight: 600,
+                              background: 'var(--surface-2)', borderRadius: 8,
+                              border: '1px solid var(--border)',
+                              fontSize: 12, color: 'var(--text-muted)', fontWeight: 600,
                             }}>
-                              ⏳ {action.label}
+                              {action.label}
                             </div>
                           )}
                         </div>

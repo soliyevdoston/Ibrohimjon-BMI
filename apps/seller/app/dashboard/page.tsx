@@ -17,8 +17,8 @@ const DEMO_ORDERS: Order[] = [
 ];
 
 const STATUS_COLOR: Record<string, string> = {
-  PENDING: 'amber', ACCEPTED: 'sky', PREPARING: 'indigo',
-  READY_FOR_PICKUP: 'green', DELIVERED: 'green', CANCELED: 'rose', FAILED: 'rose',
+  PENDING: 'gray', ACCEPTED: 'gray', PREPARING: 'gray',
+  READY_FOR_PICKUP: 'gray', DELIVERED: 'gray', CANCELED: 'gray', FAILED: 'gray',
 };
 
 function timeAgo(iso: string) {
@@ -53,10 +53,10 @@ export default function DashboardPage() {
   }, [router]);
 
   const KPI_CARDS = [
-    { label: 'Orders today', value: stats.todayOrders, icon: '📋', color: 'indigo' },
-    { label: 'Revenue today', value: money(stats.todayRevenue) + ' so\'m', icon: '💰', color: 'green' },
-    { label: 'Active orders', value: stats.activeOrders, icon: '🔄', color: 'amber' },
-    { label: 'Total products', value: stats.totalProducts, icon: '📦', color: 'sky' },
+    { label: 'Orders today', value: stats.todayOrders },
+    { label: 'Revenue today', value: money(stats.todayRevenue) + ' so\'m' },
+    { label: 'Active orders', value: stats.activeOrders },
+    { label: 'Total products', value: stats.totalProducts },
   ];
 
   return (
@@ -72,7 +72,6 @@ export default function DashboardPage() {
                 <div key={k.label} className="kpi">
                   <div className="kpi-row">
                     <span className="kpi-label">{k.label}</span>
-                    <span className={`kpi-ico ${k.color}`}>{k.icon}</span>
                   </div>
                   <div className="kpi-value" style={{ fontSize: typeof k.value === 'string' ? 18 : 26 }}>
                     {k.value}
@@ -93,9 +92,9 @@ export default function DashboardPage() {
                     <div key={d.day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                       <div
                         style={{
-                          width: '100%', background: 'var(--primary)',
+                          width: '100%', background: 'var(--text)',
                           height: `${(d.value / MAX_REV) * 100}px`,
-                          borderRadius: '6px 6px 0 0', opacity: 0.85,
+                          borderRadius: '6px 6px 0 0',
                           transition: 'height 300ms ease',
                         }}
                       />
@@ -110,13 +109,13 @@ export default function DashboardPage() {
                 <div className="card-h"><h3>Quick actions</h3></div>
                 <div className="stack-sm">
                   <a href="/products" className="btn full" style={{ justifyContent: 'flex-start', gap: 10 }}>
-                    <span>📦</span> Manage Products
+                    Manage Products
                   </a>
                   <a href="/orders" className="btn ghost full" style={{ justifyContent: 'flex-start', gap: 10 }}>
-                    <span>🛒</span> View All Orders
+                    View All Orders
                   </a>
-                  <a href="/orders?filter=pending" className="btn warning full" style={{ justifyContent: 'flex-start', gap: 10 }}>
-                    <span>⏰</span> Pending Orders ({stats.activeOrders})
+                  <a href="/orders?filter=pending" className="btn ghost full" style={{ justifyContent: 'flex-start', gap: 10 }}>
+                    Pending Orders ({stats.activeOrders})
                   </a>
                 </div>
               </div>

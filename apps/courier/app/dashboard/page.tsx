@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { CourierMap } from '@/components/map/CourierMap';
 import { CourierBottomNav } from '@/components/BottomNav';
+import { IconStore, IconHome, IconMapPin, IconCheck, IconScooter } from '@/components/Icons';
 import { api, money } from '@/lib/api';
 import { startSimulatedTracking, sendLocationToBackend } from '@/lib/gps';
 import { io, Socket } from 'socket.io-client';
@@ -45,9 +46,6 @@ const STATUS_STEPS: { status: DeliveryStatus; label: string; nextLabel: string; 
   { status: 'delivered',  label: 'Delivered!',          nextLabel: '',              nextStatus: null },
 ];
 
-const STATUS_COLORS: Record<DeliveryStatus, string> = {
-  accepted: 'indigo', picked_up: 'amber', on_the_way: 'sky', delivered: 'green',
-};
 
 function haversineKm(a: [number, number], b: [number, number]): number {
   const R = 6371;
@@ -162,16 +160,16 @@ export default function CourierDashboard() {
       <div style={{ background: 'var(--canvas)', minHeight: '100dvh', paddingBottom: 80 }}>
         {/* Header */}
         <div style={{
-          background: 'linear-gradient(160deg, #1e1b4b 0%, #4f46e5 100%)',
-          padding: '48px 20px 24px',
+          background: 'var(--surface)',
+          borderBottom: '1px solid var(--border)',
+          padding: '48px 20px 20px',
           paddingTop: `max(48px, calc(env(safe-area-inset-top) + 24px))`,
-          color: '#fff',
         }}>
-          <div className="hstack" style={{ justifyContent: 'space-between', marginBottom: 20 }}>
+          <div className="hstack" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <h1 style={{ color: '#fff', fontSize: 20, marginBottom: 2 }}>Hello, Courier! 👋</h1>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
-                {isOnline ? '🟢 Online — accepting orders' : '⚫ Offline'}
+              <h1 style={{ fontSize: 20, marginBottom: 2 }}>Kuryerlik paneli</h1>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                {isOnline ? '● Onlayn — buyurtmalar qabul qilinmoqda' : '○ Offlayn'}
               </p>
             </div>
             <div
@@ -184,18 +182,18 @@ export default function CourierDashboard() {
           </div>
 
           {/* Stats row */}
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 10 }}>
             {[
-              { label: 'Today', value: '7' },
-              { label: 'Earnings', value: '84,000' },
-              { label: 'Rating', value: '4.9 ★' },
+              { label: 'Bugun', value: '7' },
+              { label: 'Daromad', value: "84,000 so'm" },
+              { label: 'Reyting', value: '4.9' },
             ].map((s) => (
               <div key={s.label} style={{
-                flex: 1, background: 'rgba(255,255,255,0.12)', borderRadius: 12,
-                padding: '10px 12px', backdropFilter: 'blur(8px)',
+                flex: 1, background: 'var(--surface-2)', borderRadius: 12,
+                padding: '10px 12px', border: '1px solid var(--border)',
               }}>
-                <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11, marginBottom: 2 }}>{s.label}</div>
-                <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{s.value}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 2 }}>{s.label}</div>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{s.value}</div>
               </div>
             ))}
           </div>
@@ -211,15 +209,13 @@ export default function CourierDashboard() {
 
           {!isOnline ? (
             <div className="empty">
-              <div className="empty-ico">🔌</div>
-              <strong>You are offline</strong>
-              <p>Toggle online to start receiving orders</p>
+              <strong>Siz offlayn holatdasiz</strong>
+              <p>Buyurtmalar qabul qilish uchun onlayn rejimga o&apos;ting</p>
             </div>
           ) : orders.length === 0 ? (
             <div className="empty">
-              <div className="empty-ico">📭</div>
-              <strong>No orders nearby</strong>
-              <p>Stay in your zone — new orders appear automatically</p>
+              <strong>Yaqin atrofda buyurtmalar yo&apos;q</strong>
+              <p>Zonangizda qoling — yangi buyurtmalar avtomatik keladi</p>
             </div>
           ) : (
             <div className="stack">
@@ -227,14 +223,16 @@ export default function CourierDashboard() {
                 <div key={order.id} className="order-card fade-in">
                   <div className="hstack" style={{ justifyContent: 'space-between' }}>
                     <strong style={{ fontSize: 15 }}>{order.code}</strong>
-                    <span style={{ fontWeight: 700, color: 'var(--success)', fontSize: 16 }}>
-                      +{money(order.earnings)} so'm
+                    <span style={{ fontWeight: 700, fontSize: 16 }}>
+                      +{money(order.earnings)} so&apos;m
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div className="hstack">
-                      <span style={{ fontSize: 18 }}>🏪</span>
+                      <div style={{ width: 22, height: 22, flexShrink: 0, color: 'var(--text-muted)' }}>
+                        <IconStore size={18} stroke={1.6} />
+                      </div>
                       <div>
                         <div style={{ fontWeight: 600, fontSize: 14 }}>{order.sellerName}</div>
                         <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{order.sellerAddress}</div>
@@ -242,7 +240,9 @@ export default function CourierDashboard() {
                     </div>
                     <div style={{ borderLeft: '2px dashed var(--border)', marginLeft: 9, paddingLeft: 17, height: 12 }} />
                     <div className="hstack">
-                      <span style={{ fontSize: 18 }}>🏠</span>
+                      <div style={{ width: 22, height: 22, flexShrink: 0, color: 'var(--text-muted)' }}>
+                        <IconHome size={18} stroke={1.6} />
+                      </div>
                       <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{order.customerAddress}</div>
                     </div>
                   </div>
@@ -268,15 +268,15 @@ export default function CourierDashboard() {
                       style={{ flex: 1 }}
                       onClick={() => setOrders((prev) => prev.filter((o) => o.id !== order.id))}
                     >
-                      Pass
+                      O&apos;tkazib yuborish
                     </button>
                     <button
-                      className="btn success"
+                      className="btn"
                       style={{ flex: 3, minHeight: 44 }}
                       onClick={() => handleAccept(order)}
                       disabled={loadingId === order.id}
                     >
-                      {loadingId === order.id ? 'Accepting…' : '✓ Accept Order'}
+                      {loadingId === order.id ? 'Qabul qilinmoqda…' : 'Qabul qilish'}
                     </button>
                   </div>
                 </div>
@@ -306,10 +306,14 @@ export default function CourierDashboard() {
       <div className="map-overlay-top">
         <div className="status-bar">
           <div style={{
-            width: 36, height: 36, borderRadius: 10, background: 'var(--primary-50)',
-            display: 'grid', placeItems: 'center', fontSize: 18, flex: 'none',
+            width: 36, height: 36, borderRadius: 10, background: 'var(--surface-2)',
+            border: '1px solid var(--border)',
+            display: 'grid', placeItems: 'center', flex: 'none',
+            color: 'var(--text)',
           }}>
-            {deliveryStatus === 'delivered' ? '✅' : '🛵'}
+            {deliveryStatus === 'delivered'
+              ? <IconCheck size={18} stroke={2.2} />
+              : <IconScooter size={18} stroke={1.6} />}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>{activeDelivery.code}</div>
@@ -317,7 +321,7 @@ export default function CourierDashboard() {
               {currentStep?.label ?? 'Delivery'}
             </div>
           </div>
-          <span className={`chip ${STATUS_COLORS[deliveryStatus]}`}>
+          <span className="chip gray">
             {deliveryStatus.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
           </span>
         </div>
@@ -328,13 +332,19 @@ export default function CourierDashboard() {
         <div className="map-action-panel">
           {deliveryStatus === 'delivered' ? (
             <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 8 }}>🎉</div>
-              <h2 style={{ fontSize: 20, marginBottom: 4 }}>Order Delivered!</h2>
+              <div style={{
+                width: 64, height: 64, borderRadius: 18, background: 'var(--surface-2)',
+                border: '1px solid var(--border)', display: 'grid', placeItems: 'center',
+                margin: '0 auto 12px', color: 'var(--text)',
+              }}>
+                <IconCheck size={28} stroke={2} />
+              </div>
+              <h2 style={{ fontSize: 20, marginBottom: 4 }}>Yetkazildi!</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 16 }}>
-                Earnings: <strong style={{ color: 'var(--success)' }}>+{money(activeDelivery.earnings)} so'm</strong>
+                Daromad: <strong>+{money(activeDelivery.earnings)} so&apos;m</strong>
               </p>
-              <button className="btn success full" onClick={() => setActiveDelivery(null)}>
-                Accept next order
+              <button className="btn full" onClick={() => setActiveDelivery(null)}>
+                Keyingi buyurtmani qabul qilish
               </button>
             </div>
           ) : (
@@ -347,29 +357,29 @@ export default function CourierDashboard() {
                 const distKm = haversineKm(courierPos, target);
                 return (
                   <div style={{
-                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                    background: 'var(--text)',
                     borderRadius: 14, padding: '12px 16px',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 600, marginBottom: 2 }}>MASOFA</div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.6)', fontWeight: 600, marginBottom: 2 }}>MASOFA</div>
                       <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
                         {distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`}
                       </div>
                     </div>
-                    <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,.25)' }} />
+                    <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,.2)' }} />
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 600, marginBottom: 2 }}>YETIB KELISH</div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.6)', fontWeight: 600, marginBottom: 2 }}>YETIB KELISH</div>
                       <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
                         {etaLabel(distKm)}
                       </div>
                     </div>
-                    <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,.25)' }} />
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.7)', fontWeight: 600, marginBottom: 2 }}>MANZIL</div>
-                      <div style={{ fontSize: 16, color: '#fff', lineHeight: 1 }}>
-                        {deliveryStatus === 'accepted' || deliveryStatus === 'picked_up' ? '🏪' : '🏠'}
-                      </div>
+                    <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,.2)' }} />
+                    <div style={{ textAlign: 'center', color: '#fff' }}>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,.6)', fontWeight: 600, marginBottom: 4 }}>MANZIL</div>
+                      {deliveryStatus === 'accepted' || deliveryStatus === 'picked_up'
+                        ? <IconStore size={18} stroke={1.6} />
+                        : <IconHome size={18} stroke={1.6} />}
                     </div>
                   </div>
                 );
@@ -378,7 +388,9 @@ export default function CourierDashboard() {
               {/* Route summary */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div className="hstack">
-                  <span style={{ fontSize: 18 }}>🏪</span>
+                  <div style={{ width: 22, height: 22, flexShrink: 0, color: 'var(--text-muted)' }}>
+                    <IconStore size={18} stroke={1.6} />
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{activeDelivery.sellerName}</div>
                     <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{activeDelivery.sellerAddress}</div>
@@ -386,7 +398,9 @@ export default function CourierDashboard() {
                 </div>
                 <div style={{ borderLeft: '2px dashed var(--border)', marginLeft: 9, paddingLeft: 17, height: 8 }} />
                 <div className="hstack">
-                  <span style={{ fontSize: 18 }}>🏠</span>
+                  <div style={{ width: 22, height: 22, flexShrink: 0, color: 'var(--text-muted)' }}>
+                    <IconHome size={18} stroke={1.6} />
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>Mijoz</div>
                     <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{activeDelivery.customerAddress}</div>
@@ -399,7 +413,7 @@ export default function CourierDashboard() {
               {/* Main action button */}
               {currentStep && currentStep.nextStatus && (
                 <button
-                  className="btn success full"
+                  className="btn full"
                   onClick={() => handleStatusUpdate(currentStep.nextStatus)}
                 >
                   {currentStep.nextLabel}

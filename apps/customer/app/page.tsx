@@ -6,9 +6,7 @@ export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const token =
-      typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-    router.replace(token ? '/home' : '/login');
+    router.replace('/home');
   }, [router]);
 
   return null;
