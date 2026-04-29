@@ -1,17 +1,20 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { IconDots, IconSearch } from '@/components/admin/Icon';
-import { initials, mockCustomers, uzs } from '@/lib/admin-mock';
+import { IconClose, IconCheck, IconSearch } from '@/components/admin/Icon';
+import { initials, uzs } from '@/lib/admin-mock';
+import { useCustomers } from '@/lib/admin-store';
 
 export default function AdminUsersPage() {
+  const { items: customers, update, remove } = useCustomers();
   const [q, setQ] = useState('');
-  const [filter, setFilter] = useState<'ALL' | 'VERIFIED' | 'UNVERIFIED'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'VERIFIED' | 'UNVERIFIED' | 'BLOCKED'>('ALL');
 
   const rows = useMemo(() => {
-    return mockCustomers.filter((c) => {
+    return customers.filter((c) => {
       if (filter === 'VERIFIED' && !c.isVerified) return false;
       if (filter === 'UNVERIFIED' && c.isVerified) return false;
+      if (filter === 'BLOCKED' && !c.isBlocked) return false;
       if (q) {
         const needle = q.toLowerCase();
         if (!c.name.toLowerCase().includes(needle) && !c.phone.toLowerCase().includes(needle)) {
@@ -20,57 +23,59 @@ export default function AdminUsersPage() {
       }
       return true;
     });
-  }, [q, filter]);
+  }, [q, filter, customers]);
 
-  const verified = mockCustomers.filter((c) => c.isVerified).length;
-  const totalSpend = mockCustomers.reduce((s, x) => s + x.spend, 0);
+  const verified = customers.filter((c) => c.isVerified).length;
+  const blocked = customers.filter((c) => c.isBlocked).length;
+  const totalSpend = customers.reduce((s, x) => s + x.spend, 0);
 
   return (
     <div className="stack">
       <div className="grid-3">
         <div className="kpi">
           <div className="kpi-row">
-            <span className="kpi-label">Customers</span>
+            <span className="kpi-label">Mijozlar</span>
             <span className="kpi-ico indigo">👤</span>
           </div>
-          <div className="kpi-value">{mockCustomers.length}</div>
-          <div className="kpi-meta">{verified} phone-verified</div>
+          <div className="kpi-value">{customers.length}</div>
+          <div className="kpi-meta">{verified} tasdiqlangan, {blocked} bloklangan</div>
         </div>
         <div className="kpi">
           <div className="kpi-row">
-            <span className="kpi-label">Lifetime spend</span>
+            <span className="kpi-label">Umumiy xarid</span>
             <span className="kpi-ico green">💵</span>
           </div>
           <div className="kpi-value">{uzs(totalSpend)}</div>
-          <div className="kpi-meta">Across all customers</div>
+          <div className="kpi-meta">Barcha mijozlar</div>
         </div>
         <div className="kpi">
           <div className="kpi-row">
-            <span className="kpi-label">Avg. orders / customer</span>
+            <span className="kpi-label">O'rtacha buyurtma</span>
             <span className="kpi-ico sky">📦</span>
           </div>
           <div className="kpi-value">
-            {(mockCustomers.reduce((s, x) => s + x.ordersCount, 0) / mockCustomers.length).toFixed(1)}
+            {(customers.reduce((s, x) => s + x.ordersCount, 0) / Math.max(customers.length, 1)).toFixed(1)}
           </div>
-          <div className="kpi-meta">Rolling 30-day</div>
+          <div className="kpi-meta">Har bir mijoz uchun</div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-h">
           <div>
-            <h3>Customers</h3>
-            <div className="card-sub">{rows.length} shown</div>
+            <h3>Mijozlar</h3>
+            <div className="card-sub">{rows.length} ta ko'rsatilmoqda</div>
           </div>
           <div className="hstack">
             <div className="hstack" style={{ gap: 6 }}>
-              <button onClick={() => setFilter('ALL')} className={`btn ${filter === 'ALL' ? 'soft' : 'ghost'} sm`}>All</button>
-              <button onClick={() => setFilter('VERIFIED')} className={`btn ${filter === 'VERIFIED' ? 'soft' : 'ghost'} sm`}>Verified</button>
-              <button onClick={() => setFilter('UNVERIFIED')} className={`btn ${filter === 'UNVERIFIED' ? 'soft' : 'ghost'} sm`}>Unverified</button>
+              <button onClick={() => setFilter('ALL')} className={`btn ${filter === 'ALL' ? 'soft' : 'ghost'} sm`}>Barchasi</button>
+              <button onClick={() => setFilter('VERIFIED')} className={`btn ${filter === 'VERIFIED' ? 'soft' : 'ghost'} sm`}>Tasdiqlangan</button>
+              <button onClick={() => setFilter('UNVERIFIED')} className={`btn ${filter === 'UNVERIFIED' ? 'soft' : 'ghost'} sm`}>Tasdiqlanmagan</button>
+              <button onClick={() => setFilter('BLOCKED')} className={`btn ${filter === 'BLOCKED' ? 'soft' : 'ghost'} sm`}>Bloklangan</button>
             </div>
             <div className="topbar-search" style={{ margin: 0, minWidth: 220 }}>
               <IconSearch size={15} />
-              <input placeholder="Search name, phone..." value={q} onChange={(e) => setQ(e.target.value)} />
+              <input placeholder="Ism, telefon..." value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
           </div>
         </div>
@@ -79,18 +84,18 @@ export default function AdminUsersPage() {
           <table className="table">
             <thead>
               <tr>
-                <th>Customer</th>
-                <th>Phone</th>
-                <th>Verified</th>
-                <th style={{ textAlign: 'right' }}>Orders</th>
-                <th style={{ textAlign: 'right' }}>Lifetime spend</th>
-                <th style={{ textAlign: 'right' }}>Last active</th>
+                <th>Mijoz</th>
+                <th>Telefon</th>
+                <th>Holat</th>
+                <th style={{ textAlign: 'right' }}>Buyurtmalar</th>
+                <th style={{ textAlign: 'right' }}>Umumiy xarid</th>
+                <th style={{ textAlign: 'right' }}>Faollik</th>
                 <th />
               </tr>
             </thead>
             <tbody>
               {rows.map((c) => (
-                <tr key={c.id}>
+                <tr key={c.id} style={c.isBlocked ? { opacity: 0.55 } : undefined}>
                   <td>
                     <div className="tcell-primary">
                       <span className="avatar" style={{ width: 32, height: 32, fontSize: 11 }}>
@@ -101,17 +106,41 @@ export default function AdminUsersPage() {
                   </td>
                   <td>{c.phone}</td>
                   <td>
-                    <span className={`chip ${c.isVerified ? 'green' : 'gray'}`}>
-                      {c.isVerified ? 'Verified' : 'Unverified'}
-                    </span>
+                    {c.isBlocked ? (
+                      <span className="chip rose">Bloklangan</span>
+                    ) : (
+                      <span className={`chip ${c.isVerified ? 'green' : 'gray'}`}>
+                        {c.isVerified ? 'Tasdiqlangan' : 'Tasdiqlanmagan'}
+                      </span>
+                    )}
                   </td>
                   <td style={{ textAlign: 'right' }}><strong>{c.ordersCount}</strong></td>
                   <td style={{ textAlign: 'right' }}>{uzs(c.spend)}</td>
                   <td style={{ textAlign: 'right' }} className="muted">{c.lastActive}</td>
                   <td>
-                    <button className="icon-btn" style={{ width: 30, height: 30 }} aria-label="Actions">
-                      <IconDots size={14} />
-                    </button>
+                    <div className="hstack" style={{ gap: 4, justifyContent: 'flex-end' }}>
+                      {c.isBlocked ? (
+                        <button className="btn green sm" onClick={() => update(c.id, { isBlocked: false })}>
+                          Blokdan chiqarish
+                        </button>
+                      ) : (
+                        <button className="btn ghost sm" onClick={() => {
+                          if (confirm(`${c.name} mijozni bloklashni xohlaysizmi?`)) update(c.id, { isBlocked: true });
+                        }}>
+                          Bloklash
+                        </button>
+                      )}
+                      {!c.isVerified && !c.isBlocked && (
+                        <button className="icon-btn" style={{ width: 30, height: 30 }} title="Tasdiqlash" onClick={() => update(c.id, { isVerified: true })}>
+                          <IconCheck size={14} />
+                        </button>
+                      )}
+                      <button className="icon-btn" style={{ width: 30, height: 30, color: '#ef4444' }} title="O'chirish" onClick={() => {
+                        if (confirm(`${c.name} mijozni butunlay o'chirishni xohlaysizmi?`)) remove(c.id);
+                      }}>
+                        <IconClose size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -120,7 +149,7 @@ export default function AdminUsersPage() {
                   <td colSpan={7}>
                     <div className="empty">
                       <div className="empty-ico">∅</div>
-                      <strong>No customers match</strong>
+                      <strong>Mijozlar topilmadi</strong>
                     </div>
                   </td>
                 </tr>

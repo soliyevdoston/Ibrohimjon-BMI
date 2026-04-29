@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { SellerSidebar } from '@/components/Sidebar';
 import { SellerTopbar } from '@/components/Topbar';
+import { SellerDeliveryTracker } from '@/components/map/SellerDeliveryTracker';
 import { api, money, timeAgo } from '@/lib/api';
 import { io, Socket } from 'socket.io-client';
 
@@ -11,7 +12,12 @@ type Order = {
   id: string; code: string; status: string;
   customerName: string; totalAmount: number; createdAt: string;
   items: OrderItem[]; deliveryAddressText: string;
+  sellerPos?: [number, number];
+  customerPos?: [number, number];
+  deliveryId?: string;
 };
+
+const SHOP_POS: [number, number] = [41.3111, 69.2797]; // seller's shop (Yunusobod, Tashkent)
 
 type Tab = 'all' | 'pending' | 'accepted' | 'preparing' | 'ready';
 const TABS: { id: Tab; label: string }[] = [
@@ -38,6 +44,7 @@ const DEMO_ORDERS: Order[] = [
       { id: 'i2', titleSnapshot: 'Uzbek Bread', quantity: 2, priceSnapshot: 8000 },
       { id: 'i3', titleSnapshot: 'Green Tea 100g', quantity: 3, priceSnapshot: 35000 },
     ],
+    sellerPos: SHOP_POS, customerPos: [41.3170, 69.2833], deliveryId: 'd-128',
   },
   {
     id: '2', code: 'ORD-127', status: 'ACCEPTED',
@@ -48,6 +55,7 @@ const DEMO_ORDERS: Order[] = [
       { id: 'i3', titleSnapshot: 'Olive Oil 500ml', quantity: 2, priceSnapshot: 89000 },
       { id: 'i4', titleSnapshot: 'Pomegranate Juice 1L', quantity: 3, priceSnapshot: 45000 },
     ],
+    sellerPos: SHOP_POS, customerPos: [41.3275, 69.3415], deliveryId: 'd-127',
   },
   {
     id: '3', code: 'ORD-126', status: 'PREPARING',
@@ -55,6 +63,7 @@ const DEMO_ORDERS: Order[] = [
     createdAt: new Date(Date.now() - 35 * 60000).toISOString(),
     deliveryAddressText: 'Chilonzor, Toshkent',
     items: [{ id: 'i5', titleSnapshot: 'Fresh Tomatoes', quantity: 5, priceSnapshot: 18000 }],
+    sellerPos: SHOP_POS, customerPos: [41.2756, 69.2034], deliveryId: 'd-126',
   },
   {
     id: '4', code: 'ORD-125', status: 'READY_FOR_PICKUP',
@@ -65,8 +74,11 @@ const DEMO_ORDERS: Order[] = [
       { id: 'i6', titleSnapshot: 'Green Tea 100g', quantity: 2, priceSnapshot: 35000 },
       { id: 'i7', titleSnapshot: 'Uzbek Bread', quantity: 5, priceSnapshot: 8000 },
     ],
+    sellerPos: SHOP_POS, customerPos: [41.2919, 69.2186], deliveryId: 'd-125',
   },
 ];
+
+const TRACKABLE_STATUSES = new Set(['READY_FOR_PICKUP', 'OUT_FOR_DELIVERY', 'PICKED_UP', 'ON_THE_WAY']);
 
 const STATUS_NEXT: Record<string, { label: string; next: string; color: string }> = {
   PENDING:         { label: 'Accept Order', next: 'ACCEPTED', color: 'success' },
@@ -80,6 +92,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS);
   const [tab, setTab] = useState<Tab>('all');
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
 
@@ -235,6 +248,26 @@ export default function OrdersPage() {
                           )}
                         </div>
                       )}
+
+                      {TRACKABLE_STATUSES.has(order.status) && order.sellerPos && order.customerPos && (
+                        <button
+                          className="btn ghost sm"
+                          onClick={() => setTrackingOrder(order)}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            border: '1px solid #c7d2fe',
+                            background: '#eef2ff',
+                            color: '#4338ca',
+                            fontWeight: 600,
+                          }}
+                        >
+                          🛵 Kuryerni xaritada kuzatish
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -243,6 +276,18 @@ export default function OrdersPage() {
           </div>
         </main>
       </div>
+
+      {trackingOrder && trackingOrder.sellerPos && trackingOrder.customerPos && (
+        <SellerDeliveryTracker
+          open={!!trackingOrder}
+          onClose={() => setTrackingOrder(null)}
+          orderCode={trackingOrder.code}
+          customerName={trackingOrder.customerName}
+          deliveryId={trackingOrder.deliveryId ?? trackingOrder.id}
+          sellerPos={trackingOrder.sellerPos}
+          customerPos={trackingOrder.customerPos}
+        />
+      )}
     </div>
   );
 }

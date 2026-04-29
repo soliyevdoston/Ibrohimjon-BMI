@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { useCartStore } from '@/stores/cart';
 import { api, money, reverseGeocode } from '@/lib/api';
+import type { PickupPoint } from '@/lib/locations';
 
 type Step = 1 | 2 | 3;
 type PaymentMethod = 'cash' | 'card' | 'payme' | 'click';
@@ -72,6 +73,7 @@ export default function CheckoutPage() {
   const [selected, setSelected] = useState<[number, number] | null>(null);
   const [address, setAddress] = useState('');
   const [loadingAddress, setLoadingAddress] = useState(false);
+  const [pickup, setPickup] = useState<PickupPoint | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -85,6 +87,7 @@ export default function CheckoutPage() {
 
   const handleMapSelect = useCallback(async (lat: number, lng: number) => {
     setSelected([lat, lng]);
+    setPickup(null);
     setLoadingAddress(true);
     try {
       const addr = await reverseGeocode(lat, lng);
@@ -94,7 +97,14 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  const deliveryFee = selected ? calcDeliveryFee(selected[0], selected[1]) : 8000;
+  const handlePickupSelect = useCallback((p: PickupPoint) => {
+    setSelected([p.lat, p.lng]);
+    setPickup(p);
+    setAddress(`${p.name} — ${p.address}, ${p.district}`);
+    setLoadingAddress(false);
+  }, []);
+
+  const deliveryFee = pickup ? 0 : (selected ? calcDeliveryFee(selected[0], selected[1]) : 8000);
   const sub = subtotal();
   const total = sub + deliveryFee;
 
@@ -173,7 +183,11 @@ export default function CheckoutPage() {
                 </p>
               </div>
 
-              <LocationPicker selected={selected} onSelect={handleMapSelect} />
+              <LocationPicker
+                selected={selected}
+                onSelect={handleMapSelect}
+                onPickupSelect={handlePickupSelect}
+              />
 
               <div style={{ padding: '14px 16px 16px' }}>
                 {loadingAddress ? (
@@ -183,10 +197,45 @@ export default function CheckoutPage() {
                   </div>
                 ) : address ? (
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <span style={{ color: 'var(--text)', flexShrink: 0, marginTop: 1 }}><PinIcon /></span>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>Tanlangan manzil</div>
+                    <span style={{
+                      flexShrink: 0,
+                      marginTop: 1,
+                      fontSize: 16,
+                      color: pickup ? '#06b6d4' : 'var(--text)',
+                    }}>{pickup ? '📦' : <PinIcon />}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: pickup ? '#0e7490' : 'var(--text)',
+                        lineHeight: 1.4,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}>
+                        {pickup ? 'Olib ketish punkti' : 'Yetkazib berish manzili'}
+                        {pickup && (
+                          <span style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: 999,
+                            background: '#cffafe',
+                            color: '#0e7490',
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.4,
+                          }}>
+                            Bepul
+                          </span>
+                        )}
+                      </div>
                       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.5 }}>{address}</div>
+                      {pickup && (
+                        <div style={{ fontSize: 11, color: '#0891b2', marginTop: 4, display: 'flex', gap: 10 }}>
+                          <span>🕒 {pickup.hours}</span>
+                          <span>📍 {pickup.district}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

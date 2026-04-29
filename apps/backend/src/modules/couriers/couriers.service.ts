@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/common/prisma.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { PrismaService } from "src/common/prisma.service";
 
 @Injectable()
 export class CouriersService {
@@ -18,10 +18,13 @@ export class CouriersService {
     });
   }
 
-  async setPresence(userId: string, body: { isOnline: boolean; isAvailable: boolean }) {
+  async setPresence(
+    userId: string,
+    body: { isOnline: boolean; isAvailable: boolean },
+  ) {
     const courier = await this.prisma.courier.findFirst({ where: { userId } });
     if (!courier) {
-      throw new NotFoundException('Courier profile not found');
+      throw new NotFoundException("Courier profile not found");
     }
 
     return this.prisma.courier.update({
@@ -37,7 +40,7 @@ export class CouriersService {
   async myProfile(userId: string) {
     const courier = await this.prisma.courier.findFirst({ where: { userId } });
     if (!courier) {
-      throw new NotFoundException('Courier profile not found');
+      throw new NotFoundException("Courier profile not found");
     }
     return courier;
   }

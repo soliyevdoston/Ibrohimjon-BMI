@@ -150,3 +150,33 @@ export const IconClose = make(
     <path d="M18 6L6 18" />
   </>,
 );
+
+export const IconBuilding = make(
+  <>
+    <rect x="4" y="3" width="16" height="18" rx="1.5" />
+    <path d="M8 8h2M8 12h2M8 16h2M14 8h2M14 12h2M14 16h2" />
+  </>,
+);
+
+export const IconPackage = make(
+  <>
+    <path d="M21 8l-9-5-9 5 9 5 9-5z" />
+    <path d="M3 8v8l9 5 9-5V8" />
+    <path d="M12 13v8" />
+  </>,
+);
+
+export const IconBox = make(
+  <>
+    <rect x="3" y="6" width="18" height="14" rx="2" />
+    <path d="M3 10h18" />
+    <path d="M9 14h6" />
+  </>,
+);
+
+export const IconTag = make(
+  <>
+    <path d="M20 12.5l-8.5 8.5a2 2 0 01-2.8 0l-7-7a2 2 0 010-2.8L10.2 2.7a2 2 0 011.4-.6H19a2 2 0 012 2v7.4a2 2 0 01-.6 1.4z" />
+    <circle cx="15" cy="9" r="1.5" fill="currentColor" />
+  </>,
+);

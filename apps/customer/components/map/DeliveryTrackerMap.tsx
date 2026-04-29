@@ -1,10 +1,11 @@
 'use client';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { MapContainer, Marker, Polyline, useMap } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { MapTilerLayer, LayerSwitcher, useMapStyle } from './MapTilerLayer';
+import { fetchRoute, type RouteResult } from '@/lib/routing';
 
-// Fix default Leaflet icon URLs
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -78,31 +79,61 @@ export default function DeliveryTrackerMap({
   destination: [number, number];
   sellerPos: [number, number];
 }) {
-  const routePoints: [number, number][] = [sellerPos, courierPos, destination];
+  const [mapStyle, setMapStyle] = useMapStyle('streets');
+  const [route, setRoute] = useState<RouteResult | null>(null);
+
+  // Fetch real road route: seller → courier → destination
+  useEffect(() => {
+    let cancelled = false;
+    fetchRoute([sellerPos, courierPos, destination]).then((r) => {
+      if (!cancelled) setRoute(r);
+    });
+    return () => { cancelled = true; };
+  }, [sellerPos[0], sellerPos[1], courierPos[0], courierPos[1], destination[0], destination[1]]);
+
+  const fallbackPoints: [number, number][] = [sellerPos, courierPos, destination];
+  const routePoints = route?.coordinates ?? fallbackPoints;
 
   return (
-    <MapContainer
-      center={courierPos}
-      zoom={14}
-      style={{ height: '100%', width: '100%' }}
-      zoomControl={false}
-    >
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-        maxZoom={19}
-      />
-      <MapAutofit points={routePoints} />
-      <Polyline
-        positions={routePoints}
-        color="#4f46e5"
-        weight={3}
-        opacity={0.7}
-        dashArray="8 4"
-      />
-      <Marker position={sellerPos} icon={sellerIcon} />
-      <Marker position={courierPos} icon={courierIcon} />
-      <Marker position={destination} icon={destinationIcon} />
-    </MapContainer>
+    <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+      <MapContainer
+        center={courierPos}
+        zoom={14}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl={false}
+      >
+        <MapTilerLayer style={mapStyle} />
+        <MapAutofit points={fallbackPoints} />
+        <Polyline
+          positions={routePoints}
+          color="#4f46e5"
+          weight={route ? 5 : 3}
+          opacity={route ? 0.85 : 0.6}
+          dashArray={route ? undefined : '8 4'}
+        />
+        <Marker position={sellerPos} icon={sellerIcon} />
+        <Marker position={courierPos} icon={courierIcon} />
+        <Marker position={destination} icon={destinationIcon} />
+      </MapContainer>
+      <LayerSwitcher current={mapStyle} onChange={setMapStyle} position="top-right" />
+      {route && (
+        <div style={{
+          position: 'absolute',
+          bottom: 10,
+          left: 10,
+          zIndex: 1000,
+          background: 'rgba(255,255,255,0.96)',
+          padding: '6px 12px',
+          borderRadius: 10,
+          fontSize: 12,
+          fontWeight: 600,
+          color: '#374151',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+          backdropFilter: 'blur(8px)',
+        }}>
+          {(route.distanceMeters / 1000).toFixed(1)} km · {Math.round(route.durationSeconds / 60)} min
+        </div>
+      )}
+    </div>
   );
 }

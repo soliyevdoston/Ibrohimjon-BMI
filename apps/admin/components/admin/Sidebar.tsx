@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  IconBox,
+  IconBuilding,
   IconChart,
   IconClose,
   IconDashboard,
@@ -10,8 +12,10 @@ import {
   IconLogout,
   IconMoney,
   IconOrders,
+  IconPackage,
   IconSettings,
   IconStore,
+  IconTag,
   IconTruck,
   IconUsers,
 } from './Icon';
@@ -38,17 +42,31 @@ const groups: Group[] = [
   {
     label: 'Operations',
     items: [
-      { href: '/orders',     label: 'Orders',    icon: IconOrders },
-      { href: '/couriers',   label: 'Couriers',  icon: IconTruck },
-      { href: '/sellers',    label: 'Sellers',   icon: IconStore },
-      { href: '/users',      label: 'Customers', icon: IconUsers },
-      { href: '/payments',   label: "To'lovlar", icon: IconMoney },
+      { href: '/orders',     label: 'Buyurtmalar', icon: IconOrders },
+      { href: '/couriers',   label: 'Kuryerlar',   icon: IconTruck },
+      { href: '/sellers',    label: 'Sotuvchilar', icon: IconStore },
+      { href: '/users',      label: 'Mijozlar',    icon: IconUsers },
+      { href: '/payments',   label: "To'lovlar",   icon: IconMoney },
+    ],
+  },
+  {
+    label: 'Catalog',
+    items: [
+      { href: '/products',   label: 'Mahsulotlar',  icon: IconBox },
+      { href: '/categories', label: 'Kategoriyalar', icon: IconTag },
+    ],
+  },
+  {
+    label: 'Network',
+    items: [
+      { href: '/branches',   label: 'Filiallar',  icon: IconBuilding },
+      { href: '/pickups',    label: 'Punktlar',   icon: IconPackage },
     ],
   },
   {
     label: 'System',
     items: [
-      { href: '/settings',   label: 'Settings',  icon: IconSettings },
+      { href: '/settings',   label: 'Sozlamalar', icon: IconSettings },
     ],
   },
 ];

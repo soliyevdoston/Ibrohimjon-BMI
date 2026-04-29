@@ -1,8 +1,10 @@
 'use client';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+import { MapContainer, Marker, Polyline, useMap } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { MapTilerLayer, LayerSwitcher, useMapStyle } from './MapTilerLayer';
+import { fetchRoute, type RouteResult } from '@/lib/routing';
 
 const courierIcon = L.divIcon({
   html: `<div style="
@@ -85,44 +87,55 @@ export default function CourierMapImpl({
   customerPos: [number, number];
   autofit?: boolean;
 }) {
-  const allPoints: [number, number][] = [sellerPos, courierPos, customerPos];
+  const [mapStyle, setMapStyle] = useMapStyle('streets');
+  const [route, setRoute] = useState<RouteResult | null>(null);
+
+  // Fetch real road route through all 3 points (refresh on courier movement, throttled by integer round)
+  useEffect(() => {
+    let cancelled = false;
+    fetchRoute([sellerPos, courierPos, customerPos]).then((r) => {
+      if (!cancelled) setRoute(r);
+    });
+    return () => { cancelled = true; };
+  }, [
+    sellerPos[0], sellerPos[1],
+    Math.round(courierPos[0] * 1000) / 1000,
+    Math.round(courierPos[1] * 1000) / 1000,
+    customerPos[0], customerPos[1],
+  ]);
+
+  const fallbackPoints: [number, number][] = [sellerPos, courierPos, customerPos];
+  const routePoints = route?.coordinates ?? fallbackPoints;
 
   return (
-    <MapContainer
-      center={courierPos}
-      zoom={14}
-      style={{ height: '100%', width: '100%' }}
-      zoomControl
-    >
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        maxZoom={19}
-      />
+    <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+      <MapContainer
+        center={courierPos}
+        zoom={14}
+        style={{ height: '100%', width: '100%' }}
+        zoomControl
+      >
+        <MapTilerLayer style={mapStyle} />
 
-      {autofit ? (
-        <MapAutofit points={allPoints} />
-      ) : (
-        <PanTo position={courierPos} />
-      )}
+        {autofit ? (
+          <MapAutofit points={fallbackPoints} />
+        ) : (
+          <PanTo position={courierPos} />
+        )}
 
-      {/* Route polyline */}
-      <Polyline
-        positions={allPoints}
-        color="#4f46e5"
-        weight={4}
-        opacity={0.6}
-        dashArray="10 6"
-      />
+        <Polyline
+          positions={routePoints}
+          color="#4f46e5"
+          weight={route ? 6 : 4}
+          opacity={route ? 0.85 : 0.6}
+          dashArray={route ? undefined : '10 6'}
+        />
 
-      {/* Seller origin */}
-      <Marker position={sellerPos} icon={sellerIcon} />
-
-      {/* Courier (animated) */}
-      <Marker position={courierPos} icon={courierIcon} />
-
-      {/* Customer destination */}
-      <Marker position={customerPos} icon={customerIcon} />
-    </MapContainer>
+        <Marker position={sellerPos} icon={sellerIcon} />
+        <Marker position={courierPos} icon={courierIcon} />
+        <Marker position={customerPos} icon={customerIcon} />
+      </MapContainer>
+      <LayerSwitcher current={mapStyle} onChange={setMapStyle} position="top-right" />
+    </div>
   );
 }
