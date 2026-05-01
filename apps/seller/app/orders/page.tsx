@@ -98,8 +98,9 @@ export default function OrdersPage() {
 
   const loadOrders = useCallback(async () => {
     try {
-      const res = await api<{ items: Order[] }>('/sellers/orders', { token });
-      setOrders(res.items);
+      const res = await api<Order[] | { items?: Order[] }>('/orders/seller', { token });
+      const list = Array.isArray(res) ? res : (res.items ?? []);
+      setOrders(list);
     } catch { /* use demo */ }
   }, [token]);
 

@@ -50,7 +50,7 @@ export function DonutChart({ segments, centerLabel }: { segments: Segment[]; cen
           }}
         >
           <div>
-            <div className="donut-center">{total.toLocaleString('uz-UZ')}</div>
+            <div className="donut-center">{String(total).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}</div>
             <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>{centerLabel ?? 'Total'}</div>
           </div>
         </div>

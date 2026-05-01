@@ -4,10 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DeliveryStatus, OrderStatus } from '@prisma/client';
+import { DeliveryStatus, OrderStatus, PaymentStatus } from '@prisma/client';
 import dayjs from 'dayjs';
 import { PrismaService } from 'src/common/prisma.service';
 import { OrdersService } from '../orders/orders.service';
+import { LedgerService } from '../payouts/ledger.service';
 import { RealtimeService } from '../realtime/realtime.service';
 import { CourierLocationDto } from './dto/courier-location.dto';
 import { UpdateDeliveryStatusDto } from './dto/update-delivery-status.dto';
@@ -18,6 +19,7 @@ export class DeliveriesService {
     private readonly prisma: PrismaService,
     private readonly ordersService: OrdersService,
     private readonly realtimeService: RealtimeService,
+    private readonly ledgerService: LedgerService,
   ) {}
 
   async listAvailable(courierUserId: string) {
@@ -50,30 +52,41 @@ export class DeliveriesService {
       throw new BadRequestException('Delivery already taken');
     }
 
-    const claim = await this.prisma.delivery.updateMany({
-      where: {
-        id: deliveryId,
-        status: DeliveryStatus.SEARCHING_COURIER,
-      },
-      data: {
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const claim = await tx.delivery.updateMany({
+        where: {
+          id: deliveryId,
+          status: DeliveryStatus.SEARCHING_COURIER,
+        },
+        data: {
+          courierId: courier.id,
+          status: DeliveryStatus.ACCEPTED,
+          acceptedAt: new Date(),
+        },
+      });
+
+      if (claim.count === 0) {
+        throw new BadRequestException('Delivery already taken by another courier');
+      }
+
+      const fresh = await tx.delivery.findUnique({
+        where: { id: deliveryId },
+        include: { order: true },
+      });
+
+      if (!fresh) {
+        throw new NotFoundException('Delivery not found after assignment');
+      }
+
+      // Create the courier-fee ledger entry now that we know who's earning it.
+      await this.ledgerService.createCourierEntry(tx, {
+        orderId: fresh.orderId,
         courierId: courier.id,
-        status: DeliveryStatus.ACCEPTED,
-        acceptedAt: new Date(),
-      },
+        amount: Number(fresh.order.courierFeeAmount),
+      });
+
+      return fresh;
     });
-
-    if (claim.count === 0) {
-      throw new BadRequestException('Delivery already taken by another courier');
-    }
-
-    const updated = await this.prisma.delivery.findUnique({
-      where: { id: deliveryId },
-      include: { order: true },
-    });
-
-    if (!updated) {
-      throw new NotFoundException('Delivery not found after assignment');
-    }
 
     await this.ordersService.markDeliveryStatus(updated.orderId, OrderStatus.COURIER_ACCEPTED, courierUserId);
 
@@ -136,13 +149,44 @@ export class DeliveriesService {
       throw new BadRequestException('Invalid delivery transition');
     }
 
-    const updated = await this.prisma.delivery.update({
-      where: { id: deliveryId },
-      data: {
-        status: dto.status as DeliveryStatus,
-        pickedUpAt: dto.status === 'PICKED_UP' ? new Date() : undefined,
-        deliveredAt: dto.status === 'DELIVERED' ? new Date() : undefined,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const next = await tx.delivery.update({
+        where: { id: deliveryId },
+        data: {
+          status: dto.status as DeliveryStatus,
+          pickedUpAt: dto.status === 'PICKED_UP' ? new Date() : undefined,
+          deliveredAt: dto.status === 'DELIVERED' ? new Date() : undefined,
+        },
+      });
+
+      if (dto.status === 'DELIVERED') {
+        const order = await tx.order.findUnique({
+          where: { id: next.orderId },
+          select: { paymentStatus: true, paymentMethod: true },
+        });
+
+        // Cash on delivery: courier collects cash, so the platform receives
+        // the full amount as soon as delivery is confirmed. Mark order PAID
+        // and flip the seller/commission/service-fee entries that the gateway
+        // callback would normally have flipped at /payments/callback time.
+        if (order && order.paymentStatus !== PaymentStatus.PAID) {
+          await tx.order.update({
+            where: { id: next.orderId },
+            data: { paymentStatus: PaymentStatus.PAID, deliveredAt: new Date() },
+          });
+          await this.ledgerService.markPaidSettlements(tx, next.orderId);
+        } else {
+          await tx.order.update({
+            where: { id: next.orderId },
+            data: { deliveredAt: new Date() },
+          });
+        }
+
+        // Always flip courier-fee + delivery-margin on DELIVERED.
+        await this.ledgerService.markDeliveredSettlements(tx, next.orderId, true);
+      }
+
+      return next;
     });
 
     const orderStatusMap: Record<string, OrderStatus> = {

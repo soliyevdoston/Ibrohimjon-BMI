@@ -23,6 +23,18 @@ export class ProductsController {
     return this.productsService.categories();
   }
 
+  @Get('mine')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER)
+  mine(@CurrentUser('id') sellerUserId: string, @Query() query: ListProductsDto) {
+    return this.productsService.listForSeller(sellerUserId, query);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.productsService.findOne(id);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SELLER)

@@ -1,13 +1,10 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useCartStore } from '@/stores/cart';
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: () => React.ReactNode;
-};
+import { useAuthStore } from '@/stores/auth';
+import { CartDrawer } from '@/components/CartDrawer';
 
 function HomeIcon() {
   return (
@@ -29,11 +26,12 @@ function OrdersIcon() {
   );
 }
 
-function BellIcon() {
+function CartIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 01-3.46 0" />
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.97-1.67L23 6H6" />
     </svg>
   );
 }
@@ -47,46 +45,92 @@ function ProfileIcon() {
   );
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { href: '/home',          label: 'Bosh sahifa', icon: () => <HomeIcon /> },
-  { href: '/orders',        label: 'Buyurtmalar', icon: () => <OrdersIcon /> },
-  { href: '/notifications', label: 'Xabarlar',    icon: () => <BellIcon /> },
-  { href: '/profile',       label: 'Profil',      icon: () => <ProfileIcon /> },
-];
-
 export function BottomNav() {
   const pathname = usePathname();
-  const cartCount = useCartStore((s) => s.count());
+  const isOpen = useCartStore((s) => s.isOpen);
+  const setOpen = useCartStore((s) => s.setOpen);
+  const items = useCartStore((s) => s.items);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const initAuth = useAuthStore((s) => s.init);
+
+  // Avoid hydration mismatch — persisted state only on client
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); initAuth(); }, [initAuth]);
+
+  const cartCount = hydrated ? items.reduce((a, i) => a + i.quantity, 0) : 0;
+  const isLoggedIn = !!accessToken;
+
+  const handleCartClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      // Redirect to login with redirect back
+      window.location.href = `/login?redirect=${pathname}`;
+      return;
+    }
+    setOpen(!isOpen);
+  };
+
+  const isCartActive = isOpen;
 
   return (
-    <nav className="bottom-nav">
-      <div className="bottom-nav-inner">
-        {NAV_ITEMS.map((item) => {
-          const basePath = item.href.split('?')[0];
-          const isActive =
-            pathname === basePath ||
-            (basePath !== '/home' && pathname.startsWith(basePath + '/'));
-          const showBadge = item.href === '/orders' && cartCount > 0;
+    <>
+      <nav className="bottom-nav">
+        <div className="bottom-nav-inner">
+          {/* Home */}
+          <Link
+            href="/home"
+            className={`bottom-nav-item${pathname === '/home' ? ' active' : ''}`}
+          >
+            <div className="bottom-nav-icon">
+              <HomeIcon />
+            </div>
+            <span>Bosh sahifa</span>
+          </Link>
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`bottom-nav-item${isActive ? ' active' : ''}`}
-            >
-              <div className="bottom-nav-icon">
-                {item.icon()}
-                {showBadge && (
-                  <span className="bottom-nav-badge">
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </span>
-                )}
-              </div>
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+          {/* Orders */}
+          <Link
+            href="/orders"
+            className={`bottom-nav-item${pathname === '/orders' || pathname.startsWith('/orders/') ? ' active' : ''}`}
+          >
+            <div className="bottom-nav-icon">
+              <OrdersIcon />
+            </div>
+            <span>Buyurtmalar</span>
+          </Link>
+
+          {/* Cart — opens drawer */}
+          <button
+            type="button"
+            onClick={handleCartClick}
+            className={`bottom-nav-item${isCartActive ? ' active' : ''}`}
+            aria-label="Savat"
+          >
+            <div className="bottom-nav-icon">
+              <CartIcon />
+              {cartCount > 0 && (
+                <span className="bottom-nav-badge">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+            </div>
+            <span>Savat</span>
+          </button>
+
+          {/* Profile */}
+          <Link
+            href="/profile"
+            className={`bottom-nav-item${pathname === '/profile' ? ' active' : ''}`}
+          >
+            <div className="bottom-nav-icon">
+              <ProfileIcon />
+            </div>
+            <span>Profil</span>
+          </Link>
+        </div>
+      </nav>
+
+      {/* Globally render cart drawer so it works on every page */}
+      <CartDrawer />
+    </>
   );
 }

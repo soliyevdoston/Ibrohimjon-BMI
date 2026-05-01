@@ -37,8 +37,18 @@ export default function SettingsPage() {
     if (!localStorage.getItem('access_token')) { router.replace('/login'); return; }
     const load = async () => {
       try {
-        const data = await api<Profile>('/sellers/me', { token });
-        setForm((prev) => ({ ...prev, ...data }));
+        const data = await api<{
+          legalName?: string; brandName?: string; description?: string;
+          addressText?: string; phone?: string;
+        }>('/seller/profile', { token });
+        setForm((prev) => ({
+          ...prev,
+          name: data.legalName ?? prev.name,
+          brand: data.brandName ?? prev.brand,
+          address: data.addressText ?? prev.address,
+          description: data.description ?? prev.description,
+          phone: data.phone ?? prev.phone,
+        }));
       } catch { /* use demo */ }
     };
     load();
@@ -47,7 +57,16 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api('/sellers/me', { method: 'PATCH', body: form, token });
+      await api('/seller/profile', {
+        method: 'POST',
+        body: {
+          legalName: form.name,
+          brandName: form.brand,
+          description: form.description,
+          addressText: form.address,
+        },
+        token,
+      });
     } catch { /* ignore */ } finally {
       setSaving(false);
       setSaved(true);

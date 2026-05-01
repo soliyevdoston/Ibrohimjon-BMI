@@ -1,14 +1,66 @@
 'use client';
-import { useState } from 'react';
-import { AdminSidebar } from '@/components/admin/Sidebar';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { api, money, moneyK } from '@/lib/api';
 import { IconCheck, IconMoney } from '@/components/admin/Icon';
 
-const fmt = (n: number) => new Intl.NumberFormat('uz-UZ').format(Math.round(n));
-const K = (n: number) => new Intl.NumberFormat('uz-UZ').format(Math.round(n / 1000)) + 'K';
+/* ───────────────────── Types ────────────────────────────── */
+interface Overview {
+  gmv: number;
+  gmvSubtotal: number;
+  paidOrders: number;
+  totalCommission: number;
+  totalCourierFees: number;
+  totalPlatformRevenue: number;
+  pendingPayoutAmount: number;
+  pendingPayoutCount: number;
+  sellerOwed: number;
+  courierOwed: number;
+  todayCommission: number;
+}
 
-function IconClock({ size = 20, stroke = 1.75 }: { size?: number; stroke?: number }) {
+interface PayoutRow {
+  id: string;
+  payeeType: 'SELLER' | 'COURIER';
+  payeeId: string;
+  amount: string | number;
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED';
+  bankCardSnapshot: string | null;
+  bankCardHolderSnapshot: string | null;
+  rejectionReason: string | null;
+  requestedAt: string;
+  processedAt: string | null;
+  payee: { displayName: string | null; fullName: string | null; phone: string | null };
+}
+
+interface SellerRow {
+  id: string;
+  brandName: string;
+  legalName: string;
+  fullName: string | null;
+  phone: string | null;
+  commissionRate: number;
+  bankCardNumber: string | null;
+  bankCardHolder: string | null;
+  available: number;
+  pending: number;
+  paidOut: number;
+}
+
+interface PlatformConfig {
+  id: string;
+  commissionRate: string | number;
+  serviceFeeRate: string | number;
+  deliveryBaseFee: string | number;
+  deliveryPerKmFee: string | number;
+  courierBaseFee: string | number;
+  courierPerKmFee: string | number;
+  updatedAt: string;
+}
+
+/* ───────────────────── Icons ────────────────────────────── */
+function IconClock({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" />
     </svg>
   );
@@ -50,64 +102,16 @@ function IconShield({ size = 18 }: { size?: number }) {
   );
 }
 
-/* ─── Data ─────────────────────────────────────────────────── */
-type SellerTx = {
-  id: string; date: string; seller: string; orderTotal: number;
-  commission: number; payout: number; orders: number;
-  status: 'paid' | 'pending' | 'processing'; method: string;
-};
-
-type CourierTx = {
-  id: string; date: string; courier: string; deliveries: number;
-  earned: number; status: 'paid' | 'pending';
-};
-
-const SELLER_TX: SellerTx[] = [
-  { id: 'TX-001', date: '27 Apr, 14:32', seller: 'Toshkent Nonvoyxonasi', orderTotal: 3_240_000, commission: 259_200, payout: 2_980_800, orders: 48, status: 'paid',       method: 'Uzcard' },
-  { id: 'TX-002', date: '27 Apr, 12:11', seller: "Samarqand Go'shti",     orderTotal: 1_870_000, commission: 149_600, payout: 1_720_400, orders: 31, status: 'paid',       method: 'Humo' },
-  { id: 'TX-003', date: '27 Apr, 10:05', seller: "Farida's Kitchen",      orderTotal: 2_510_000, commission: 200_800, payout: 2_309_200, orders: 39, status: 'processing', method: 'Uzcard' },
-  { id: 'TX-004', date: '26 Apr, 18:45', seller: 'DonerLand',             orderTotal: 980_000,   commission: 78_400,  payout: 901_600,   orders: 17, status: 'pending',    method: 'Uzcard' },
-  { id: 'TX-005', date: '26 Apr, 16:20', seller: 'Fresh Market',          orderTotal: 4_120_000, commission: 329_600, payout: 3_790_400, orders: 63, status: 'paid',       method: 'Humo' },
-  { id: 'TX-006', date: '26 Apr, 13:55', seller: 'Plov Usta',             orderTotal: 1_340_000, commission: 107_200, payout: 1_232_800, orders: 22, status: 'paid',       method: 'Uzcard' },
-  { id: 'TX-007', date: '25 Apr, 19:30', seller: 'Burger House',          orderTotal: 2_780_000, commission: 222_400, payout: 2_557_600, orders: 44, status: 'pending',    method: 'Uzcard' },
-  { id: 'TX-008', date: '25 Apr, 17:00', seller: 'Sushi Art',             orderTotal: 5_900_000, commission: 472_000, payout: 5_428_000, orders: 71, status: 'paid',       method: 'Humo' },
-];
-
-const COURIER_TX: CourierTx[] = [
-  { id: 'CR-001', date: '27 Apr', courier: 'Jasur Toshmatov',   deliveries: 14, earned: 196_000, status: 'paid' },
-  { id: 'CR-002', date: '27 Apr', courier: 'Bekzod Alimov',     deliveries: 11, earned: 154_000, status: 'paid' },
-  { id: 'CR-003', date: '27 Apr', courier: 'Sanjar Yusupov',    deliveries: 9,  earned: 126_000, status: 'pending' },
-  { id: 'CR-004', date: '26 Apr', courier: 'Dilshod Karimov',   deliveries: 17, earned: 238_000, status: 'paid' },
-  { id: 'CR-005', date: '26 Apr', courier: 'Mirzo Hasanov',     deliveries: 6,  earned: 84_000,  status: 'pending' },
-  { id: 'CR-006', date: '25 Apr', courier: 'Firdavs Ergashev',  deliveries: 19, earned: 266_000, status: 'paid' },
-];
-
-const STATUS_LABEL: Record<string, string> = { paid: "To'landi", pending: 'Kutilmoqda', processing: 'Jarayonda' };
-const COMMISSION_RATE = 8; // %
-const DELIVERY_FEE_PER_ORDER = 14_000;
-
-/* ─── Computed summaries ─────────────────────────────────── */
-const totalCustomerPaid    = SELLER_TX.reduce((s, t) => s + t.orderTotal + t.orders * DELIVERY_FEE_PER_ORDER, 0);
-const totalSellerPayout    = SELLER_TX.reduce((s, t) => s + t.payout, 0);
-const totalCommission      = SELLER_TX.reduce((s, t) => s + t.commission, 0);
-const totalDeliveryRevenue = SELLER_TX.reduce((s, t) => s + t.orders * DELIVERY_FEE_PER_ORDER, 0);
-const totalCourierPayout   = COURIER_TX.reduce((s, t) => s + t.earned, 0);
-const platformNet          = totalCommission + totalDeliveryRevenue - totalCourierPayout;
-
-const methodBreakdown = [
-  { label: 'Naqd pul', pct: 34, amount: Math.round(totalCustomerPaid * 0.34) },
-  { label: 'Karta',    pct: 28, amount: Math.round(totalCustomerPaid * 0.28) },
-  { label: 'Payme',    pct: 22, amount: Math.round(totalCustomerPaid * 0.22) },
-  { label: 'Click',    pct: 16, amount: Math.round(totalCustomerPaid * 0.16) },
-];
-
-/* ─── Sub-components ────────────────────────────────────── */
-function Kpi({ label, value, Icon, sub }: { label: string; value: string; Icon: React.FC<{ size?: number; stroke?: number }>; sub?: string }) {
+/* ───────────────────── Sub-components ───────────────────── */
+function Kpi({ label, value, Icon, sub }: {
+  label: string; value: string;
+  Icon: React.FC<{ size?: number }>; sub?: string;
+}) {
   return (
     <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 20, border: '1px solid var(--border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'grid', placeItems: 'center', color: 'var(--text)' }}>
-          <Icon size={17} stroke={1.7} />
+          <Icon size={17} />
         </div>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
       </div>
@@ -117,264 +121,385 @@ function Kpi({ label, value, Icon, sub }: { label: string; value: string; Icon: 
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+const PAYOUT_STATUS_LABEL: Record<PayoutRow['status'], string> = {
+  PENDING: 'Kutilmoqda',
+  APPROVED: 'Tasdiqlangan',
+  PAID: "To'landi",
+  REJECTED: 'Rad etildi',
+};
+
+function PayoutStatusBadge({ status }: { status: PayoutRow['status'] }) {
+  const colors: Record<PayoutRow['status'], { bg: string; fg: string }> = {
+    PENDING: { bg: '#fef3c7', fg: '#92400e' },
+    APPROVED: { bg: '#dbeafe', fg: '#1e40af' },
+    PAID: { bg: '#d1fae5', fg: '#065f46' },
+    REJECTED: { bg: '#fee2e2', fg: '#991b1b' },
+  };
+  const c = colors[status];
   return (
-    <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-      {status === 'paid' ? <IconCheck size={11} stroke={2.4} /> : <IconClock size={11} stroke={1.8} />}
-      {STATUS_LABEL[status]}
+    <span style={{
+      fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 6,
+      background: c.bg, color: c.fg, display: 'inline-flex', alignItems: 'center', gap: 4,
+    }}>
+      {status === 'PAID' ? <IconCheck size={11} stroke={2.4} /> : <IconClock size={11} />}
+      {PAYOUT_STATUS_LABEL[status]}
     </span>
   );
 }
 
-type TabId = 'overview' | 'sellers' | 'couriers';
+/* ───────────────────── Main ─────────────────────────────── */
+type TabId = 'overview' | 'payouts' | 'sellers' | 'config';
 
 export default function PaymentsPage() {
   const [tab, setTab] = useState<TabId>('overview');
-  const [sellerFilter, setSellerFilter] = useState<'all' | 'paid' | 'pending' | 'processing'>('all');
-  const [sellerSearch, setSellerSearch] = useState('');
-  const [courierFilter, setCourierFilter] = useState<'all' | 'paid' | 'pending'>('all');
+  const [overview, setOverview] = useState<Overview | null>(null);
+  const [payouts, setPayouts] = useState<PayoutRow[]>([]);
+  const [sellers, setSellers] = useState<SellerRow[]>([]);
+  const [config, setConfig] = useState<PlatformConfig | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'' | 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED'>('');
+  const [typeFilter, setTypeFilter] = useState<'' | 'SELLER' | 'COURIER'>('');
 
-  const sellerList = SELLER_TX
-    .filter(t => sellerFilter === 'all' || t.status === sellerFilter)
-    .filter(t => !sellerSearch || t.seller.toLowerCase().includes(sellerSearch.toLowerCase()) || t.id.toLowerCase().includes(sellerSearch.toLowerCase()));
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter) params.set('status', statusFilter);
+      if (typeFilter) params.set('payeeType', typeFilter);
+      const [ov, pl, sl, cfg] = await Promise.all([
+        api<Overview>('/payouts/admin/overview'),
+        api<PayoutRow[]>(`/payouts/admin/list?${params.toString()}`),
+        api<SellerRow[]>('/payouts/admin/sellers'),
+        api<PlatformConfig>('/payouts/admin/config'),
+      ]);
+      setOverview(ov);
+      setPayouts(pl);
+      setSellers(sl);
+      setConfig(cfg);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Xatolik');
+    } finally {
+      setLoading(false);
+    }
+  }, [statusFilter, typeFilter]);
 
-  const courierList = COURIER_TX
-    .filter(t => courierFilter === 'all' || t.status === courierFilter);
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
+
+  const approve = async (id: string) => {
+    await api(`/payouts/admin/${id}/approve`, { method: 'PATCH' });
+    await loadAll();
+  };
+  const markPaid = async (id: string) => {
+    await api(`/payouts/admin/${id}/paid`, { method: 'PATCH' });
+    await loadAll();
+  };
+  const reject = async (id: string) => {
+    const reason = window.prompt('Rad etish sababi:') ?? undefined;
+    await api(`/payouts/admin/${id}/reject`, { method: 'PATCH', body: { reason } });
+    await loadAll();
+  };
+  const setSellerCommission = async (id: string, current: number) => {
+    const input = window.prompt('Yangi komissiya foizini kiriting (masalan 10):', String(current * 100));
+    if (input === null) return;
+    const rate = Number(input) / 100;
+    if (!Number.isFinite(rate) || rate < 0 || rate > 0.5) {
+      alert('Foiz 0–50 oralig`ida bo`lishi kerak');
+      return;
+    }
+    await api(`/payouts/admin/sellers/${id}/commission`, {
+      method: 'PATCH',
+      body: { commissionRate: rate },
+    });
+    await loadAll();
+  };
+  const saveConfig = async (patch: Partial<Record<keyof PlatformConfig, number>>) => {
+    await api('/payouts/admin/config', { method: 'PUT', body: patch });
+    await loadAll();
+  };
+
+  const platformCount = overview ? overview.paidOrders : 0;
+  const flowAmount = overview?.gmv ?? 0;
+  const flowSeller = overview ? overview.gmvSubtotal - overview.totalCommission : 0;
+  const flowCourier = overview?.totalCourierFees ?? 0;
+  const flowPlatform = overview?.totalPlatformRevenue ?? 0;
 
   return (
-    <div className="layout">
-      <AdminSidebar />
-      <main className="main">
-        <div className="page">
-          {/* Header */}
-          <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Pul aylanmasi</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Mijoz → Platforma → Sotuvchi → Kuryer to'lov zanjiri</p>
+    <div className="stack">
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Pul aylanmasi</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+            Mijoz → Platforma → Sotuvchi → Kuryer · Yandex/Uzum modeli
+          </p>
+        </div>
+        <button
+          onClick={loadAll}
+          style={{ padding: '8px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
+        >
+          {loading ? 'Yuklanmoqda…' : 'Yangilash'}
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ background: '#fee2e2', color: '#991b1b', padding: 12, borderRadius: 10, fontSize: 13 }}>
+          {error}
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 12, padding: 4, border: '1px solid var(--border)', marginBottom: 4, width: 'fit-content' }}>
+        {([
+          { id: 'overview', label: "Umumiy ko'rinish" },
+          { id: 'payouts',  label: "To'lov so'rovlari" },
+          { id: 'sellers',  label: 'Sotuvchilar' },
+          { id: 'config',   label: 'Sozlamalar' },
+        ] as { id: TabId; label: string }[]).map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding: '8px 20px', borderRadius: 8, border: 'none',
+            background: tab === t.id ? 'var(--surface)' : 'transparent',
+            color: tab === t.id ? 'var(--text)' : 'var(--text-muted)',
+            fontWeight: tab === t.id ? 700 : 500, fontSize: 13,
+            cursor: 'pointer', boxShadow: tab === t.id ? '0 1px 3px rgba(0,0,0,.06)' : 'none',
+            transition: 'all 160ms', whiteSpace: 'nowrap',
+          }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* OVERVIEW */}
+      {tab === 'overview' && overview && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', padding: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 20 }}>
+              Pul harakati zanjiri ({platformCount} ta to&apos;langan buyurtma)
+            </div>
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, overflowX: 'auto' }}>
+              <FlowNode Icon={IconUser} label="Mijoz" amount={moneyK(flowAmount)} sub="Jami to'lov" />
+              <FlowArrow label={`${moneyK(flowAmount)} so'm`} sub="Mahsulot + Yetkazib berish + Servis" />
+              <FlowNode Icon={IconShield} label="Platforma" amount={moneyK(flowPlatform)} sub="Sof daromad" highlight />
+              <FlowArrow label={`${moneyK(flowSeller)} so'm`} sub="Mahsulot − komissiya" />
+              <FlowNode Icon={IconStore} label="Sotuvchi" amount={moneyK(flowSeller)} sub="To'lov" />
+              <FlowArrow label={`${moneyK(flowCourier)} so'm`} sub="Yetkazib berish haqi" />
+              <FlowNode Icon={IconScooter} label="Kuryer" amount={moneyK(flowCourier)} sub="Daromad" />
+            </div>
           </div>
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 12, padding: 4, border: '1px solid var(--border)', marginBottom: 28, width: 'fit-content' }}>
-            {([
-              { id: 'overview', label: "Umumiy ko'rinish" },
-              { id: 'sellers',  label: 'Sotuvchilar' },
-              { id: 'couriers', label: 'Kuryerlar' },
-            ] as { id: TabId; label: string }[]).map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)} style={{
-                padding: '8px 20px', borderRadius: 8, border: 'none',
-                background: tab === t.id ? 'var(--surface)' : 'transparent',
-                color: tab === t.id ? 'var(--text)' : 'var(--text-muted)',
-                fontWeight: tab === t.id ? 700 : 500, fontSize: 13,
-                cursor: 'pointer', boxShadow: tab === t.id ? '0 1px 3px rgba(0,0,0,.06)' : 'none',
-                transition: 'all 160ms', whiteSpace: 'nowrap',
-              }}>
-                {t.label}
-              </button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+            <Kpi label="GMV (jami)" value={moneyK(overview.gmv) + " so'm"} Icon={IconUser} sub={`${overview.paidOrders} ta buyurtma`} />
+            <Kpi label="Komissiya" value={moneyK(overview.totalCommission) + " so'm"} Icon={IconMoney} sub={`Bugun: ${moneyK(overview.todayCommission)}`} />
+            <Kpi label="Kuryerlarga" value={moneyK(overview.totalCourierFees) + " so'm"} Icon={IconScooter} sub="Yetkazib berish" />
+            <Kpi label="Platforma sof" value={moneyK(overview.totalPlatformRevenue) + " so'm"} Icon={IconShield} sub="Komissiya + servis + delivery margin" />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+            <Kpi label="Sotuvchilarga qarz" value={money(overview.sellerOwed) + " so'm"} Icon={IconStore} sub="To'lash kutilmoqda" />
+            <Kpi label="Kuryerlarga qarz" value={money(overview.courierOwed) + " so'm"} Icon={IconScooter} sub="Available balance" />
+            <Kpi label="So'rovlardagi summa" value={money(overview.pendingPayoutAmount) + " so'm"} Icon={IconClock} sub={`${overview.pendingPayoutCount} ta payout`} />
+          </div>
+        </div>
+      )}
+
+      {/* PAYOUTS */}
+      {tab === 'payouts' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as typeof statusFilter)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 13 }}>
+              <option value="">Barcha statuslar</option>
+              <option value="PENDING">Kutilmoqda</option>
+              <option value="APPROVED">Tasdiqlangan</option>
+              <option value="PAID">To'landi</option>
+              <option value="REJECTED">Rad etildi</option>
+            </select>
+            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value as typeof typeFilter)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 13 }}>
+              <option value="">Barcha turlar</option>
+              <option value="SELLER">Sotuvchilar</option>
+              <option value="COURIER">Kuryerlar</option>
+            </select>
+          </div>
+
+          <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '0.7fr 1.5fr 0.9fr 1.1fr 0.9fr 1fr 1.1fr', padding: '12px 16px', background: 'var(--surface-2)', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+              {['TUR', 'OLUVCHI', 'SUMMA', 'KARTA', 'STATUS', 'SO`RALGAN', 'AMAL'].map(h => <div key={h}>{h}</div>)}
+            </div>
+            {payouts.map((p, i) => (
+              <div key={p.id} style={{ display: 'grid', gridTemplateColumns: '0.7fr 1.5fr 0.9fr 1.1fr 0.9fr 1fr 1.1fr', padding: '14px 16px', borderTop: i === 0 ? 'none' : '1px solid var(--border)', alignItems: 'center', fontSize: 13 }}>
+                <div style={{ fontWeight: 600 }}>{p.payeeType === 'SELLER' ? 'Sotuvchi' : 'Kuryer'}</div>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{p.payee.displayName ?? '—'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.payee.phone}</div>
+                </div>
+                <div style={{ fontWeight: 700 }}>{money(Number(p.amount))} so&apos;m</div>
+                <div style={{ fontSize: 12 }}>
+                  <div>{p.bankCardSnapshot ?? '—'}</div>
+                  {p.bankCardHolderSnapshot && <div style={{ color: 'var(--text-muted)' }}>{p.bankCardHolderSnapshot}</div>}
+                </div>
+                <div><PayoutStatusBadge status={p.status} /></div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{new Date(p.requestedAt).toLocaleString()}</div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {p.status === 'PENDING' && (
+                    <>
+                      <button onClick={() => approve(p.id)} style={btnSmall('#dbeafe', '#1e40af')}>Tasdiq</button>
+                      <button onClick={() => reject(p.id)} style={btnSmall('#fee2e2', '#991b1b')}>Rad</button>
+                    </>
+                  )}
+                  {(p.status === 'PENDING' || p.status === 'APPROVED') && (
+                    <button onClick={() => markPaid(p.id)} style={btnSmall('#d1fae5', '#065f46')}>To&apos;landi</button>
+                  )}
+                </div>
+              </div>
             ))}
+            {payouts.length === 0 && (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+                {loading ? 'Yuklanmoqda…' : "Hozircha to'lov so'rovlari yo'q"}
+              </div>
+            )}
           </div>
+        </div>
+      )}
 
-          {/* ======= OVERVIEW TAB ======= */}
-          {tab === 'overview' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-              {/* Money flow diagram */}
-              <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', padding: 24 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 20 }}>
-                  Pul harakati zanjiri
-                </div>
-                <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, overflowX: 'auto' }}>
-                  {/* Customer */}
-                  <FlowNode Icon={IconUser} label="Mijoz" amount={K(totalCustomerPaid)} sub="Jami to'lov" />
-                  <FlowArrow label={`${K(totalCustomerPaid)} so'm`} sub="Tovar + yetkazish" />
-                  {/* Platform */}
-                  <FlowNode Icon={IconShield} label="Platforma" amount={K(platformNet)} sub="Sof foyda" highlight />
-                  <FlowArrow label={`${K(totalSellerPayout)} so'm`} sub={`Komissiya chegirib: ${COMMISSION_RATE}%`} />
-                  {/* Seller */}
-                  <FlowNode Icon={IconStore} label="Sotuvchi" amount={K(totalSellerPayout)} sub="To'lov" />
-                  <FlowArrow label={`${K(totalCourierPayout)} so'm`} sub="Yetkazish haqqi" />
-                  {/* Courier */}
-                  <FlowNode Icon={IconScooter} label="Kuryer" amount={K(totalCourierPayout)} sub="Daromad" />
-                </div>
+      {/* SELLERS */}
+      {tab === 'sellers' && (
+        <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 0.8fr 1fr 1fr 1fr 0.7fr', padding: '12px 16px', background: 'var(--surface-2)', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+            {['SOTUVCHI', 'TELEFON', "KOM'YA", 'AVAILABLE', 'PENDING', 'PAID OUT', 'AMAL'].map(h => <div key={h}>{h}</div>)}
+          </div>
+          {sellers.map((s, i) => (
+            <div key={s.id} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 0.8fr 1fr 1fr 1fr 0.7fr', padding: '14px 16px', borderTop: i === 0 ? 'none' : '1px solid var(--border)', alignItems: 'center', fontSize: 13 }}>
+              <div>
+                <div style={{ fontWeight: 700 }}>{s.brandName}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.legalName}</div>
               </div>
-
-              {/* Summary KPIs */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
-                <Kpi label="Mijozlar to'ladi" value={K(totalCustomerPaid) + " so'm"} Icon={IconUser} sub="Tovar + yetkazish" />
-                <Kpi label="Sotuvchilarga"    value={K(totalSellerPayout) + " so'm"} Icon={IconStore} sub="Komissiya chiqarilgan" />
-                <Kpi label="Kuryerlarga"      value={K(totalCourierPayout) + " so'm"} Icon={IconScooter} sub="Yetkazish haqqi" />
-                <Kpi label="Platforma foydasi" value={K(platformNet) + " so'm"} Icon={IconShield} sub={`Komissiya (${COMMISSION_RATE}%) + yetkazish`} />
-              </div>
-
-              {/* Commission breakdown */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                {/* Commission rate card */}
-                <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', padding: 24 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 16 }}>
-                    Komissiya tarkibi
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {[
-                      { label: 'Savdo komissiyasi', value: COMMISSION_RATE + '%', amount: K(totalCommission) },
-                      { label: "Yetkazish to'lovi",  value: K(DELIVERY_FEE_PER_ORDER) + ' / buyurtma', amount: K(totalDeliveryRevenue) },
-                      { label: "Kuryer to'lovi",     value: '−' + K(totalCourierPayout), amount: '−' + K(totalCourierPayout) },
-                    ].map((row, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 600 }}>{row.label}</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{row.value}</div>
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 700 }}>{row.amount} so'm</div>
-                      </div>
-                    ))}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '2px solid var(--border)' }}>
-                      <div style={{ fontSize: 14, fontWeight: 700 }}>Sof foyda</div>
-                      <div style={{ fontSize: 16, fontWeight: 800 }}>{K(platformNet)} so'm</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment methods breakdown */}
-                <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', padding: 24 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 16 }}>
-                    To'lov usullari
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {methodBreakdown.map((m) => (
-                      <div key={m.label}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5, fontSize: 13, fontWeight: 600 }}>
-                          <span>{m.label}</span>
-                          <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{m.pct}% · {K(m.amount)} so'm</span>
-                        </div>
-                        <div style={{ height: 6, background: 'var(--surface-2)', borderRadius: 4, overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: m.pct + '%', background: 'var(--text)', borderRadius: 4, transition: 'width 0.6s ease' }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.phone ?? '—'}</div>
+              <div style={{ fontWeight: 700 }}>{(Number(s.commissionRate) * 100).toFixed(1)}%</div>
+              <div style={{ fontWeight: 700, color: '#065f46' }}>{money(s.available)}</div>
+              <div style={{ color: '#92400e' }}>{money(s.pending)}</div>
+              <div style={{ color: 'var(--text-muted)' }}>{money(s.paidOut)}</div>
+              <div>
+                <button onClick={() => setSellerCommission(s.id, Number(s.commissionRate))} style={btnSmall('#f3f4f6', '#374151')}>
+                  Sozlash
+                </button>
               </div>
             </div>
-          )}
-
-          {/* ======= SELLERS TAB ======= */}
-          {tab === 'sellers' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {/* KPIs */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                <Kpi label="To'landi"    value={K(SELLER_TX.filter(t => t.status === 'paid').reduce((s, t) => s + t.payout, 0)) + " so'm"} Icon={IconCheck} />
-                <Kpi label="Kutilmoqda" value={K(SELLER_TX.filter(t => t.status !== 'paid').reduce((s, t) => s + t.payout, 0)) + " so'm"} Icon={IconClock} />
-                <Kpi label="Komissiya"  value={K(totalCommission) + " so'm"} Icon={IconMoney} sub={COMMISSION_RATE + '% stavka'} />
-              </div>
-
-              {/* Filters */}
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: 220 }}>
-                  <input className="input" placeholder="Sotuvchi nomi yoki ID…" value={sellerSearch} onChange={e => setSellerSearch(e.target.value)} />
-                </div>
-                <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 12, padding: 4, border: '1px solid var(--border)' }}>
-                  {(['all', 'paid', 'pending', 'processing'] as const).map(f => (
-                    <button key={f} onClick={() => setSellerFilter(f)} style={{
-                      padding: '7px 14px', borderRadius: 8, border: 'none',
-                      background: sellerFilter === f ? 'var(--surface)' : 'transparent',
-                      color: sellerFilter === f ? 'var(--text)' : 'var(--text-muted)',
-                      fontWeight: sellerFilter === f ? 700 : 500, fontSize: 13,
-                      cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 160ms',
-                    }}>
-                      {f === 'all' ? 'Barchasi' : STATUS_LABEL[f]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Table */}
-              <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.4fr 1fr 0.8fr 0.7fr 0.7fr 0.8fr 0.9fr', padding: '12px 16px', background: 'var(--surface-2)', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
-                  {['ID', 'SOTUVCHI', 'BUYURTMA JAMI', "KOM'YA (8%)", "TO'LOV", 'BUYURTMA', 'STATUS', 'SANA'].map(h => <div key={h}>{h}</div>)}
-                </div>
-                {sellerList.map((tx, i) => (
-                  <div key={tx.id} style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.4fr 1fr 0.8fr 0.7fr 0.7fr 0.8fr 0.9fr', padding: '14px 16px', borderTop: i === 0 ? 'none' : '1px solid var(--border)', alignItems: 'center', fontSize: 13 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: 12 }}>{tx.id}</div>
-                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tx.seller}</div>
-                    <div style={{ fontWeight: 600 }}>{K(tx.orderTotal)}</div>
-                    <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>−{K(tx.commission)}</div>
-                    <div style={{ fontWeight: 700 }}>{K(tx.payout)}</div>
-                    <div style={{ color: 'var(--text-muted)' }}>{tx.orders} ta</div>
-                    <div><StatusBadge status={tx.status} /></div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{tx.date}</div>
-                  </div>
-                ))}
-                {sellerList.length === 0 && (
-                  <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Hech narsa topilmadi</div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ======= COURIERS TAB ======= */}
-          {tab === 'couriers' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {/* KPIs */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-                <Kpi label="To'landi"         value={K(COURIER_TX.filter(t => t.status === 'paid').reduce((s, t) => s + t.earned, 0)) + " so'm"} Icon={IconCheck} />
-                <Kpi label="Kutilmoqda"       value={K(COURIER_TX.filter(t => t.status === 'pending').reduce((s, t) => s + t.earned, 0)) + " so'm"} Icon={IconClock} />
-                <Kpi label="Jami yetkazishlar" value={fmt(COURIER_TX.reduce((s, t) => s + t.deliveries, 0)) + ' ta'} Icon={IconScooter} sub="Bugungi kun" />
-              </div>
-
-              {/* Filter */}
-              <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 12, padding: 4, border: '1px solid var(--border)', width: 'fit-content' }}>
-                {(['all', 'paid', 'pending'] as const).map(f => (
-                  <button key={f} onClick={() => setCourierFilter(f)} style={{
-                    padding: '7px 16px', borderRadius: 8, border: 'none',
-                    background: courierFilter === f ? 'var(--surface)' : 'transparent',
-                    color: courierFilter === f ? 'var(--text)' : 'var(--text-muted)',
-                    fontWeight: courierFilter === f ? 700 : 500, fontSize: 13,
-                    cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 160ms',
-                  }}>
-                    {f === 'all' ? 'Barchasi' : STATUS_LABEL[f]}
-                  </button>
-                ))}
-              </div>
-
-              {/* Table */}
-              <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.6fr 0.8fr 1fr 0.9fr 1fr', padding: '12px 16px', background: 'var(--surface-2)', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
-                  {['ID', 'KURYER', 'YETKAZISH', "DAROMAD", 'STATUS', 'SANA'].map(h => <div key={h}>{h}</div>)}
-                </div>
-                {courierList.map((tx, i) => (
-                  <div key={tx.id} style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.6fr 0.8fr 1fr 0.9fr 1fr', padding: '14px 16px', borderTop: i === 0 ? 'none' : '1px solid var(--border)', alignItems: 'center', fontSize: 13 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: 12 }}>{tx.id}</div>
-                    <div style={{ fontWeight: 600 }}>{tx.courier}</div>
-                    <div style={{ color: 'var(--text-muted)' }}>{tx.deliveries} ta</div>
-                    <div style={{ fontWeight: 700 }}>{K(tx.earned)} so'm</div>
-                    <div><StatusBadge status={tx.status} /></div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{tx.date}</div>
-                  </div>
-                ))}
-                {courierList.length === 0 && (
-                  <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Hech narsa topilmadi</div>
-                )}
-              </div>
-
-              {/* Per-delivery fee info */}
-              <div style={{ background: 'var(--surface)', borderRadius: 12, border: '1px solid var(--border)', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
-                <span style={{ color: 'var(--text)' }}><IconScooter size={16} /></span>
-                Har bir muvaffaqiyatli yetkazish uchun kuryer <strong style={{ color: 'var(--text)' }}>14 000 so'm</strong> oladi.
-                Haftasiga bir marta hisobga o&apos;tkaziladi.
-              </div>
-            </div>
+          ))}
+          {sellers.length === 0 && (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Sotuvchilar yo&apos;q</div>
           )}
         </div>
-      </main>
+      )}
+
+      {/* CONFIG */}
+      {tab === 'config' && config && (
+        <ConfigForm config={config} onSave={saveConfig} />
+      )}
     </div>
   );
 }
 
-/* ─── Flow diagram helpers ──────────────────────────────── */
+function btnSmall(bg: string, fg: string): React.CSSProperties {
+  return {
+    padding: '5px 10px', borderRadius: 6, border: 'none', background: bg, color: fg,
+    fontSize: 11, fontWeight: 700, cursor: 'pointer',
+  };
+}
+
+function ConfigForm({ config, onSave }: {
+  config: PlatformConfig;
+  onSave: (patch: Partial<Record<keyof PlatformConfig, number>>) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState({
+    commissionRate: Number(config.commissionRate) * 100,
+    serviceFeeRate: Number(config.serviceFeeRate) * 100,
+    deliveryBaseFee: Number(config.deliveryBaseFee),
+    deliveryPerKmFee: Number(config.deliveryPerKmFee),
+    courierBaseFee: Number(config.courierBaseFee),
+    courierPerKmFee: Number(config.courierPerKmFee),
+  });
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await onSave({
+        commissionRate: draft.commissionRate / 100,
+        serviceFeeRate: draft.serviceFeeRate / 100,
+        deliveryBaseFee: draft.deliveryBaseFee,
+        deliveryPerKmFee: draft.deliveryPerKmFee,
+        courierBaseFee: draft.courierBaseFee,
+        courierPerKmFee: draft.courierPerKmFee,
+      });
+      setSavedAt(new Date().toLocaleTimeString());
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fields: Array<[keyof typeof draft, string, string]> = [
+    ['commissionRate', "Default komissiya (%)", "Sotuvchi mahsulot summasidan"],
+    ['serviceFeeRate', "Servis to'lovi (%)", "Mijoz subtotal'dan"],
+    ['deliveryBaseFee', "Delivery base (so'm)", "Mijoz to'laydigan boshlang'ich narx"],
+    ['deliveryPerKmFee', "Delivery per km (so'm)", "Mijoz har km uchun"],
+    ['courierBaseFee', "Courier base (so'm)", "Kuryer boshlang'ich daromadi"],
+    ['courierPerKmFee', "Courier per km (so'm)", "Kuryer har km uchun"],
+  ];
+
+  return (
+    <div style={{ background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', padding: 24, maxWidth: 720 }}>
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Platforma sozlamalari</h3>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          Bu qiymatlar yangi buyurtmalarda ishlatiladi. Mavjud buyurtmalar snapshot qilingan stavkani saqlab qoladi.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        {fields.map(([key, label, hint]) => (
+          <label key={key} style={{ display: 'block' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>{label}</div>
+            <input
+              type="number"
+              value={draft[key]}
+              onChange={(e) => setDraft({ ...draft, [key]: Number(e.target.value) })}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 8,
+                border: '1px solid var(--border)', background: 'var(--surface-2)', fontSize: 14,
+              }}
+            />
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{hint}</div>
+          </label>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          onClick={save}
+          disabled={saving}
+          style={{
+            padding: '10px 20px', borderRadius: 10, border: 'none',
+            background: '#111827', color: '#fff', fontWeight: 700, fontSize: 14,
+            cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1,
+          }}
+        >
+          {saving ? 'Saqlanmoqda…' : 'Saqlash'}
+        </button>
+        {savedAt && (
+          <span style={{ fontSize: 12, color: '#065f46' }}>Saqlandi · {savedAt}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────── Flow diagram ─────────────────────── */
 function FlowNode({ Icon, label, amount, sub, highlight }: {
   Icon: React.FC<{ size?: number }>;
-  label: string;
-  amount: string;
-  sub: string;
-  highlight?: boolean;
+  label: string; amount: string; sub: string; highlight?: boolean;
 }) {
   return (
     <div style={{
@@ -404,3 +529,6 @@ function FlowArrow({ label, sub }: { label: string; sub: string }) {
     </div>
   );
 }
+
+// silence the imported but unused symbol when overview isn't loaded
+void useMemo;

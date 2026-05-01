@@ -33,9 +33,19 @@ export default function ProfilePage() {
     if (!localStorage.getItem('access_token')) { router.replace('/login'); return; }
     const load = async () => {
       try {
-        const data = await api<Profile>('/users/me', { token });
-        setProfile(data);
-        setEditName(data.name);
+        const data = await api<{
+          name?: string; fullName?: string;
+          phone?: string | null; email?: string | null;
+          ordersCount?: number; totalSpent?: number;
+        }>('/users/me', { token });
+        const normalized: Profile = {
+          name: data.name ?? data.fullName ?? data.email ?? 'Foydalanuvchi',
+          phone: data.phone ?? data.email ?? '',
+          ordersCount: data.ordersCount ?? DEMO.ordersCount,
+          totalSpent: data.totalSpent ?? DEMO.totalSpent,
+        };
+        setProfile(normalized);
+        setEditName(normalized.name);
       } catch {
         setEditName(DEMO.name);
       }
@@ -63,8 +73,8 @@ export default function ProfilePage() {
     router.replace('/login');
   };
 
-  const initials = (n: string) =>
-    n.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+  const initials = (n: string | null | undefined) =>
+    (n ?? '').toString().split(' ').filter(Boolean).map((w) => w[0] ?? '').join('').slice(0, 2).toUpperCase() || '?';
 
   return (
     <div className="page" style={{ paddingBottom: 88 }}>
@@ -147,6 +157,7 @@ export default function ProfilePage() {
           {/* Quick links */}
           {[
             { label: "Barcha buyurtmalar", href: '/orders' },
+            { label: "Mening kartalarim", href: '/profile/cards' },
             { label: "Saqlangan manzillar", href: '/orders' },
           ].map((item) => (
             <button

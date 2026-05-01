@@ -57,12 +57,32 @@ function StepIndicator({ step }: { step: Step }) {
 
 const STEP_TITLES: Record<Step, string> = { 1: 'Manzil', 2: "To'lov", 3: 'Tasdiqlash' };
 
+// These constants mirror the backend's PlatformConfig defaults so the customer
+// preview matches what the backend will charge. Updated centrally there.
+const DELIVERY_BASE_FEE = 6000;
+const DELIVERY_PER_KM_FEE = 1400;
+const SERVICE_FEE_RATE = 0.02;
+
 function calcDeliveryFee(lat: number, lng: number): number {
   const centerLat = 41.2995, centerLng = 69.2401;
   const kmLat = Math.abs(lat - centerLat) * 111;
   const kmLng = Math.abs(lng - centerLng) * 85;
   const km = Math.sqrt(kmLat * kmLat + kmLng * kmLng);
-  return Math.round(6000 + km * 1200);
+  return Math.round(DELIVERY_BASE_FEE + km * DELIVERY_PER_KM_FEE);
+}
+
+function calcServiceFee(subtotal: number): number {
+  return Math.round(subtotal * SERVICE_FEE_RATE);
+}
+
+interface SavedCard {
+  id: string;
+  last4: string;
+  holderName: string;
+  provider: 'UZCARD' | 'HUMO' | 'VISA' | 'MASTERCARD' | 'UNKNOWN';
+  expiryMonth: number;
+  expiryYear: number;
+  isDefault: boolean;
 }
 
 export default function CheckoutPage() {
@@ -75,6 +95,8 @@ export default function CheckoutPage() {
   const [loadingAddress, setLoadingAddress] = useState(false);
   const [pickup, setPickup] = useState<PickupPoint | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState('');
@@ -84,6 +106,19 @@ export default function CheckoutPage() {
     if (!token) router.replace('/login?redirect=/checkout');
     if (items.length === 0 && step === 1) router.replace('/home');
   }, [items.length, router, step]);
+
+  // Load saved cards once a token is available; used when 'card' is picked.
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    api<SavedCard[]>('/customer/cards', { token })
+      .then((list) => {
+        setSavedCards(list);
+        const def = list.find((c) => c.isDefault) ?? list[0];
+        if (def) setSelectedCardId(def.id);
+      })
+      .catch(() => {/* ignore — cards optional */});
+  }, []);
 
   const handleMapSelect = useCallback(async (lat: number, lng: number) => {
     setSelected([lat, lng]);
@@ -106,12 +141,24 @@ export default function CheckoutPage() {
 
   const deliveryFee = pickup ? 0 : (selected ? calcDeliveryFee(selected[0], selected[1]) : 8000);
   const sub = subtotal();
-  const total = sub + deliveryFee;
+  const serviceFee = calcServiceFee(sub);
+  const total = sub + deliveryFee + serviceFee;
 
   const handlePlaceOrder = async () => {
     if (!selected) return;
+    if (items.length === 0) { setError('Savatda mahsulot yo\'q'); return; }
     const token = localStorage.getItem('access_token');
     if (!token) { router.replace('/login?redirect=/checkout'); return; }
+
+    // Backend expects: one sellerId per order, items without sellerId, deliveryAddressText, idempotencyKey
+    const sellerId = items[0].sellerId;
+    if (!sellerId) { setError('Sotuvchi aniqlanmadi'); return; }
+    const idempotencyKey = `ord-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    if (paymentMethod === 'card' && !selectedCardId) {
+      setError('Karta tanlang yoki yangi karta qo`shing');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -119,20 +166,27 @@ export default function CheckoutPage() {
       const order = await api<{ id: string }>('/orders', {
         method: 'POST', token,
         body: {
-          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity, sellerId: i.sellerId })),
-          deliveryAddress: address,
+          sellerId,
+          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+          deliveryAddressText: address || 'Toshkent',
           deliveryLat: selected[0],
           deliveryLng: selected[1],
           paymentMethod,
+          customerCardId: paymentMethod === 'card' ? selectedCardId : undefined,
+          idempotencyKey,
         },
       });
 
-      try {
-        await api('/payments', {
-          method: 'POST', token,
-          body: { orderId: order.id, method: paymentMethod, amount: total },
-        });
-      } catch { /* payment endpoint optional */ }
+      // Only initialize gateway flow for non-cash methods. Cash orders settle
+      // automatically when the courier marks delivery DELIVERED.
+      if (paymentMethod !== 'cash') {
+        try {
+          await api('/payments/create', {
+            method: 'POST', token,
+            body: { orderId: order.id },
+          });
+        } catch { /* gateway init optional in dev */ }
+      }
 
       setOrderId(order.id);
       clear();
@@ -282,8 +336,16 @@ export default function CheckoutPage() {
                 <span className="price-row-value">{money(sub)} so&apos;m</span>
               </div>
               <div className="price-row">
-                <span className="price-row-label">Yetkazib berish</span>
-                <span className="price-row-value">{money(deliveryFee)} so&apos;m</span>
+                <span className="price-row-label">
+                  Yetkazib berish {pickup && <span style={{ color: '#10b981', fontSize: 11, marginLeft: 6 }}>(olib ketish)</span>}
+                </span>
+                <span className="price-row-value">{deliveryFee === 0 ? 'Bepul' : `${money(deliveryFee)} so'm`}</span>
+              </div>
+              <div className="price-row">
+                <span className="price-row-label" title="Platforma servis to'lovi">
+                  Servis to&apos;lovi <span style={{ color: '#9ca3af', fontSize: 11, marginLeft: 4 }}>(2%)</span>
+                </span>
+                <span className="price-row-value">{money(serviceFee)} so&apos;m</span>
               </div>
               <div style={{ height: 1, background: 'var(--border)', margin: '10px 0' }} />
               <div className="price-row" style={{ fontSize: 16 }}>
@@ -316,6 +378,70 @@ export default function CheckoutPage() {
                   </button>
                 ))}
               </div>
+
+              {paymentMethod === 'card' && (
+                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                  {savedCards.length > 0 ? (
+                    <>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.5px' }}>
+                        SAQLANGAN KARTALAR
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {savedCards.map((c) => {
+                          const sel = selectedCardId === c.id;
+                          return (
+                            <button
+                              key={c.id}
+                              onClick={() => setSelectedCardId(c.id)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                                padding: '12px 14px', borderRadius: 12,
+                                border: `1.5px solid ${sel ? 'var(--text)' : 'var(--border)'}`,
+                                background: sel ? 'var(--surface-alt)' : 'var(--surface)',
+                                cursor: 'pointer', textAlign: 'left', width: '100%',
+                              }}
+                            >
+                              <span style={{ fontSize: 18 }}>💳</span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 13, fontWeight: 700 }}>
+                                  {c.provider === 'UNKNOWN' ? 'Karta' : c.provider} •••• {c.last4}
+                                </div>
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                  {c.holderName} · {String(c.expiryMonth).padStart(2, '0')}/{String(c.expiryYear).slice(-2)}
+                                </div>
+                              </div>
+                              {sel && <span style={{ color: 'var(--text)' }}><CheckIcon /></span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        onClick={() => router.push('/profile/cards')}
+                        style={{
+                          marginTop: 10, width: '100%', padding: '10px',
+                          background: 'transparent', border: '1px dashed var(--border)',
+                          borderRadius: 10, fontSize: 13, fontWeight: 600,
+                          color: 'var(--text)', cursor: 'pointer',
+                        }}
+                      >
+                        + Yangi karta qo&apos;shish
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => router.push('/profile/cards')}
+                      style={{
+                        width: '100%', padding: '14px',
+                        background: 'var(--surface-alt)', border: '1px dashed var(--border)',
+                        borderRadius: 12, fontSize: 13, fontWeight: 600,
+                        color: 'var(--text)', cursor: 'pointer',
+                      }}
+                    >
+                      💳 Karta qo&apos;shing va shu yerda to&apos;lang
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {error && (

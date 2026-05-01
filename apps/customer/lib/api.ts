@@ -5,15 +5,34 @@ export async function api<T>(
   path: string,
   options: { method?: string; body?: unknown; token?: string } = {}
 ): Promise<T> {
+  // Auto-fallback: pull token from localStorage if not explicitly passed
+  let token = options.token;
+  if (!token && typeof window !== 'undefined') {
+    token = localStorage.getItem('access_token') ?? undefined;
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     method: options.method ?? 'GET',
     headers: {
       'content-type': 'application/json',
-      ...(options.token ? { authorization: `Bearer ${options.token}` } : {}),
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: 'no-store',
   });
+
+  // 401 — token expired or invalid: clear and bounce to login
+  if (res.status === 401 && typeof window !== 'undefined') {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('name');
+    // Avoid loops on /login
+    if (!window.location.pathname.startsWith('/login')) {
+      const back = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.replace(`/login?redirect=${back}`);
+    }
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: 'Request failed' }));
     throw new Error((err as { message?: string }).message ?? 'Request failed');
@@ -22,7 +41,8 @@ export async function api<T>(
 }
 
 export function money(value: number) {
-  return new Intl.NumberFormat('uz-UZ').format(value);
+  // Hydration-safe formatter (Intl.NumberFormat differs between Node SSR and browser)
+  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 type MapTilerFeature = {

@@ -4,27 +4,25 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DeliveryStatus, OrderStatus, Prisma } from '@prisma/client';
-import { ConfigService } from '@nestjs/config';
+import { DeliveryStatus, OrderStatus } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import { haversineKm } from 'src/common/utils/haversine';
 import { RealtimeService } from '../realtime/realtime.service';
+import { PricingService } from '../pricing/pricing.service';
+import { LedgerService } from '../payouts/ledger.service';
+import { CustomerCardsService } from '../customer-cards/customer-cards.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { SellerUpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
 export class OrdersService {
-  private readonly baseFee: number;
-  private readonly perKmFee: number;
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
     private readonly realtimeService: RealtimeService,
-  ) {
-    this.baseFee = Number(this.configService.get('DELIVERY_BASE_FEE', 6000));
-    this.perKmFee = Number(this.configService.get('DELIVERY_PER_KM_FEE', 1400));
-  }
+    private readonly pricingService: PricingService,
+    private readonly ledgerService: LedgerService,
+    private readonly customerCardsService: CustomerCardsService,
+  ) {}
 
   async create(customerId: string, dto: CreateOrderDto) {
     const existing = await this.prisma.order.findUnique({ where: { idempotencyKey: dto.idempotencyKey } });
@@ -35,6 +33,10 @@ export class OrdersService {
     const seller = await this.prisma.seller.findUnique({ where: { id: dto.sellerId } });
     if (!seller) {
       throw new NotFoundException('Seller not found');
+    }
+
+    if (dto.paymentMethod === 'card' && dto.customerCardId) {
+      await this.customerCardsService.assertOwnership(customerId, dto.customerCardId);
     }
 
     const productIds = [...new Set(dto.items.map((i) => i.productId))];
@@ -77,8 +79,12 @@ export class OrdersService {
       dto.deliveryLat,
       dto.deliveryLng,
     );
-    const deliveryFee = this.baseFee + distanceKm * this.perKmFee;
-    const total = subtotal + deliveryFee;
+
+    const breakdown = await this.pricingService.computeBreakdown({
+      subtotal,
+      distanceKm,
+      sellerCommissionRate: Number(seller.commissionRate),
+    });
 
     return this.prisma.$transaction(async (tx) => {
       for (const item of orderItems) {
@@ -102,10 +108,17 @@ export class OrdersService {
           customerId,
           sellerId: dto.sellerId,
           idempotencyKey: dto.idempotencyKey,
-          subtotalAmount: subtotal,
-          deliveryFeeAmount: deliveryFee,
-          totalAmount: total,
+          subtotalAmount: breakdown.subtotalAmount,
+          deliveryFeeAmount: breakdown.deliveryFeeAmount,
+          serviceFeeAmount: breakdown.serviceFeeAmount,
+          totalAmount: breakdown.totalAmount,
+          platformCommissionAmount: breakdown.platformCommissionAmount,
+          courierFeeAmount: breakdown.courierFeeAmount,
+          sellerPayoutAmount: breakdown.sellerPayoutAmount,
+          platformRevenueAmount: breakdown.platformRevenueAmount,
+          commissionRateSnapshot: breakdown.commissionRateSnapshot,
           paymentMethod: dto.paymentMethod,
+          customerCardId: dto.paymentMethod === 'card' ? dto.customerCardId ?? null : null,
           note: dto.note,
           deliveryAddressText: dto.deliveryAddressText,
           deliveryLat: dto.deliveryLat,
@@ -133,6 +146,12 @@ export class OrdersService {
           delivery: true,
           payment: true,
         },
+      });
+
+      await this.ledgerService.createOrderEntries(tx, {
+        orderId: order.id,
+        sellerId: dto.sellerId,
+        breakdown,
       });
 
       this.realtimeService.publishOrderStatus(order.id, order.status);
@@ -338,14 +357,14 @@ export class OrdersService {
             gte: todayStart,
           },
         },
-        _sum: { totalAmount: true },
+        _sum: { sellerPayoutAmount: true },
       }),
     ]);
 
     return {
       todayOrders,
       activeOrders,
-      todayRevenue: Number(revenueAgg._sum.totalAmount ?? 0),
+      todayRevenue: Number(revenueAgg._sum.sellerPayoutAmount ?? 0),
     };
   }
 }

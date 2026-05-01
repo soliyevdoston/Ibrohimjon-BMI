@@ -112,4 +112,46 @@ export class ProductsService {
   async categories() {
     return this.prisma.category.findMany({ orderBy: { name: 'asc' } });
   }
+
+  async listForSeller(sellerUserId: string, query: ListProductsDto) {
+    const seller = await this.prisma.seller.findUnique({ where: { userId: sellerUserId } });
+    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+
+    const where: Prisma.ProductWhereInput = {
+      sellerId: seller.id,
+      ...(query.search
+        ? { title: { contains: query.search, mode: 'insensitive' } }
+        : {}),
+      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+    };
+
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.product.findMany({
+        where,
+        include: { category: true },
+        take: query.limit,
+        skip: (query.page - 1) * query.limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return { items, meta: { page: query.page, limit: query.limit, total } };
+  }
+
+  async findOne(id: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        seller: {
+          select: { id: true, brandName: true, rating: true },
+        },
+      },
+    });
+    if (!product) {
+      throw new NotFoundException('Mahsulot topilmadi');
+    }
+    return product;
+  }
 }

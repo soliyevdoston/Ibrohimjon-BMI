@@ -516,15 +516,17 @@ p  { color: var(--text-secondary); }
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   overflow: hidden;
-  transition: transform var(--transition), box-shadow var(--transition);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .product-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.04);
+  border-color: rgba(79, 70, 229, 0.25);
 }
 
 .product-card-image {
@@ -534,7 +536,37 @@ p  { color: var(--text-secondary); }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
+  font-size: 40px;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.product-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 350ms ease;
+}
+
+.product-card:hover .product-card-image img {
+  transform: scale(1.06);
+}
+
+.product-card-stock-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
+  z-index: 1;
 }
 
 .product-card-body {
@@ -1242,8 +1274,12 @@ p  { color: var(--text-secondary); }
 }
 
 /* ---- HERO BANNER ----------------------------------------- */
+@keyframes bannerFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .hero-banner {
-  background: var(--surface-alt);
   border-radius: var(--radius-xl);
   padding: var(--space-8) var(--space-6);
   margin-bottom: var(--space-5);
@@ -1253,30 +1289,71 @@ p  { color: var(--text-secondary); }
   gap: var(--space-4);
   overflow: hidden;
   position: relative;
-  border: 1px solid var(--border);
+  min-height: 180px;
+  background-color: #0f172a;
+  background-size: cover;
+  background-position: center right;
+  background-repeat: no-repeat;
+  border: none;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  transition: background-image 600ms ease;
 }
 
-.hero-banner-text { flex: 1; }
+.hero-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(99, 102, 241, 0.25) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-banner-text {
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  color: #fff;
+}
 
 .hero-banner-title {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
-  color: var(--text);
-  line-height: 1.3;
+  color: #fff;
+  line-height: 1.25;
   margin-bottom: var(--space-2);
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .hero-banner-sub {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.92);
   line-height: 1.6;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
 .hero-banner-art {
-  font-size: 64px;
+  font-size: 72px;
   line-height: 1;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.95;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+  position: relative;
+  z-index: 1;
+}
+
+/* Buyurtma berish CTA tugma — banner ichida oq fonli */
+.hero-banner .btn-sm {
+  background: #fff !important;
+  color: #0f172a !important;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.hero-banner .btn-sm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
 /* ---- SECTION ROW ----------------------------------------- */

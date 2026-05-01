@@ -99,11 +99,42 @@ export default function OrdersPage() {
     const token = localStorage.getItem('access_token');
     if (!token) { router.replace('/login'); return; }
 
+    type RawOrder = {
+      id: string;
+      code?: string;
+      status: string;
+      createdAt: string;
+      total?: number | string;
+      totalAmount?: number | string;
+      items?: Array<{ id: string; quantity: number }>;
+      itemsCount?: number;
+      deliveryAddress?: string;
+      deliveryAddressText?: string;
+    };
+
+    const normalize = (raw: RawOrder): Order => ({
+      id: raw.id,
+      code: raw.code ?? `#${raw.id.slice(0, 8).toUpperCase()}`,
+      status: (raw.status ?? 'pending').toLowerCase() as OrderStatus,
+      createdAt: raw.createdAt,
+      total: typeof raw.totalAmount === 'string' ? Number(raw.totalAmount)
+            : typeof raw.totalAmount === 'number' ? raw.totalAmount
+            : typeof raw.total === 'string' ? Number(raw.total)
+            : (raw.total ?? 0),
+      items: raw.items,
+      itemsCount: raw.itemsCount ?? raw.items?.reduce((a, i) => a + i.quantity, 0),
+      deliveryAddress: raw.deliveryAddress ?? raw.deliveryAddressText,
+    });
+
     const load = async () => {
       try {
-        const data = await api<Order[] | { data: Order[] }>('/orders/my', { token });
-        const list = Array.isArray(data) ? data : (data as { data: Order[] }).data ?? [];
-        setOrders(list);
+        const data = await api<RawOrder[] | { data?: RawOrder[]; items?: RawOrder[] }>('/orders/my', { token });
+        const list = Array.isArray(data)
+          ? data
+          : (data as { data?: RawOrder[]; items?: RawOrder[] }).items
+            ?? (data as { data?: RawOrder[]; items?: RawOrder[] }).data
+            ?? [];
+        setOrders(list.map(normalize));
       } catch {
         setOrders(DEMO_ORDERS);
       } finally {

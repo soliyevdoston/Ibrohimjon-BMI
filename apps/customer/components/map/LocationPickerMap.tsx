@@ -14,6 +14,47 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
+// React 18/19 dev StrictMode re-attaches refs before passive cleanups can run,
+// so react-leaflet's MapContainer can hit "Map container is already initialized"
+// on the same DOM node, and the stale cleanup later throws "being reused".
+// Patch Leaflet so init clears the prior _leaflet_id and remove() is a no-op
+// when the container has already been claimed by a newer instance.
+type LeafletProtoPatch = {
+  __initContainerPatched?: boolean;
+  _initContainer: (id: string | HTMLElement) => void;
+  remove: () => unknown;
+  _container?: HTMLElement & { _leaflet_id?: number };
+  _containerId?: number;
+};
+const _mapProto = L.Map.prototype as unknown as LeafletProtoPatch;
+if (typeof window !== 'undefined' && !_mapProto.__initContainerPatched) {
+  const originalInit = _mapProto._initContainer;
+  _mapProto._initContainer = function (id) {
+    const el =
+      typeof id === 'string' ? document.getElementById(id) : (id as HTMLElement);
+    if (el && (el as unknown as { _leaflet_id?: number })._leaflet_id) {
+      delete (el as unknown as { _leaflet_id?: number })._leaflet_id;
+    }
+    return originalInit.call(this, id);
+  };
+  const originalRemove = _mapProto.remove;
+  _mapProto.remove = function () {
+    const self = this as unknown as LeafletProtoPatch;
+    // Bail out if already removed (no _containerId) or if the container
+    // has been claimed by a newer map instance (id mismatch). In either
+    // case calling the original remove() would throw.
+    if (
+      !self._container ||
+      self._containerId === undefined ||
+      self._container._leaflet_id !== self._containerId
+    ) {
+      return self;
+    }
+    return originalRemove.call(this);
+  };
+  _mapProto.__initContainerPatched = true;
+}
+
 const TASHKENT: [number, number] = [41.2995, 69.2401];
 
 const pinIcon = L.divIcon({
@@ -73,6 +114,7 @@ export default function LocationPickerMap({
 }) {
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [mapStyle, setMapStyle] = useMapStyle('streets');
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
@@ -86,6 +128,12 @@ export default function LocationPickerMap({
     }
   }, []);
 
+  useEffect(() => {
+    return () => {
+      mapInstance?.remove();
+    };
+  }, [mapInstance]);
+
   const isSelectedPickup = (p: PickupPoint) =>
     selected !== null &&
     Math.abs(p.lat - selected[0]) < 1e-5 &&
@@ -94,6 +142,7 @@ export default function LocationPickerMap({
   return (
     <div style={{ position: 'relative', height: '100%', width: '100%' }}>
       <MapContainer
+        ref={setMapInstance}
         center={selected ?? userPos ?? TASHKENT}
         zoom={13}
         style={{ height: '100%', width: '100%' }}

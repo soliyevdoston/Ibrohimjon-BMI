@@ -45,11 +45,32 @@ export default function AnalyticsPage() {
   const router = useRouter();
   const [period, setPeriod] = useState<'week' | 'month'>('week');
 
+  const [authChecked, setAuthChecked] = useState(false);
   useEffect(() => {
-    const { useAuthStore } = require('@/stores/auth');
-    const { token } = useAuthStore.getState();
-    if (!token) router.replace('/login');
+    // Defer to next tick so any pending localStorage writes settle first
+    const id = setTimeout(() => {
+      if (typeof window === 'undefined') return;
+      if (!localStorage.getItem('access_token')) {
+        router.replace('/login');
+        return;
+      }
+      setAuthChecked(true);
+    }, 0);
+    return () => clearTimeout(id);
   }, [router]);
+
+  if (!authChecked) {
+    return (
+      <div className="layout">
+        <SellerSidebar />
+        <main className="main">
+          <div className="page" style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>
+            Yuklanmoqda…
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="layout">

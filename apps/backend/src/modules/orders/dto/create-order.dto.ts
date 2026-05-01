@@ -44,8 +44,12 @@ export class CreateOrderDto {
   @Matches(/^[A-Za-z0-9_-]{10,80}$/)
   idempotencyKey!: string;
 
-  @IsIn(['cash', 'card'])
-  paymentMethod!: 'cash' | 'card';
+  @IsIn(['cash', 'card', 'payme', 'click'])
+  paymentMethod!: 'cash' | 'card' | 'payme' | 'click';
+
+  @IsOptional()
+  @IsUUID()
+  customerCardId?: string;
 
   @IsOptional()
   @IsString()

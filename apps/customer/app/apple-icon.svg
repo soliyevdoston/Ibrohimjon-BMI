@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#bg)"/>
+  <g fill="#fff" transform="translate(90 96) scale(2.6)">
+    <path d="M0 -14 L7 -7 L18 -10 L11 -3 L19 4 L7 3 L0 14 L-7 3 L-19 4 L-11 -3 L-18 -10 L-7 -7 Z" opacity="0.18"/>
+    <path d="M-2 -12 C-1 -8, 1 -8, 2 -12 L7 -8 C12 -10, 17 -8, 19 -3 C14 -3, 11 -1, 8 2 L13 6 C8 8, 4 8, 1 6 L0 12 L-1 6 C-4 8, -8 8, -13 6 L-8 2 C-11 -1, -14 -3, -19 -3 C-17 -8, -12 -10, -7 -8 Z"/>
+    <circle cx="0" cy="-6" r="1.6" fill="#4f46e5"/>
+  </g>
+  <text x="90" y="158" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="22" fill="#fff" letter-spacing="2">LOCHIN</text>
+</svg>

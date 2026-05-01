@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PricingService } from '../pricing/pricing.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { SellerUpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrdersService } from './orders.service';
@@ -11,7 +12,23 @@ import { OrdersService } from './orders.service';
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly pricingService: PricingService,
+  ) {}
+
+  @Get('quote')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.CUSTOMER)
+  async quote(
+    @Query('subtotal') subtotal: string,
+    @Query('distanceKm') distanceKm: string,
+  ) {
+    return this.pricingService.computeBreakdown({
+      subtotal: Number(subtotal) || 0,
+      distanceKm: Number(distanceKm) || 0,
+    });
+  }
 
   @Post()
   @UseGuards(RolesGuard)

@@ -64,15 +64,31 @@ function etaLabel(km: number): string {
   return `~${Math.floor(minutes / 60)}h ${minutes % 60}daq`;
 }
 
+const SORT_OPTIONS = [
+  { id: 'nearest',  label: 'Yaqin' },
+  { id: 'earnings', label: 'Daromad' },
+  { id: 'fastest',  label: 'Tezkor' },
+] as const;
+type SortOption = (typeof SORT_OPTIONS)[number]['id'];
+
+const DAILY_GOAL = 100_000;
+
 export default function CourierDashboard() {
   const router = useRouter();
-  const [isOnline, setIsOnline] = useState(false);
+  // Online status — driven by browser network connectivity (navigator.onLine)
+  const [isOnline, setIsOnline] = useState(true);
   const [orders, setOrders] = useState<AvailableOrder[]>(DEMO_ORDERS);
   const [activeDelivery, setActiveDelivery] = useState<AvailableOrder | null>(null);
   const [deliveryStatus, setDeliveryStatus] = useState<DeliveryStatus>('accepted');
   const [courierPos, setCourierPos] = useState<[number, number]>([41.2995, 69.2401]);
   const [showPanel, setShowPanel] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('nearest');
+  const [refreshing, setRefreshing] = useState(false);
+  const [todayEarnings] = useState(84_000);
+  const [todayDeliveries] = useState(7);
+  const [rating] = useState(4.9);
+  const [acceptRate] = useState(96);
   const gpsCleanupRef = useRef<(() => void) | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
@@ -88,6 +104,20 @@ export default function CourierDashboard() {
     });
     return () => { socket.disconnect(); };
   }, [router, token]);
+
+  // Auto online/offline detection via browser network status
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const startGPS = useCallback((delivery: AvailableOrder) => {
     const from = delivery.sellerPos;
@@ -155,62 +185,185 @@ export default function CourierDashboard() {
   const currentStep = STATUS_STEPS.find((s) => s.status === deliveryStatus)!;
 
   /* ── Available orders view ── */
+  const goalProgress = Math.min(100, Math.round((todayEarnings / DAILY_GOAL) * 100));
+  const sortedOrders = [...orders].sort((a, b) => {
+    if (sortBy === 'earnings') return b.earnings - a.earnings;
+    if (sortBy === 'fastest') return a.estimatedMinutes - b.estimatedMinutes;
+    return a.distanceKm - b.distanceKm;
+  });
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
+  };
+
   if (!activeDelivery) {
     return (
       <div style={{ background: 'var(--canvas)', minHeight: '100dvh', paddingBottom: 80 }}>
-        {/* Header */}
+        {/* Header — gradient online/offline */}
         <div style={{
-          background: 'var(--surface)',
-          borderBottom: '1px solid var(--border)',
+          background: isOnline
+            ? 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)'
+            : 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+          color: '#fff',
           padding: '48px 20px 20px',
           paddingTop: `max(48px, calc(env(safe-area-inset-top) + 24px))`,
+          transition: 'background 400ms ease',
         }}>
-          <div className="hstack" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <h1 style={{ fontSize: 20, marginBottom: 2 }}>Kuryerlik paneli</h1>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                {isOnline ? '● Onlayn — buyurtmalar qabul qilinmoqda' : '○ Offlayn'}
-              </p>
+          <div style={{ marginBottom: 18 }}>
+            <div className="hstack" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
+              <h1 style={{ fontSize: 22, color: '#fff' }}>Salom! 👋</h1>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '5px 12px',
+                borderRadius: 999,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                background: isOnline ? 'rgba(16, 240, 164, 0.2)' : 'rgba(239, 68, 68, 0.25)',
+                border: `1px solid ${isOnline ? 'rgba(16,240,164,0.5)' : 'rgba(239,68,68,0.5)'}`,
+                color: '#fff',
+              }}>
+                <span style={{
+                  width: 7, height: 7, borderRadius: 999,
+                  background: isOnline ? '#10f0a4' : '#ef4444',
+                  boxShadow: isOnline ? '0 0 0 3px rgba(16,240,164,0.35)' : '0 0 0 3px rgba(239,68,68,0.35)',
+                  animation: isOnline ? 'pulse 1.6s ease-in-out infinite' : undefined,
+                }} />
+                {isOnline ? 'Onlayn' : 'Internet yo\'q'}
+              </span>
             </div>
-            <div
-              className={`toggle ${isOnline ? 'on' : ''}`}
-              onClick={() => setIsOnline(!isOnline)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="toggle-thumb" />
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500 }}>
+              {isOnline
+                ? 'Internet ulangan — buyurtmalar avtomatik keladi'
+                : 'Internet ulanishini tekshiring'}
+            </p>
+          </div>
+
+          {/* Daily goal progress */}
+          <div style={{
+            background: 'rgba(255,255,255,0.14)',
+            borderRadius: 14,
+            padding: '12px 14px',
+            backdropFilter: 'blur(8px)',
+            marginBottom: 14,
+          }}>
+            <div className="hstack" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: 0.4, textTransform: 'uppercase' }}>
+                Bugungi maqsad
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>
+                {money(todayEarnings)} / {money(DAILY_GOAL)} so&apos;m
+              </span>
+            </div>
+            <div style={{
+              height: 8, background: 'rgba(255,255,255,0.18)', borderRadius: 999, overflow: 'hidden',
+            }}>
+              <div style={{
+                height: '100%',
+                width: `${goalProgress}%`,
+                background: goalProgress >= 100
+                  ? 'linear-gradient(90deg, #10f0a4, #34d399)'
+                  : 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+                borderRadius: 999,
+                transition: 'width 600ms ease',
+                boxShadow: '0 0 12px rgba(255,255,255,0.4)',
+              }} />
+            </div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 6, fontWeight: 500 }}>
+              {goalProgress >= 100 ? "🎉 Maqsad bajarildi!" : `${100 - goalProgress}% qoldi`}
             </div>
           </div>
 
           {/* Stats row */}
-          <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             {[
-              { label: 'Bugun', value: '7' },
-              { label: 'Daromad', value: "84,000 so'm" },
-              { label: 'Reyting', value: '4.9' },
+              { label: 'Bugun', value: `${todayDeliveries}`, sub: 'yetkazildi' },
+              { label: 'Daromad', value: `${(todayEarnings / 1000).toFixed(0)}K`, sub: 'so\'m' },
+              { label: 'Reyting', value: `★ ${rating}`, sub: 'mukammal' },
+              { label: 'Qabul', value: `${acceptRate}%`, sub: 'darajasi' },
             ].map((s) => (
               <div key={s.label} style={{
-                flex: 1, background: 'var(--surface-2)', borderRadius: 12,
-                padding: '10px 12px', border: '1px solid var(--border)',
+                flex: 1,
+                background: 'rgba(255,255,255,0.14)',
+                borderRadius: 12,
+                padding: '10px 8px',
+                backdropFilter: 'blur(8px)',
+                textAlign: 'center',
               }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 2 }}>{s.label}</div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{s.value}</div>
+                <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9, marginBottom: 3, fontWeight: 700, letterSpacing: 0.3, textTransform: 'uppercase' }}>{s.label}</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#fff', lineHeight: 1.1 }}>{s.value}</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{s.sub}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Orders list */}
-        <div className="page" style={{ paddingTop: 20 }}>
-          <div className="hstack" style={{ marginBottom: 16 }}>
-            <h2 style={{ fontSize: 17 }}>Available Orders</h2>
+        <div className="page" style={{ paddingTop: 16 }}>
+          {/* Sort + refresh */}
+          <div className="hstack" style={{ marginBottom: 14, gap: 8, alignItems: 'center' }}>
+            <h2 style={{ fontSize: 17, flex: 'none' }}>Buyurtmalar</h2>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600,
+              padding: '2px 8px', background: 'var(--surface-2)', borderRadius: 999, border: '1px solid var(--border)' }}>
+              {orders.length} ta
+            </span>
             <div className="spacer" />
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{orders.length} nearby</span>
+            <button
+              onClick={handleRefresh}
+              aria-label="Yangilash"
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+                cursor: 'pointer',
+                fontSize: 16,
+                color: 'var(--text-muted)',
+                display: 'grid', placeItems: 'center',
+                animation: refreshing ? 'spin 700ms linear' : undefined,
+              }}
+            >↻</button>
           </div>
+
+          {/* Sort tabs */}
+          {isOnline && orders.length > 0 && (
+            <div style={{
+              display: 'flex', gap: 4, padding: 4,
+              background: 'var(--surface-2)',
+              borderRadius: 12,
+              border: '1px solid var(--border)',
+              marginBottom: 14,
+            }}>
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setSortBy(opt.id)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 0',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: sortBy === opt.id ? 'var(--surface)' : 'transparent',
+                    color: sortBy === opt.id ? 'var(--text)' : 'var(--text-muted)',
+                    fontWeight: sortBy === opt.id ? 700 : 500,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    boxShadow: sortBy === opt.id ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                    transition: 'all 150ms',
+                    minHeight: 36,
+                  }}
+                >{opt.label}</button>
+              ))}
+            </div>
+          )}
 
           {!isOnline ? (
             <div className="empty">
-              <strong>Siz offlayn holatdasiz</strong>
-              <p>Buyurtmalar qabul qilish uchun onlayn rejimga o&apos;ting</p>
+              <strong>Internet ulanishi yo&apos;q</strong>
+              <p>Wi-Fi yoki mobil internetni yoqib, qayta urinib ko&apos;ring</p>
             </div>
           ) : orders.length === 0 ? (
             <div className="empty">
@@ -219,7 +372,7 @@ export default function CourierDashboard() {
             </div>
           ) : (
             <div className="stack">
-              {orders.map((order) => (
+              {sortedOrders.map((order) => (
                 <div key={order.id} className="order-card fade-in">
                   <div className="hstack" style={{ justifyContent: 'space-between' }}>
                     <strong style={{ fontSize: 15 }}>{order.code}</strong>

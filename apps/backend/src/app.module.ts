@@ -15,6 +15,9 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { HealthModule } from './modules/health/health.module';
 import { SellersModule } from './modules/sellers/sellers.module';
 import { CouriersModule } from './modules/couriers/couriers.module';
+import { PricingModule } from './modules/pricing/pricing.module';
+import { PayoutsModule } from './modules/payouts/payouts.module';
+import { CustomerCardsModule } from './modules/customer-cards/customer-cards.module';
 
 @Module({
   imports: [
@@ -26,6 +29,8 @@ import { CouriersModule } from './modules/couriers/couriers.module';
       },
     ]),
     PrismaModule,
+    PricingModule,
+    PayoutsModule,
     AuthModule,
     UsersModule,
     ProductsModule,
@@ -37,6 +42,7 @@ import { CouriersModule } from './modules/couriers/couriers.module';
     HealthModule,
     SellersModule,
     CouriersModule,
+    CustomerCardsModule,
   ],
   providers: [
     {

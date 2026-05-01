@@ -59,6 +59,38 @@ p { margin: 0; }
   margin: 0 auto;
 }
 
+/* ── Animations ── */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.7; }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Touch targets — minimum 44px tap zones ── */
+button, .order-card button, a.btn {
+  min-height: 36px;
+}
+.btn { min-height: 44px; padding: 10px 16px; }
+.btn.sm { min-height: 36px; }
+
+/* ── Order card mobile improvements ── */
+.order-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+.order-card:active {
+  transform: scale(0.98);
+}
+
 /* ── Bottom navigation ── */
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ActivityFeed } from '@/components/admin/ActivityFeed';
 import { DonutChart } from '@/components/admin/DonutChart';
 import { KpiCard } from '@/components/admin/KpiCard';
 import { LiveMap } from '@/components/admin/LiveMap';
@@ -51,7 +52,7 @@ export default function DashboardPage() {
         />
         <KpiCard
           label="Orders"
-          value={mockKPIs.ordersToday.toLocaleString('uz-UZ')}
+          value={String(mockKPIs.ordersToday).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
           delta={mockKPIs.ordersDelta}
           hint="since midnight"
           tone="sky"
@@ -60,7 +61,7 @@ export default function DashboardPage() {
         />
         <KpiCard
           label="Active deliveries"
-          value={mockKPIs.activeDeliveries.toLocaleString('uz-UZ')}
+          value={String(mockKPIs.activeDeliveries).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
           delta={mockKPIs.activeDelta}
           hint="in progress"
           tone="amber"
@@ -154,6 +155,8 @@ export default function DashboardPage() {
         </div>
 
         <div className="stack">
+          <ActivityFeed height={300} />
+
           <div className="card">
             <div className="card-h">
               <div>

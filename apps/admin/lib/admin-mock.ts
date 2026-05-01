@@ -188,7 +188,9 @@ export const statusChip: Record<Status, { label: string; tone: string }> = {
 };
 
 export function uzs(value: number) {
-  return new Intl.NumberFormat('uz-UZ').format(value) + ' soʼm';
+  // Hydration-safe: avoid Intl.NumberFormat (locale data differs between Node and browser)
+  const formatted = String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return formatted + ' soʼm';
 }
 
 export function initials(name: string) {

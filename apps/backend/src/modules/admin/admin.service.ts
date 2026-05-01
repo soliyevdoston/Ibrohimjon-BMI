@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DeliveryStatus } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
+import { LedgerService } from '../payouts/ledger.service';
 import { RealtimeService } from '../realtime/realtime.service';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly realtimeService: RealtimeService,
+    private readonly ledgerService: LedgerService,
   ) {}
 
   users() {
@@ -52,14 +54,31 @@ export class AdminService {
       throw new NotFoundException('Courier not found');
     }
 
-    const updated = await this.prisma.delivery.update({
-      where: { orderId },
-      data: {
-        courierId,
-        status: DeliveryStatus.ACCEPTED,
-        acceptedAt: new Date(),
-      },
-      include: { order: true },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const next = await tx.delivery.update({
+        where: { orderId },
+        data: {
+          courierId,
+          status: DeliveryStatus.ACCEPTED,
+          acceptedAt: new Date(),
+        },
+        include: { order: true },
+      });
+
+      // Skip if a courier ledger entry was already created (e.g. courier had
+      // accepted then admin reassigned). Otherwise create one for this courier.
+      const existing = await tx.ledgerEntry.findFirst({
+        where: { orderId, type: 'COURIER_FEE' },
+      });
+      if (!existing) {
+        await this.ledgerService.createCourierEntry(tx, {
+          orderId,
+          courierId,
+          amount: Number(next.order.courierFeeAmount),
+        });
+      }
+
+      return next;
     });
 
     this.realtimeService.publishDeliveryStatus(updated.id, updated.status, { orderId, courierId });

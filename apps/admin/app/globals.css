@@ -394,14 +394,30 @@ p {
   flex-direction: column;
   gap: 10px;
   box-shadow: var(--shadow-sm);
-  transition: transform var(--t-fast), box-shadow var(--t-fast);
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
   position: relative;
   overflow: hidden;
 }
 
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, transparent);
+  transition: background 200ms ease;
+}
+
 .kpi:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.kpi:hover::before {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
 }
 
 .kpi-row {
@@ -425,9 +441,11 @@ p {
   font-size: 16px;
 }
 
-.kpi-ico.indigo, .kpi-ico.green, .kpi-ico.amber, .kpi-ico.rose, .kpi-ico.sky {
-  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
-}
+.kpi-ico.indigo { background: linear-gradient(135deg, #ddd6fe, #c7d2fe); color: #4338ca; border: 1px solid #c7d2fe; }
+.kpi-ico.green  { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857; border: 1px solid #a7f3d0; }
+.kpi-ico.amber  { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; border: 1px solid #fde68a; }
+.kpi-ico.rose   { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #b91c1c; border: 1px solid #fecaca; }
+.kpi-ico.sky    { background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: #0369a1; border: 1px solid #bae6fd; }
 
 .kpi-value {
   font-size: 26px;
@@ -646,11 +664,12 @@ p {
 }
 
 .table tbody tr {
-  transition: background var(--t-fast);
+  transition: background 150ms ease, box-shadow 150ms ease;
 }
 
 .table tbody tr:hover {
-  background: var(--surface-2);
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.04), rgba(99, 102, 241, 0.01));
+  box-shadow: inset 3px 0 0 #6366f1;
 }
 
 .table tbody tr:last-child td {

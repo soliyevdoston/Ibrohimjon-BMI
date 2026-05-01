@@ -1,9 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PaymentStatus } from '@prisma/client';
+import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { createHmac } from 'crypto';
 import dayjs from 'dayjs';
 import { PrismaService } from 'src/common/prisma.service';
+import { LedgerService } from '../payouts/ledger.service';
 import { RealtimeService } from '../realtime/realtime.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentCallbackDto } from './dto/payment-callback.dto';
@@ -14,6 +15,7 @@ export class PaymentsService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly realtimeService: RealtimeService,
+    private readonly ledgerService: LedgerService,
   ) {}
 
   async createPayment(customerId: string, dto: CreatePaymentDto) {
@@ -86,25 +88,41 @@ export class PaymentsService {
 
     const nextStatus = dto.status === 'paid' ? PaymentStatus.PAID : PaymentStatus.FAILED;
 
-    const payment = await this.prisma.payment.update({
-      where: { orderId: dto.orderId },
-      data: {
-        externalPaymentId: dto.externalPaymentId,
-        callbackIdempotency: dto.callbackId,
-        status: nextStatus,
-        failReason: dto.status === 'failed' ? 'Gateway declined transaction' : null,
-        rawCallbackPayload: {
-          payload: dto.rawPayload,
+    const payment = await this.prisma.$transaction(async (tx) => {
+      const updatedPayment = await tx.payment.update({
+        where: { orderId: dto.orderId },
+        data: {
+          externalPaymentId: dto.externalPaymentId,
+          callbackIdempotency: dto.callbackId,
+          status: nextStatus,
+          failReason: dto.status === 'failed' ? 'Gateway declined transaction' : null,
+          rawCallbackPayload: { payload: dto.rawPayload },
         },
-      },
-    });
+      });
 
-    await this.prisma.order.update({
-      where: { id: dto.orderId },
-      data: {
-        paymentStatus: nextStatus,
-        ...(nextStatus === PaymentStatus.FAILED ? { status: 'FAILED' } : {}),
-      },
+      await tx.order.update({
+        where: { id: dto.orderId },
+        data: {
+          paymentStatus: nextStatus,
+          ...(nextStatus === PaymentStatus.FAILED ? { status: OrderStatus.FAILED } : {}),
+        },
+      });
+
+      if (nextStatus === PaymentStatus.PAID) {
+        await this.ledgerService.markPaidSettlements(tx, dto.orderId);
+        // If delivery already completed (rare race), also flip courier/margin entries
+        const delivery = await tx.delivery.findUnique({
+          where: { orderId: dto.orderId },
+          select: { status: true },
+        });
+        if (delivery?.status === 'DELIVERED') {
+          await this.ledgerService.markDeliveredSettlements(tx, dto.orderId, true);
+        }
+      } else {
+        await this.ledgerService.reverseOrderEntries(tx, dto.orderId);
+      }
+
+      return updatedPayment;
     });
 
     this.realtimeService.publishOrderStatus(dto.orderId, nextStatus === PaymentStatus.PAID ? 'PAID' : 'PAYMENT_FAILED');

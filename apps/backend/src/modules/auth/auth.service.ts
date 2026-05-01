@@ -98,7 +98,39 @@ export class AuthService {
       data: { consumedAt: new Date() },
     });
 
-    return this.issueTokens(user.id, user.phone, user.role);
+    return this.issueTokens(user.id, user.phone ?? '', user.role);
+  }
+
+  async loginWithEmail(email: string, password: string) {
+    const normalized = email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email: normalized } });
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Email yoki parol noto\'g\'ri');
+    }
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) {
+      throw new UnauthorizedException('Email yoki parol noto\'g\'ri');
+    }
+    return this.issueTokens(user.id, user.phone ?? user.email ?? '', user.role);
+  }
+
+  async registerWithEmail(email: string, password: string, fullName: string | undefined, role: UserRole) {
+    const normalized = email.trim().toLowerCase();
+    const existing = await this.prisma.user.findUnique({ where: { email: normalized } });
+    if (existing) {
+      throw new BadRequestException('Bu email allaqachon ro\'yxatdan o\'tgan');
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await this.prisma.user.create({
+      data: {
+        email: normalized,
+        passwordHash,
+        fullName,
+        role,
+        isEmailVerified: true,
+      },
+    });
+    return this.issueTokens(user.id, user.email ?? '', user.role);
   }
 
   async refresh(refreshToken: string) {
@@ -136,9 +168,9 @@ export class AuthService {
     return this.issueTokens(payload.sub, payload.phone, payload.role);
   }
 
-  private async issueTokens(userId: string, phone: string, role: UserRole) {
+  private async issueTokens(userId: string, identity: string, role: UserRole) {
     const accessToken = await this.jwtService.signAsync(
-      { sub: userId, phone, role },
+      { sub: userId, phone: identity, role },
       {
         secret: this.configService.getOrThrow('JWT_ACCESS_SECRET'),
         expiresIn: this.configService.get('JWT_ACCESS_TTL', '15m'),
@@ -146,7 +178,7 @@ export class AuthService {
     );
 
     const refreshToken = await this.jwtService.signAsync(
-      { sub: userId, phone, role },
+      { sub: userId, phone: identity, role },
       {
         secret: this.configService.getOrThrow('JWT_REFRESH_SECRET'),
         expiresIn: this.configService.get('JWT_REFRESH_TTL', '30d'),
@@ -167,7 +199,7 @@ export class AuthService {
       tokenType: 'Bearer',
       user: {
         id: userId,
-        phone,
+        phone: identity,
         role,
       },
     };

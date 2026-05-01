@@ -1,9 +1,47 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { SellerSidebar } from '@/components/Sidebar';
 import { SellerTopbar } from '@/components/Topbar';
 import { api, money } from '@/lib/api';
+
+function useCountUp(target: number, durationMs: number = 900): number {
+  const [value, setValue] = useState(0);
+  const ref = useRef<{ start: number; from: number; to: number; raf: number | null }>({
+    start: 0, from: 0, to: target, raf: null,
+  });
+  useEffect(() => {
+    if (ref.current.raf) cancelAnimationFrame(ref.current.raf);
+    ref.current.from = value;
+    ref.current.to = target;
+    ref.current.start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min((now - ref.current.start) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const next = ref.current.from + (ref.current.to - ref.current.from) * eased;
+      setValue(t === 1 ? ref.current.to : next);
+      if (t < 1) ref.current.raf = requestAnimationFrame(tick);
+    };
+    ref.current.raf = requestAnimationFrame(tick);
+    return () => { if (ref.current.raf) cancelAnimationFrame(ref.current.raf); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, durationMs]);
+  return value;
+}
+
+function AnimatedKpi({ label, value, formatted }: { label: string; value: number; formatted?: (v: number) => string }) {
+  const animated = useCountUp(value);
+  return (
+    <div className="kpi">
+      <div className="kpi-row">
+        <span className="kpi-label">{label}</span>
+      </div>
+      <div className="kpi-value" style={{ fontSize: 26 }}>
+        {formatted ? formatted(animated) : Math.round(animated).toString()}
+      </div>
+    </div>
+  );
+}
 
 type Stats = { todayOrders: number; todayRevenue: number; activeOrders: number; totalProducts: number };
 type Order = { id: string; code: string; customerName: string; status: string; totalAmount: number; createdAt: string };
@@ -28,7 +66,11 @@ function timeAgo(iso: string) {
   return `${Math.floor(diff / 3600)}h ago`;
 }
 
-const REVENUE_DATA = [120, 185, 210, 95, 340, 280, 185].map((v, i) => ({ day: ['M', 'T', 'W', 'T', 'F', 'S', 'S'][i], value: v }));
+const REVENUE_DATA = [120, 185, 210, 95, 340, 280, 185].map((v, i) => ({
+  id: i,
+  day: ['Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sh', 'Ya'][i],
+  value: v,
+}));
 const MAX_REV = Math.max(...REVENUE_DATA.map((d) => d.value));
 
 export default function DashboardPage() {
@@ -42,22 +84,21 @@ export default function DashboardPage() {
     const load = async () => {
       try {
         const [s, o] = await Promise.all([
-          api<Stats>('/sellers/dashboard', { token }),
-          api<{ items: Order[] }>('/sellers/orders?limit=5', { token }),
+          api<Partial<Stats>>('/orders/seller/dashboard', { token }),
+          api<Order[] | { items?: Order[] }>('/orders/seller', { token }),
         ]);
-        setStats(s);
-        setOrders(o.items);
+        setStats({
+          todayOrders: s.todayOrders ?? 0,
+          todayRevenue: s.todayRevenue ?? 0,
+          activeOrders: s.activeOrders ?? 0,
+          totalProducts: s.totalProducts ?? DEMO_STATS.totalProducts,
+        });
+        const orderList = Array.isArray(o) ? o : (o.items ?? []);
+        setOrders(orderList.slice(0, 5));
       } catch { /* use demo data */ }
     };
     load();
   }, [router]);
-
-  const KPI_CARDS = [
-    { label: 'Orders today', value: stats.todayOrders },
-    { label: 'Revenue today', value: money(stats.todayRevenue) + ' so\'m' },
-    { label: 'Active orders', value: stats.activeOrders },
-    { label: 'Total products', value: stats.totalProducts },
-  ];
 
   return (
     <div className="app-shell">
@@ -66,18 +107,16 @@ export default function DashboardPage() {
         <SellerTopbar title="Dashboard" subtitle="Lochin · Seller" />
         <main className="app-content fade-in">
           <div className="stack">
-            {/* KPI row */}
+            {/* KPI row — animated counters */}
             <div className="grid-4">
-              {KPI_CARDS.map((k) => (
-                <div key={k.label} className="kpi">
-                  <div className="kpi-row">
-                    <span className="kpi-label">{k.label}</span>
-                  </div>
-                  <div className="kpi-value" style={{ fontSize: typeof k.value === 'string' ? 18 : 26 }}>
-                    {k.value}
-                  </div>
-                </div>
-              ))}
+              <AnimatedKpi label="Bugungi buyurtmalar" value={stats.todayOrders} />
+              <AnimatedKpi
+                label="Bugungi daromad"
+                value={stats.todayRevenue}
+                formatted={(v) => money(v) + ' so\'m'}
+              />
+              <AnimatedKpi label="Faol buyurtmalar" value={stats.activeOrders} />
+              <AnimatedKpi label="Mahsulotlar" value={stats.totalProducts} />
             </div>
 
             <div className="grid-2-3">
@@ -89,7 +128,7 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 120 }}>
                   {REVENUE_DATA.map((d) => (
-                    <div key={d.day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <div key={d.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                       <div
                         style={{
                           width: '100%', background: 'var(--text)',
