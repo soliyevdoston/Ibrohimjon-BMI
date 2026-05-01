@@ -170,6 +170,13 @@ export class OrdersService {
       });
 
       this.realtimeService.publishOrderStatus(order.id, order.status);
+      this.realtimeService.notifySellerNewOrder(dto.sellerId, {
+        id: order.id,
+        totalAmount: Number(order.totalAmount),
+        requiredVehicle: breakdown.requiredVehicle,
+        totalWeightKg: breakdown.totalWeightKg,
+        itemCount: order.items.length,
+      });
       return order;
     });
   }
@@ -244,14 +251,31 @@ export class OrdersService {
       include: { delivery: true },
     });
 
-    if (dto.status === 'READY_FOR_PICKUP' && !updated.delivery) {
-      await this.prisma.delivery.create({
-        data: {
-          orderId,
-          status: DeliveryStatus.SEARCHING_COURIER,
-        },
+    if (dto.status === 'READY_FOR_PICKUP') {
+      let delivery = updated.delivery;
+      if (!delivery) {
+        delivery = await this.prisma.delivery.create({
+          data: {
+            orderId,
+            status: DeliveryStatus.SEARCHING_COURIER,
+          },
+        });
+      }
+
+      // Push to compatible couriers so they can grab it from their dashboard.
+      this.realtimeService.notifyCouriersDeliveryAvailable({
+        deliveryId: delivery.id,
+        orderId,
+        requiredVehicle: order.requiredVehicle,
+        totalWeightKg: Number(order.totalWeightKg),
+        courierFeeAmount: Number(order.courierFeeAmount),
+        pickupAddress: order.seller.addressText ?? undefined,
+        deliveryAddress: order.deliveryAddressText,
       });
     }
+
+    // Tell the seller dashboard the queue moved.
+    this.realtimeService.notifySellerOrderUpdate(order.sellerId, orderId, dto.status);
 
     this.realtimeService.publishOrderStatus(orderId, dto.status);
 
@@ -274,7 +298,7 @@ export class OrdersService {
 
     const delivery = await this.prisma.delivery.upsert({
       where: { orderId: order.id },
-      update: { status: DeliveryStatus.SEARCHING_COURIER },
+      update: { status: DeliveryStatus.SEARCHING_COURIER, courierId: null },
       create: {
         orderId: order.id,
         status: DeliveryStatus.SEARCHING_COURIER,
@@ -282,6 +306,15 @@ export class OrdersService {
     });
 
     this.realtimeService.publishDeliveryStatus(delivery.id, delivery.status, { orderId: order.id });
+    this.realtimeService.notifyCouriersDeliveryAvailable({
+      deliveryId: delivery.id,
+      orderId: order.id,
+      requiredVehicle: order.requiredVehicle,
+      totalWeightKg: Number(order.totalWeightKg),
+      courierFeeAmount: Number(order.courierFeeAmount),
+      pickupAddress: order.seller.addressText ?? undefined,
+      deliveryAddress: order.deliveryAddressText,
+    });
 
     return delivery;
   }

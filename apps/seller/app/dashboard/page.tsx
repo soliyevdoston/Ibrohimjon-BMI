@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { io, Socket } from 'socket.io-client';
 import { SellerSidebar } from '@/components/Sidebar';
 import { SellerTopbar } from '@/components/Topbar';
 import { api, money } from '@/lib/api';
@@ -73,32 +74,74 @@ const REVENUE_DATA = [120, 185, 210, 95, 340, 280, 185].map((v, i) => ({
 }));
 const MAX_REV = Math.max(...REVENUE_DATA.map((d) => d.value));
 
+interface NewOrderToast {
+  orderId: string;
+  totalAmount: number;
+  requiredVehicle: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
+  totalWeightKg: number;
+  itemCount: number;
+}
+
+const VEHICLE_ICON: Record<NewOrderToast['requiredVehicle'], string> = {
+  BIKE: '🚲', CAR: '🚗', VAN: '🚐', TRUCK: '🚛',
+};
+
 export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats>(DEMO_STATS);
   const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS);
+  const [toast, setToast] = useState<NewOrderToast | null>(null);
+
+  const load = useCallback(async (token: string) => {
+    try {
+      const [s, o] = await Promise.all([
+        api<Partial<Stats>>('/orders/seller/dashboard', { token }),
+        api<Order[] | { items?: Order[] }>('/orders/seller', { token }),
+      ]);
+      setStats({
+        todayOrders: s.todayOrders ?? 0,
+        todayRevenue: s.todayRevenue ?? 0,
+        activeOrders: s.activeOrders ?? 0,
+        totalProducts: s.totalProducts ?? DEMO_STATS.totalProducts,
+      });
+      const orderList = Array.isArray(o) ? o : (o.items ?? []);
+      setOrders(orderList.slice(0, 5));
+    } catch { /* keep previous data */ }
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) { router.replace('/login'); return; }
-    const load = async () => {
-      try {
-        const [s, o] = await Promise.all([
-          api<Partial<Stats>>('/orders/seller/dashboard', { token }),
-          api<Order[] | { items?: Order[] }>('/orders/seller', { token }),
-        ]);
-        setStats({
-          todayOrders: s.todayOrders ?? 0,
-          todayRevenue: s.todayRevenue ?? 0,
-          activeOrders: s.activeOrders ?? 0,
-          totalProducts: s.totalProducts ?? DEMO_STATS.totalProducts,
+    load(token);
+
+    let socket: Socket | null = null;
+    let cancelled = false;
+
+    api<{ id: string }>('/seller/profile', { token })
+      .then((profile) => {
+        if (cancelled || !profile?.id) return;
+        socket = io(`${process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:4000'}/realtime`, {
+          auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
         });
-        const orderList = Array.isArray(o) ? o : (o.items ?? []);
-        setOrders(orderList.slice(0, 5));
-      } catch { /* use demo data */ }
+        socket.on('connect', () => {
+          socket?.emit('seller:join', { sellerId: profile.id });
+        });
+        socket.on('order:new', (data: NewOrderToast) => {
+          setToast(data);
+          setTimeout(() => setToast(null), 6000);
+          load(token);
+        });
+        socket.on('order:update', () => {
+          load(token);
+        });
+      })
+      .catch(() => {/* ignore */});
+
+    return () => {
+      cancelled = true;
+      socket?.disconnect();
     };
-    load();
-  }, [router]);
+  }, [router, load]);
 
   return (
     <div className="app-shell">
@@ -194,6 +237,59 @@ export default function DashboardPage() {
           </div>
         </main>
       </div>
+
+      {toast && (
+        <div
+          role="alert"
+          style={{
+            position: 'fixed',
+            top: 'max(20px, env(safe-area-inset-top))',
+            right: 20,
+            background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+            color: '#fff',
+            padding: '14px 18px',
+            borderRadius: 14,
+            boxShadow: '0 12px 32px rgba(79, 70, 229, 0.45)',
+            zIndex: 1000,
+            minWidth: 300,
+            maxWidth: 360,
+            cursor: 'pointer',
+            animation: 'slideIn 250ms ease',
+          }}
+          onClick={() => router.push('/orders')}
+        >
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 28 }}>🔔</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 2 }}>
+                Yangi buyurtma!
+              </div>
+              <div style={{ fontSize: 12, opacity: 0.9, marginBottom: 4 }}>
+                {toast.itemCount} ta mahsulot · {money(toast.totalAmount)} so&apos;m
+              </div>
+              <div style={{ fontSize: 11, opacity: 0.8 }}>
+                {VEHICLE_ICON[toast.requiredVehicle]} {Math.round(toast.totalWeightKg)} kg
+              </div>
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); setToast(null); }}
+              style={{
+                background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff',
+                width: 24, height: 24, borderRadius: 6, cursor: 'pointer',
+                fontSize: 14, lineHeight: 1,
+              }}
+              aria-label="Yopish"
+            >×</button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(20px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

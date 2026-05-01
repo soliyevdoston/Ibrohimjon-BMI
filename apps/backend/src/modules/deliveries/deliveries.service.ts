@@ -4,7 +4,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DeliveryStatus, OrderStatus, PaymentStatus } from '@prisma/client';
+import { DeliveryStatus, OrderStatus, PaymentStatus, VehicleType } from '@prisma/client';
+
+const VEHICLE_RANK: Record<VehicleType, number> = {
+  BIKE: 0,
+  CAR: 1,
+  VAN: 2,
+  TRUCK: 3,
+};
+
+function vehiclesAtOrBelow(my: VehicleType): VehicleType[] {
+  const myRank = VEHICLE_RANK[my];
+  return Object.values(VehicleType).filter((v) => VEHICLE_RANK[v] <= myRank);
+}
 import dayjs from 'dayjs';
 import { PrismaService } from 'src/common/prisma.service';
 import { OrdersService } from '../orders/orders.service';
@@ -23,10 +35,16 @@ export class DeliveriesService {
   ) {}
 
   async listAvailable(courierUserId: string) {
-    await this.ensureCourierProfile(courierUserId);
+    const courier = await this.ensureCourierProfile(courierUserId);
+    const acceptableVehicles = vehiclesAtOrBelow(courier.vehicleType);
 
     return this.prisma.delivery.findMany({
-      where: { status: DeliveryStatus.SEARCHING_COURIER },
+      where: {
+        status: DeliveryStatus.SEARCHING_COURIER,
+        order: {
+          requiredVehicle: { in: acceptableVehicles },
+        },
+      },
       include: {
         order: {
           include: {
@@ -94,6 +112,16 @@ export class DeliveriesService {
       orderId: updated.orderId,
       courierId: courier.id,
     });
+
+    // Tell other couriers this delivery is no longer pickable.
+    this.realtimeService.notifyDeliveryClaimed(deliveryId, courier.id);
+
+    // Tell the seller a courier is on the way.
+    this.realtimeService.notifySellerOrderUpdate(
+      updated.order.sellerId,
+      updated.orderId,
+      OrderStatus.COURIER_ACCEPTED,
+    );
 
     return updated;
   }
@@ -200,6 +228,19 @@ export class DeliveriesService {
       orderId: updated.orderId,
       courierId: courier.id,
     });
+
+    // Refresh seller dashboard at every transition so they can track the order.
+    const orderForSeller = await this.prisma.order.findUnique({
+      where: { id: updated.orderId },
+      select: { sellerId: true },
+    });
+    if (orderForSeller) {
+      this.realtimeService.notifySellerOrderUpdate(
+        orderForSeller.sellerId,
+        updated.orderId,
+        orderStatusMap[dto.status],
+      );
+    }
 
     return updated;
   }

@@ -108,20 +108,40 @@ export default function OrdersPage() {
     if (!localStorage.getItem('access_token')) { router.replace('/login'); return; }
     loadOrders();
 
-    const socket: Socket = io(`${process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:4000'}/realtime`, {
-      auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
-    });
-    socket.on('connect', () => {
-      socket.emit('seller:join', { token });
-    });
-    socket.on('order:status', (data: { orderId: string; status: string }) => {
-      setOrders((prev) => prev.map((o) => o.id === data.orderId ? { ...o, status: data.status } : o));
-    });
-    socket.on('order:new', (order: Order) => {
-      setOrders((prev) => [order, ...prev]);
-    });
-    return () => { socket.disconnect(); };
-  }, [router, loadOrders]);
+    let socket: Socket | null = null;
+    let cancelled = false;
+
+    // Fetch sellerId once, then connect & join the seller room.
+    api<{ id: string }>('/seller/profile', { token })
+      .then((profile) => {
+        if (cancelled || !profile?.id) return;
+        socket = io(`${process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:4000'}/realtime`, {
+          auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
+        });
+        socket.on('connect', () => {
+          socket?.emit('seller:join', { sellerId: profile.id });
+        });
+        // Existing per-order updates (when this client previously joined an
+        // order: room) — keep working.
+        socket.on('order:status', (data: { orderId: string; status: string }) => {
+          setOrders((prev) => prev.map((o) => o.id === data.orderId ? { ...o, status: data.status } : o));
+        });
+        // Status changes from courier/customer side — refresh the row.
+        socket.on('order:update', (data: { orderId: string; status: string }) => {
+          setOrders((prev) => prev.map((o) => o.id === data.orderId ? { ...o, status: data.status } : o));
+        });
+        // Brand-new order from a customer — pull fresh list (server has full payload).
+        socket.on('order:new', () => {
+          loadOrders();
+        });
+      })
+      .catch(() => {/* no profile yet */});
+
+    return () => {
+      cancelled = true;
+      socket?.disconnect();
+    };
+  }, [router, loadOrders, token]);
 
   const handleAction = async (order: Order, nextStatus: string) => {
     if (!nextStatus) return;

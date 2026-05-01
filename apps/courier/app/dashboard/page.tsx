@@ -93,17 +93,85 @@ export default function CourierDashboard() {
   const socketRef = useRef<Socket | null>(null);
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
 
+  // Fetch the available-deliveries list (server already filters by my vehicle).
+  const loadAvailable = useCallback(async () => {
+    try {
+      type RawDelivery = {
+        id: string; orderId: string;
+        order: {
+          id: string;
+          totalWeightKg: string | number;
+          requiredVehicle: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
+          deliveryAddressText: string;
+          deliveryLat: string | number;
+          deliveryLng: string | number;
+          courierFeeAmount: string | number;
+          seller: {
+            id: string; brandName: string; addressText: string | null;
+            addressLat: string | number | null; addressLng: string | number | null;
+          };
+        };
+      };
+      const list = await api<RawDelivery[]>('/deliveries/available', { token });
+      const mapped: AvailableOrder[] = list.map((d) => {
+        const sLat = Number(d.order.seller.addressLat ?? 41.2995);
+        const sLng = Number(d.order.seller.addressLng ?? 69.2401);
+        const cLat = Number(d.order.deliveryLat);
+        const cLng = Number(d.order.deliveryLng);
+        const km = haversineKm([sLat, sLng], [cLat, cLng]);
+        return {
+          id: d.id,
+          code: d.orderId.slice(0, 8).toUpperCase(),
+          sellerName: d.order.seller.brandName,
+          sellerAddress: d.order.seller.addressText ?? '—',
+          customerAddress: d.order.deliveryAddressText,
+          distanceKm: Number(km.toFixed(1)),
+          estimatedMinutes: Math.round((km / 25) * 60),
+          earnings: Number(d.order.courierFeeAmount),
+          sellerPos: [sLat, sLng],
+          customerPos: [cLat, cLng],
+        };
+      });
+      setOrders(mapped.length ? mapped : DEMO_ORDERS);
+    } catch {/* keep current */}
+  }, [token]);
+
   useEffect(() => {
     if (!localStorage.getItem('access_token')) { router.replace('/login'); return; }
-    const socket = io(`${process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:4000'}/realtime`, {
-      auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
-    });
-    socketRef.current = socket;
-    socket.on('order:new', (order: AvailableOrder) => {
-      setOrders((prev) => [order, ...prev]);
-    });
-    return () => { socket.disconnect(); };
-  }, [router, token]);
+    loadAvailable();
+
+    let cancelled = false;
+    type CourierProfile = { id: string; vehicleType: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK' };
+    api<CourierProfile>('/courier/profile', { token })
+      .then((profile) => {
+        if (cancelled || !profile?.id) return;
+        const socket = io(`${process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:4000'}/realtime`, {
+          auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
+        });
+        socketRef.current = socket;
+        socket.on('connect', () => {
+          socket.emit('courier:join', {
+            courierId: profile.id,
+            vehicleType: profile.vehicleType,
+          });
+        });
+        // A new delivery within my tier became available — refresh the list.
+        socket.on('delivery:available', () => {
+          loadAvailable();
+        });
+        // Another courier grabbed it — drop it from my list immediately.
+        socket.on('delivery:claimed', (p: { deliveryId: string }) => {
+          setOrders((prev) => prev.filter((o) => o.id !== p.deliveryId));
+        });
+      })
+      .catch(() => {/* no profile yet */});
+
+    return () => {
+      cancelled = true;
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
+  }, [router, token, loadAvailable]);
 
   // Auto online/offline detection via browser network status
   useEffect(() => {

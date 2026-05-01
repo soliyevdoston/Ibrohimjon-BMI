@@ -83,6 +83,8 @@ export class AdminService {
 
     this.realtimeService.publishDeliveryStatus(updated.id, updated.status, { orderId, courierId });
     this.realtimeService.publishOrderStatus(orderId, 'COURIER_ACCEPTED', { courierId });
+    this.realtimeService.notifyDeliveryClaimed(updated.id, courierId);
+    this.realtimeService.notifySellerOrderUpdate(updated.order.sellerId, orderId, 'COURIER_ACCEPTED');
 
     return updated;
   }
