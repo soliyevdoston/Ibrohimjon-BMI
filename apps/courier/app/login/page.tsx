@@ -43,7 +43,7 @@ export default function CourierLoginPage() {
   return (
     <div style={{
       minHeight: '100vh', display: 'grid', placeItems: 'center',
-      background: 'linear-gradient(160deg, #1e1b4b 0%, #312e81 40%, #4f46e5 100%)',
+      background: 'linear-gradient(160deg, #1a1a00 0%, #3D2C00 40%, #A16207 100%)',
       padding: 20,
     }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
@@ -150,8 +150,8 @@ export default function CourierLoginPage() {
                 padding: '13px',
                 borderRadius: 12,
                 border: 'none',
-                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                color: '#fff',
+                background: 'linear-gradient(135deg, #FACC15, #EAB308)',
+                color: '#1a1a00',
                 fontSize: 15,
                 fontWeight: 700,
                 cursor: 'pointer',

@@ -1,8 +1,9 @@
-import { Body, Controller, ForbiddenException, Get, Headers, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Headers, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PricingService } from '../pricing/pricing.service';
 import { AdminService } from './admin.service';
 import { SeedService } from './seed.service';
 
@@ -11,6 +12,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly seedService: SeedService,
+    private readonly pricingService: PricingService,
   ) {}
 
   /**
@@ -70,5 +72,31 @@ export class AdminController {
   @Roles(UserRole.ADMIN)
   manualAssign(@Body() body: { orderId: string; courierId: string }) {
     return this.adminService.manualAssignCourier(body.orderId, body.courierId);
+  }
+
+  @Get('config')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getConfig() {
+    return this.pricingService.getConfig();
+  }
+
+  @Patch('config')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateConfig(@Body() body: Record<string, number>) {
+    const data: Record<string, number> = {};
+    const allowed = [
+      'commissionRate', 'serviceFeeRate',
+      'deliveryBaseFee', 'deliveryPerKmFee', 'courierBaseFee', 'courierPerKmFee',
+      'carBaseFee', 'carPerKmFee', 'carCourierBase', 'carCourierPerKm',
+      'vanBaseFee', 'vanPerKmFee', 'vanCourierBase', 'vanCourierPerKm',
+      'truckBaseFee', 'truckPerKmFee', 'truckCourierBase', 'truckCourierPerKm',
+      'bikeMaxKg', 'carMaxKg', 'vanMaxKg', 'freeDeliveryAbove',
+    ];
+    for (const key of allowed) {
+      if (body[key] !== undefined) data[key] = Number(body[key]);
+    }
+    return this.pricingService.updateConfig(data);
   }
 }

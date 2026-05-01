@@ -15,6 +15,8 @@ export interface PricingBreakdown {
   distanceKm: number;
   totalWeightKg: number;
   requiredVehicle: VehicleType;
+  freeDeliveryAbove: number;
+  isFreeDelivery: boolean;
 }
 
 export interface ComputeBreakdownInput {
@@ -88,7 +90,10 @@ export class PricingService {
         ? input.sellerCommissionRate
         : platformCommissionRate;
 
-    const deliveryFee = round(tier.deliveryBase + distanceKm * tier.deliveryPerKm);
+    const rawDeliveryFee = round(tier.deliveryBase + distanceKm * tier.deliveryPerKm);
+    const freeDeliveryAbove = num(cfg.freeDeliveryAbove);
+    const isFreeDelivery = freeDeliveryAbove > 0 && subtotal >= freeDeliveryAbove;
+    const deliveryFee = isFreeDelivery ? 0 : rawDeliveryFee;
     const courierFee = round(tier.courierBase + distanceKm * tier.courierPerKm);
     const serviceFee = round(subtotal * serviceFeeRate);
     const total = subtotal + deliveryFee + serviceFee;
@@ -111,6 +116,8 @@ export class PricingService {
       distanceKm,
       totalWeightKg,
       requiredVehicle,
+      freeDeliveryAbove,
+      isFreeDelivery,
     };
   }
 

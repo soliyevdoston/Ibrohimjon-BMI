@@ -12,7 +12,7 @@ services:
     region: frankfurt
     plan: free
     rootDir: apps/backend
-    buildCommand: npm install && npm run build && npx prisma generate && npx prisma migrate deploy
+    buildCommand: npm install && npm run build && npx prisma generate && npx prisma db push --accept-data-loss --skip-generate
     startCommand: node dist/main
     healthCheckPath: /api/v1/health
     envVars:

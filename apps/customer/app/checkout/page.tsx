@@ -122,12 +122,19 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState('');
+  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) router.replace('/login?redirect=/checkout');
     if (items.length === 0 && step === 1) router.replace('/home');
   }, [items.length, router, step]);
+
+  useEffect(() => {
+    api<{ freeDeliveryAbove: number }>('/health/config')
+      .then((d) => setFreeDeliveryAbove(d.freeDeliveryAbove ?? 0))
+      .catch(() => {});
+  }, []);
 
   // Load saved cards once a token is available; used when 'card' is picked.
   useEffect(() => {
@@ -173,12 +180,18 @@ export default function CheckoutPage() {
   const requiredVehicle = pickVehicle(totalWeightKg, vehicleHint);
   const tier = TIER_RATES[requiredVehicle];
 
-  const deliveryFee = pickup
+  const sub = subtotal();
+  const rawDeliveryFee = pickup
     ? 0
     : selected
       ? calcDeliveryFee(selected[0], selected[1], requiredVehicle)
       : tier.base + Math.round(2 * tier.perKm); // ~2km placeholder
-  const sub = subtotal();
+  const isFreeDelivery = !pickup && freeDeliveryAbove > 0 && sub >= freeDeliveryAbove;
+  const deliveryFee = isFreeDelivery ? 0 : rawDeliveryFee;
+  const freeDeliveryProgress = freeDeliveryAbove > 0 && !isFreeDelivery && !pickup
+    ? Math.min(100, Math.round((sub / freeDeliveryAbove) * 100))
+    : 0;
+  const freeDeliveryLeft = freeDeliveryAbove > 0 && !isFreeDelivery ? freeDeliveryAbove - sub : 0;
   const serviceFee = calcServiceFee(sub);
   const total = sub + deliveryFee + serviceFee;
 
@@ -265,6 +278,49 @@ export default function CheckoutPage() {
         {/* ===== STEP 1: LOCATION ===== */}
         {step === 1 && (
           <div className="stack fade-in">
+
+            {/* Free delivery banner */}
+            {freeDeliveryAbove > 0 && (
+              <div style={{
+                background: isFreeDelivery ? 'linear-gradient(135deg, #d1fae5, #a7f3d0)' : 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                border: `1.5px solid ${isFreeDelivery ? '#10b981' : '#86efac'}`,
+                borderRadius: 14, padding: '12px 16px',
+              }}>
+                {isFreeDelivery ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 22 }}>🎉</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#065f46' }}>
+                        Bepul yetkazib berish!
+                      </div>
+                      <div style={{ fontSize: 12, color: '#047857' }}>
+                        Buyurtmangiz {money(freeDeliveryAbove)} so'm chegarasidan oshdi
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>
+                        Yana {money(freeDeliveryLeft)} so'm — bepul yetkazib berish
+                      </div>
+                      <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 700 }}>
+                        {freeDeliveryProgress}%
+                      </div>
+                    </div>
+                    <div style={{ height: 6, background: '#bbf7d0', borderRadius: 999, overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', borderRadius: 999,
+                        background: 'linear-gradient(90deg, #10b981, #059669)',
+                        width: `${freeDeliveryProgress}%`,
+                        transition: 'width 0.4s ease',
+                      }} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '16px 16px 12px' }}>
                 <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
@@ -396,14 +452,28 @@ export default function CheckoutPage() {
                 <span className="price-row-label">
                   Yetkazib berish
                   {pickup && <span style={{ color: '#10b981', fontSize: 11, marginLeft: 6 }}>(olib ketish)</span>}
-                  {!pickup && requiredVehicle !== 'BIKE' && (
+                  {isFreeDelivery && <span style={{ color: '#10b981', fontSize: 11, marginLeft: 6 }}>🎉 chegara oshdi</span>}
+                  {!pickup && !isFreeDelivery && requiredVehicle !== 'BIKE' && (
                     <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 6 }}>
                       ({tier.icon} {tier.label})
                     </span>
                   )}
                 </span>
-                <span className="price-row-value">{deliveryFee === 0 ? 'Bepul' : `${money(deliveryFee)} so'm`}</span>
+                <span className="price-row-value" style={{ color: deliveryFee === 0 ? '#10b981' : undefined }}>
+                  {deliveryFee === 0 ? 'Bepul' : `${money(deliveryFee)} so'm`}
+                </span>
               </div>
+              {freeDeliveryLeft > 0 && !pickup && (
+                <div style={{ marginTop: 6, padding: '8px 10px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#166534', marginBottom: 5 }}>
+                    <span>Yana {money(freeDeliveryLeft)} so'm qo&apos;shing — bepul yetkazib berish</span>
+                    <span>{freeDeliveryProgress}%</span>
+                  </div>
+                  <div style={{ height: 4, background: '#bbf7d0', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: '#10b981', borderRadius: 999, width: `${freeDeliveryProgress}%` }} />
+                  </div>
+                </div>
+              )}
               <div className="price-row">
                 <span className="price-row-label" title="Platforma servis to'lovi">
                   Servis to&apos;lovi <span style={{ color: '#9ca3af', fontSize: 11, marginLeft: 4 }}>(2%)</span>

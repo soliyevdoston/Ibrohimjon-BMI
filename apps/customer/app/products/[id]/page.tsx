@@ -228,7 +228,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       aspectRatio: '1',
                       borderRadius: 12,
                       overflow: 'hidden',
-                      border: activeImage === i ? '2px solid #4f46e5' : '2px solid var(--border)',
+                      border: activeImage === i ? '2px solid #7C3AED' : '2px solid var(--border)',
                       cursor: 'pointer',
                       padding: 0,
                       background: '#f1f5f9',
@@ -249,7 +249,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div style={{
                 display: 'inline-block',
                 fontSize: 11, fontWeight: 700,
-                color: '#4338ca',
+                color: '#6D28D9',
                 background: '#eef2ff',
                 padding: '5px 12px',
                 borderRadius: 999,
@@ -349,7 +349,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 height: 56,
                 border: 'none',
                 borderRadius: 14,
-                background: outOfStock ? '#e5e7eb' : 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                background: outOfStock ? '#e5e7eb' : 'linear-gradient(135deg, #7C3AED, #7C3AED)',
                 color: '#fff',
                 fontSize: 16, fontWeight: 700,
                 letterSpacing: 0.3,
@@ -377,7 +377,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 onClick={() => router.push('/home')}
                 style={{
                   background: 'transparent', border: 'none',
-                  color: '#4f46e5', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  color: '#7C3AED', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
               >Barchasi →</button>
             </div>

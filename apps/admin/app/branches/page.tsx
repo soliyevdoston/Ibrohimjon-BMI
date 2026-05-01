@@ -131,7 +131,7 @@ export default function AdminBranchesPage() {
                       <div className="tcell-primary">
                         <span className="avatar" style={{
                           width: 32, height: 32, fontSize: 14,
-                          background: b.type === 'main' ? 'linear-gradient(135deg, #6366f1, #818cf8)' : 'linear-gradient(135deg, #c7d2fe, #ddd6fe)',
+                          background: b.type === 'main' ? 'linear-gradient(135deg, #2563EB, #60A5FA)' : 'linear-gradient(135deg, #DBEAFE, #BFDBFE)',
                         }}>
                           {b.type === 'main' ? '🏢' : '🏬'}
                         </span>

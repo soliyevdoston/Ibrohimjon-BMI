@@ -50,7 +50,7 @@ export default function SellerLoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
             width: 56, height: 56, borderRadius: 16, margin: '0 auto 14px',
-            background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+            background: 'linear-gradient(135deg, #F97316, #FBBF24)',
             display: 'grid', placeItems: 'center',
             boxShadow: '0 8px 24px rgba(79,70,229,0.35)',
           }}>

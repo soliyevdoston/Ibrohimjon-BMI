@@ -168,7 +168,7 @@ function vehicleBadge(v?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK') {
 export default function HomePage() {
   const router = useRouter();
   const { init, accessToken } = useAuthStore();
-  const { add, count, items, updateQty } = useCartStore();
+  const { add, count, items, updateQty, subtotal } = useCartStore();
 
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
@@ -208,6 +208,13 @@ export default function HomePage() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
   const cartCount = hydrated ? rawCartCount : 0;
+
+  const [freeDeliveryAbove, setFreeDeliveryAbove] = useState(0);
+  useEffect(() => {
+    api<{ freeDeliveryAbove: number }>('/health/config')
+      .then((d) => setFreeDeliveryAbove(d.freeDeliveryAbove ?? 0))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => { init(); }, [init]);
 
@@ -450,6 +457,43 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Free delivery progress bar */}
+        {hydrated && freeDeliveryAbove > 0 && cartCount > 0 && (() => {
+          const sub = subtotal();
+          const isFree = sub >= freeDeliveryAbove;
+          const left = freeDeliveryAbove - sub;
+          const pct = Math.min(100, Math.round((sub / freeDeliveryAbove) * 100));
+          return (
+            <div style={{
+              margin: '0 0 12px',
+              padding: '10px 14px',
+              background: isFree ? 'linear-gradient(135deg,#d1fae5,#a7f3d0)' : '#f0fdf4',
+              border: `1.5px solid ${isFree ? '#10b981' : '#86efac'}`,
+              borderRadius: 12,
+            }}>
+              {isFree ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#065f46' }}>
+                  <span>🎉</span> Bepul yetkazib berish qo&apos;llanadi!
+                  <button onClick={() => router.push('/checkout')}
+                    style={{ marginLeft: 'auto', fontSize: 12, padding: '4px 12px', borderRadius: 999, background: '#10b981', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
+                    Checkout
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#166534', marginBottom: 6 }}>
+                    <span>Yana <strong>{String(Math.round(left)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} so'm</strong> — bepul yetkazib berish</span>
+                    <span style={{ fontWeight: 700 }}>{pct}%</span>
+                  </div>
+                  <div style={{ height: 5, background: '#bbf7d0', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: '#10b981', borderRadius: 999, width: `${pct}%`, transition: 'width 0.4s' }} />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Category pills */}
         <div className="category-pills" style={{ padding: '4px 0 12px' }}>
           {categories.map((cat) => (
@@ -592,7 +636,7 @@ export default function HomePage() {
                         gap: 6,
                         height: 36,
                         padding: '0 6px',
-                        background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                        background: 'linear-gradient(135deg, #7C3AED, #7C3AED)',
                         borderRadius: 10,
                         boxShadow: '0 4px 12px rgba(79,70,229,.3)',
                       }} onClick={(e) => e.stopPropagation()}>

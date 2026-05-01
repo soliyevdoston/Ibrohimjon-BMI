@@ -245,7 +245,7 @@ export default function DashboardPage() {
             position: 'fixed',
             top: 'max(20px, env(safe-area-inset-top))',
             right: 20,
-            background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+            background: 'linear-gradient(135deg, #F97316 0%, #FBBF24 100%)',
             color: '#fff',
             padding: '14px 18px',
             borderRadius: 14,

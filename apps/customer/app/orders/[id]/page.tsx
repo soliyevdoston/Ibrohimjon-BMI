@@ -327,7 +327,7 @@ export default function OrderTrackingPage() {
         {isActiveOrder && (
           <div style={{
             marginBottom: 16,
-            background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+            background: 'linear-gradient(135deg, #7C3AED 0%, #7C3AED 100%)',
             borderRadius: 18, padding: '16px 20px',
             display: 'flex', alignItems: 'center', gap: 0,
           }}>

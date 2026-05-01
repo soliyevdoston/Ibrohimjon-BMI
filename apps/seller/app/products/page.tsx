@@ -30,7 +30,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   home: 'Home', beauty: 'Beauty', fashion: 'Fashion', other: 'Other',
 };
 
-const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6', '#ec4899'];
+const COLORS = ['#F97316', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6', '#ec4899'];
 
 export default function ProductsPage() {
   const router = useRouter();

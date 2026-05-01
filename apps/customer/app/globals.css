@@ -4,19 +4,19 @@
 
 /* ---- CSS VARIABLES ---------------------------------------- */
 :root {
-  /* Brand */
-  --primary:        #4f46e5;
-  --primary-hover:  #4338ca;
-  --primary-light:  #ede9fe;
-  --primary-dark:   #3730a3;
+  /* Brand — Uzum Purple */
+  --primary:        #7C3AED;
+  --primary-hover:  #6D28D9;
+  --primary-light:  #EDE9FE;
+  --primary-dark:   #5B21B6;
 
   /* Neutrals */
-  --bg:             #f7f8fc;
+  --bg:             #F9F7FF;
   --surface:        #ffffff;
-  --surface-alt:    #f0f2f8;
-  --border:         #e4e7f0;
-  --border-dark:    #c9cfe0;
-  --text:           #0f172a;
+  --surface-alt:    #F3F0FF;
+  --border:         #E5E0F8;
+  --border-dark:    #C4B8F0;
+  --text:           #1A0A3C;
   --text-secondary: #64748b;
   --text-muted:     #94a3b8;
   --placeholder:    #b0b8cc;
@@ -211,8 +211,8 @@ p  { color: var(--text-secondary); }
   font-weight: 600;
   border-radius: var(--radius-md);
   border: none;
-  background: var(--text);
-  color: var(--surface);
+  background: var(--primary);
+  color: #ffffff;
   transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
   white-space: nowrap;
   position: relative;
@@ -221,8 +221,8 @@ p  { color: var(--text-secondary); }
 }
 
 .btn:hover:not(:disabled) {
-  background: #1e293b;
-  box-shadow: var(--shadow-md);
+  background: var(--primary-hover);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35);
   transform: translateY(-1px);
 }
 
@@ -240,12 +240,12 @@ p  { color: var(--text-secondary); }
 
 .btn-ghost {
   background: transparent;
-  color: var(--text);
-  border: 2px solid var(--border-dark);
+  color: var(--primary);
+  border: 2px solid var(--primary-light);
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: var(--surface-alt);
+  background: var(--primary-light);
   box-shadow: none;
 }
 
@@ -307,8 +307,8 @@ p  { color: var(--text-secondary); }
 .input::placeholder { color: var(--placeholder); }
 
 .input:focus {
-  border-color: var(--text);
-  box-shadow: 0 0 0 4px rgba(15,23,42,.08);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(124,58,237,.12);
 }
 
 .input-error { border-color: var(--danger) !important; }
@@ -380,15 +380,15 @@ p  { color: var(--text-secondary); }
 }
 
 .otp-input:focus {
-  border-color: var(--text);
-  box-shadow: 0 0 0 4px rgba(15,23,42,.08);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(124,58,237,.14);
   transform: scale(1.04);
 }
 
 .otp-input.filled {
-  border-color: var(--text);
-  background: var(--surface-alt);
-  color: var(--text);
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary-dark);
 }
 
 /* ---- CHIPS / BADGES --------------------------------------- */
@@ -500,10 +500,10 @@ p  { color: var(--text-secondary); }
 }
 
 .category-pill.active {
-  background: var(--text);
-  border-color: var(--text);
-  color: var(--surface);
-  box-shadow: var(--shadow-sm);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(124,58,237,.3);
 }
 
 /* ---- PRODUCT GRID ----------------------------------------- */
@@ -535,8 +535,8 @@ p  { color: var(--text-secondary); }
 
 .product-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.04);
-  border-color: rgba(79, 70, 229, 0.25);
+  box-shadow: 0 12px 28px rgba(124, 58, 237, 0.12), 0 2px 6px rgba(124, 58, 237, 0.06);
+  border-color: rgba(124, 58, 237, 0.30);
 }
 
 .product-card-image {
@@ -686,13 +686,13 @@ p  { color: var(--text-secondary); }
 .bottom-nav-item:hover { color: var(--text); }
 
 .bottom-nav-item.active {
-  color: var(--text);
+  color: var(--primary);
 }
 
 .bottom-nav-item.active svg path,
 .bottom-nav-item.active svg rect,
 .bottom-nav-item.active svg circle {
-  stroke: var(--text);
+  stroke: var(--primary);
 }
 
 .bottom-nav-icon {
@@ -913,15 +913,15 @@ p  { color: var(--text-secondary); }
 }
 
 .timeline-dot.done {
-  background: var(--text);
-  color: var(--surface);
+  background: var(--primary);
+  color: #ffffff;
 }
 
 .timeline-dot.active {
-  background: var(--text);
-  color: var(--surface);
+  background: var(--primary);
+  color: #ffffff;
   animation: pulse 2s ease-in-out infinite;
-  box-shadow: 0 0 0 6px rgba(15,23,42,.1);
+  box-shadow: 0 0 0 6px rgba(124,58,237,.15);
 }
 
 .timeline-dot.pending {
@@ -980,8 +980,8 @@ p  { color: var(--text-secondary); }
   transition: all var(--transition);
 }
 
-.stepper-circle.done { background: var(--text); color: var(--surface); }
-.stepper-circle.active { background: var(--text); color: var(--surface); box-shadow: 0 0 0 5px rgba(15,23,42,.12); }
+.stepper-circle.done { background: var(--primary); color: #ffffff; }
+.stepper-circle.active { background: var(--primary); color: #ffffff; box-shadow: 0 0 0 5px rgba(124,58,237,.18); }
 .stepper-circle.pending { background: var(--surface-alt); color: var(--text-muted); border: 2px solid var(--border); }
 
 .stepper-line {
@@ -991,7 +991,7 @@ p  { color: var(--text-secondary); }
   margin: 0 8px;
 }
 
-.stepper-line.done { background: var(--text); }
+.stepper-line.done { background: var(--primary); }
 
 /* ---- PAYMENT METHOD SELECTOR ----------------------------- */
 .payment-methods {
@@ -1225,8 +1225,8 @@ p  { color: var(--text-secondary); }
   min-width: 20px;
   height: 20px;
   border-radius: var(--radius-full);
-  background: var(--text);
-  color: var(--surface);
+  background: var(--primary);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 700;
   display: flex;
@@ -1313,7 +1313,7 @@ p  { color: var(--text-secondary); }
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 70% 30%, rgba(99, 102, 241, 0.25) 0%, transparent 60%);
+  background: radial-gradient(circle at 70% 30%, rgba(124, 58, 237, 0.30) 0%, transparent 60%);
   pointer-events: none;
 }
 

@@ -462,6 +462,8 @@ model PlatformConfig {
   bikeMaxKg           Decimal  @default(10) @db.Decimal(8, 2)
   carMaxKg            Decimal  @default(50) @db.Decimal(8, 2)
   vanMaxKg            Decimal  @default(300) @db.Decimal(8, 2)
+  // Free delivery threshold: 0 = disabled
+  freeDeliveryAbove   Decimal  @default(0) @db.Decimal(12, 2)
   updatedAt           DateTime @updatedAt
 }
 
