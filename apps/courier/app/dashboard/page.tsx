@@ -145,7 +145,7 @@ export default function CourierDashboard() {
     api<CourierProfile>('/courier/profile', { token })
       .then((profile) => {
         if (cancelled || !profile?.id) return;
-        const socket = io(`${process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:4000'}/realtime`, {
+        const socket = io(`${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com'}/realtime`, {
           auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
         });
         socketRef.current = socket;

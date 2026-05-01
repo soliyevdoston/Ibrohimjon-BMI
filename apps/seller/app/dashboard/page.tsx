@@ -120,7 +120,7 @@ export default function DashboardPage() {
     api<{ id: string }>('/seller/profile', { token })
       .then((profile) => {
         if (cancelled || !profile?.id) return;
-        socket = io(`${process.env.NEXT_PUBLIC_WS_URL ?? 'http://localhost:4000'}/realtime`, {
+        socket = io(`${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com'}/realtime`, {
           auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
         });
         socket.on('connect', () => {

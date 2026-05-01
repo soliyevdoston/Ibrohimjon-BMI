@@ -1,5 +1,12 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
+// Production deploy first — falls back to localhost only when explicitly set.
+// This way the frontend works on any host without env-var configuration.
+const PROD_API = 'https://ibrohimjon-bmi.onrender.com/api/v1';
+const BASE = process.env.NEXT_PUBLIC_API_URL || PROD_API;
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? '';
+
+export const API_BASE_URL = BASE;
+export const WS_BASE_URL =
+  process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com';
 
 export async function api<T>(
   path: string,

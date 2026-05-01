@@ -60,7 +60,7 @@ export async function sendLocationToBackend(
   token: string
 ): Promise<void> {
   try {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1'}/deliveries/${deliveryId}/location`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://ibrohimjon-bmi.onrender.com/api/v1'}/deliveries/${deliveryId}/location`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
       body: JSON.stringify({ lat, lng }),
