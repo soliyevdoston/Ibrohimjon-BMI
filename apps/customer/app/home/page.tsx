@@ -16,20 +16,32 @@ type Product = {
   stock: number;
   imageUrl?: string;
   categoryId?: string;
+  categorySlug?: string;
   seller?: { id: string; name: string };
   sellerId?: string;
+  weightKg?: number;
+  requiresVehicle?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
+  isFragile?: boolean;
+  isOversized?: boolean;
 };
 
 type Category = { id: string; slug: string; name: string; icon: string };
 
 const CATEGORY_LABELS: Record<string, { name: string; icon: string }> = {
-  bakery:      { name: 'Tortlar',          icon: '🎂' },
-  drinks:      { name: 'Ichimliklar',      icon: '🥤' },
-  sweets:      { name: 'Shirinliklar',     icon: '🍫' },
-  pharmacy:    { name: 'Dorixona',         icon: '💊' },
-  electronics: { name: 'Texnika',          icon: '📱' },
-  home:        { name: "Uy-ro'zg'or",      icon: '🏠' },
-  beauty:      { name: "Go'zallik",        icon: '💄' },
+  // Logistics-first
+  mebel:        { name: 'Mebel',            icon: '🛋️' },
+  appliances:   { name: 'Texnika',          icon: '🔌' },
+  construction: { name: 'Qurilish',         icon: '🧱' },
+  sport:        { name: 'Sport',            icon: '🚴' },
+  garden:       { name: "Bog' va dacha",    icon: '🌳' },
+  // Existing
+  electronics:  { name: 'Smart',            icon: '📱' },
+  home:         { name: "Uy-ro'zg'or",      icon: '🏠' },
+  bakery:       { name: 'Tortlar',          icon: '🎂' },
+  drinks:       { name: 'Ichimliklar',      icon: '🥤' },
+  sweets:       { name: 'Shirinliklar',     icon: '🍫' },
+  pharmacy:     { name: 'Dorixona',         icon: '💊' },
+  beauty:       { name: "Go'zallik",        icon: '💄' },
 };
 
 const ALL_CATEGORY: Category = { id: '', slug: '', name: 'Barchasi', icon: '◻' };
@@ -133,11 +145,24 @@ function LockIcon() {
 }
 
 function getCategoryLabel(categoryId?: string): string {
+  // Note: this is keyed by category SLUG (passed in from caller).
   const map: Record<string, string> = {
-    bakery: '🎂', drinks: '🥤', sweets: '🍫', pharmacy: '💊',
-    electronics: '📱', home: '🏠', beauty: '💄',
+    mebel: '🛋️', appliances: '🔌', construction: '🧱',
+    sport: '🚴', garden: '🌳', electronics: '📱', home: '🏠',
+    bakery: '🎂', drinks: '🥤', sweets: '🍫',
+    pharmacy: '💊', beauty: '💄',
   };
   return map[categoryId ?? ''] ?? '📦';
+}
+
+function vehicleBadge(v?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK') {
+  if (!v || v === 'BIKE') return null;
+  const m = {
+    CAR:   { icon: '🚗', label: 'Avto' },
+    VAN:   { icon: '🚐', label: 'Furgon' },
+    TRUCK: { icon: '🚛', label: 'Yuk mashinasi' },
+  } as const;
+  return m[v];
 }
 
 export default function HomePage() {
@@ -215,6 +240,11 @@ export default function HomePage() {
         imageUrl?: string; categoryId?: string;
         sellerId?: string;
         seller?: { id?: string; name?: string; brandName?: string };
+        weightKg?: number | string;
+        requiresVehicle?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
+        isFragile?: boolean;
+        isOversized?: boolean;
+        category?: { slug?: string };
       };
       const data = await api<RawProduct[] | { items?: RawProduct[]; data?: RawProduct[] }>(
         `/products?${params.toString()}`,
@@ -233,10 +263,15 @@ export default function HomePage() {
         stock: p.stock,
         imageUrl: p.imageUrl,
         categoryId: p.categoryId,
+        categorySlug: p.category?.slug,
         sellerId: p.sellerId,
         seller: p.seller
           ? { id: p.seller.id ?? '', name: p.seller.name ?? p.seller.brandName ?? '' }
           : undefined,
+        weightKg: typeof p.weightKg === 'string' ? Number(p.weightKg) : p.weightKg,
+        requiresVehicle: p.requiresVehicle ?? 'BIKE',
+        isFragile: p.isFragile,
+        isOversized: p.isOversized,
       }));
       setProducts(list);
     } catch {
@@ -261,6 +296,8 @@ export default function HomePage() {
       quantity: qty,
       sellerId: product.seller?.id ?? product.sellerId ?? '',
       imageUrl: product.imageUrl,
+      weightKg: product.weightKg,
+      requiresVehicle: product.requiresVehicle,
     }, qty);
     setTimeout(() => setAddingId(null), 600);
   };
@@ -421,7 +458,7 @@ export default function HomePage() {
               className={`category-pill${activeCategory === cat.id ? ' active' : ''}`}
               onClick={() => setActiveCategory(cat.id)}
             >
-              <span style={{ marginRight: 6 }}>{cat.icon}</span>
+              <span style={{ fontSize: 15 }}>{cat.icon}</span>
               {cat.name}
             </button>
           ))}
@@ -461,6 +498,24 @@ export default function HomePage() {
                   <div className="product-card-image">
                     {outOfStock && <span className="product-card-stock-badge">Tugagan</span>}
 
+                    {(() => {
+                      const v = vehicleBadge(product.requiresVehicle);
+                      if (!v) return null;
+                      return (
+                        <span style={{
+                          position: 'absolute', top: 8, left: 8, zIndex: 1,
+                          background: 'rgba(17, 24, 39, 0.92)', color: '#fff',
+                          fontSize: 10, fontWeight: 700,
+                          padding: '4px 8px', borderRadius: 8,
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          letterSpacing: '0.3px',
+                        }}>
+                          <span style={{ fontSize: 12 }}>{v.icon}</span>
+                          {v.label}
+                        </span>
+                      );
+                    })()}
+
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleFav(product.id); }}
                       aria-label={isFav ? "Sevimlilardan o'chirish" : 'Sevimlilarga qo\'shish'}
@@ -495,13 +550,13 @@ export default function HomePage() {
                             const span = document.createElement('span');
                             span.className = 'fallback-emoji';
                             span.style.fontSize = '40px';
-                            span.textContent = getCategoryLabel(product.categoryId);
+                            span.textContent = getCategoryLabel(product.categorySlug);
                             parent.appendChild(span);
                           }
                         }}
                       />
                     ) : (
-                      <span style={{ fontSize: 40 }}>{getCategoryLabel(product.categoryId)}</span>
+                      <span style={{ fontSize: 40 }}>{getCategoryLabel(product.categorySlug)}</span>
                     )}
                   </div>
 
@@ -509,6 +564,16 @@ export default function HomePage() {
                     <div className="product-card-title">{product.title}</div>
                     {product.seller?.name && (
                       <div className="product-card-seller">{product.seller.name}</div>
+                    )}
+                    {(product.weightKg ?? 0) >= 5 && (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        fontSize: 10, fontWeight: 600, color: 'var(--text-muted)',
+                        marginTop: 4,
+                      }}>
+                        ⚖ {product.weightKg} kg
+                        {product.isFragile && <span style={{ color: '#ea580c' }}>· mo&apos;rt</span>}
+                      </div>
                     )}
                     <div style={{ marginTop: 'auto', paddingTop: 4 }}>
                       <div className="product-card-price">{money(product.price)} so&apos;m</div>

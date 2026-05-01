@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { DeliveryStatus, OrderStatus } from '@prisma/client';
+import { DeliveryStatus, OrderStatus, VehicleType } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 import { haversineKm } from 'src/common/utils/haversine';
 import { RealtimeService } from '../realtime/realtime.service';
@@ -69,10 +69,21 @@ export class OrdersService {
         unitPrice: Number(product.price),
         totalPrice: Number(product.price) * item.quantity,
         titleSnapshot: product.title,
+        unitWeightKg: Number(product.weightKg),
+        requiresVehicle: product.requiresVehicle,
       };
     });
 
     const subtotal = orderItems.reduce((acc, i) => acc + i.totalPrice, 0);
+    const totalWeightKg = orderItems.reduce(
+      (acc, i) => acc + i.unitWeightKg * i.quantity,
+      0,
+    );
+    const vehicleHint = orderItems.reduce<VehicleType>((acc, i) => {
+      const rank = { BIKE: 0, CAR: 1, VAN: 2, TRUCK: 3 } as const;
+      return rank[i.requiresVehicle] > rank[acc] ? i.requiresVehicle : acc;
+    }, VehicleType.BIKE);
+
     const distanceKm = haversineKm(
       Number(seller.addressLat ?? dto.deliveryLat),
       Number(seller.addressLng ?? dto.deliveryLng),
@@ -83,6 +94,8 @@ export class OrdersService {
     const breakdown = await this.pricingService.computeBreakdown({
       subtotal,
       distanceKm,
+      totalWeightKg,
+      vehicleHint,
       sellerCommissionRate: Number(seller.commissionRate),
     });
 
@@ -117,6 +130,8 @@ export class OrdersService {
           sellerPayoutAmount: breakdown.sellerPayoutAmount,
           platformRevenueAmount: breakdown.platformRevenueAmount,
           commissionRateSnapshot: breakdown.commissionRateSnapshot,
+          requiredVehicle: breakdown.requiredVehicle,
+          totalWeightKg: breakdown.totalWeightKg,
           paymentMethod: dto.paymentMethod,
           customerCardId: dto.paymentMethod === 'card' ? dto.customerCardId ?? null : null,
           note: dto.note,

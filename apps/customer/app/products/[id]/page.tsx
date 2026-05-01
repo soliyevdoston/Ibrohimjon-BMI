@@ -18,6 +18,11 @@ type Product = {
   sellerId?: string;
   seller?: { id?: string; name?: string; brandName?: string };
   category?: { id: string; name: string; slug: string };
+  weightKg?: number | string;
+  dimensionsCm?: string;
+  requiresVehicle?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
+  isFragile?: boolean;
+  isOversized?: boolean;
 };
 
 type RawProductsRes = Product[] | { items?: Product[]; data?: Product[] };
@@ -111,6 +116,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       quantity: qty,
       sellerId: product.seller?.id ?? product.sellerId ?? '',
       imageUrl: product.imageUrl,
+      weightKg: product.weightKg !== undefined ? Number(product.weightKg) : undefined,
+      requiresVehicle: product.requiresVehicle,
     }, qty);
     setTimeout(() => setAdding(false), 700);
   };

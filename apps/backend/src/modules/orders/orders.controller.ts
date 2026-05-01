@@ -23,10 +23,14 @@ export class OrdersController {
   async quote(
     @Query('subtotal') subtotal: string,
     @Query('distanceKm') distanceKm: string,
+    @Query('weightKg') weightKg?: string,
+    @Query('vehicleHint') vehicleHint?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK',
   ) {
     return this.pricingService.computeBreakdown({
       subtotal: Number(subtotal) || 0,
       distanceKm: Number(distanceKm) || 0,
+      totalWeightKg: weightKg !== undefined ? Number(weightKg) : 0,
+      vehicleHint: vehicleHint,
     });
   }
 

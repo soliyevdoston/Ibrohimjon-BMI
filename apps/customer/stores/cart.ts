@@ -9,6 +9,8 @@ export type CartItem = {
   quantity: number;
   sellerId: string;
   imageUrl?: string;
+  weightKg?: number;
+  requiresVehicle?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
 };
 
 type CartState = {

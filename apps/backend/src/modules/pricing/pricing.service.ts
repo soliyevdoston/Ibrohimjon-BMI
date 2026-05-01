@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PlatformConfig, Prisma } from '@prisma/client';
+import { PlatformConfig, Prisma, VehicleType } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
 
 export interface PricingBreakdown {
@@ -13,13 +13,25 @@ export interface PricingBreakdown {
   platformRevenueAmount: number;
   commissionRateSnapshot: number;
   distanceKm: number;
+  totalWeightKg: number;
+  requiredVehicle: VehicleType;
 }
 
 export interface ComputeBreakdownInput {
   subtotal: number;
   distanceKm: number;
+  totalWeightKg?: number;
+  /** If any line item explicitly demands a higher-tier vehicle. */
+  vehicleHint?: VehicleType;
   sellerCommissionRate?: number;
 }
+
+const VEHICLE_RANK: Record<VehicleType, number> = {
+  BIKE: 0,
+  CAR: 1,
+  VAN: 2,
+  TRUCK: 3,
+};
 
 @Injectable()
 export class PricingService {
@@ -44,17 +56,30 @@ export class PricingService {
     return this.computeBreakdownWithConfig(input, cfg);
   }
 
+  /** Pick the smallest vehicle that can carry the given weight. */
+  pickVehicle(weightKg: number, cfg: PlatformConfig, hint?: VehicleType): VehicleType {
+    const w = Math.max(0, weightKg);
+    let byWeight: VehicleType;
+    if (w <= num(cfg.bikeMaxKg)) byWeight = VehicleType.BIKE;
+    else if (w <= num(cfg.carMaxKg)) byWeight = VehicleType.CAR;
+    else if (w <= num(cfg.vanMaxKg)) byWeight = VehicleType.VAN;
+    else byWeight = VehicleType.TRUCK;
+
+    if (!hint) return byWeight;
+    return VEHICLE_RANK[hint] >= VEHICLE_RANK[byWeight] ? hint : byWeight;
+  }
+
   computeBreakdownWithConfig(
     input: ComputeBreakdownInput,
     cfg: PlatformConfig,
   ): PricingBreakdown {
     const subtotal = round(input.subtotal);
     const distanceKm = Math.max(0, Number(input.distanceKm) || 0);
+    const totalWeightKg = Math.max(0, Number(input.totalWeightKg ?? 0));
 
-    const deliveryBase = num(cfg.deliveryBaseFee);
-    const deliveryPerKm = num(cfg.deliveryPerKmFee);
-    const courierBase = num(cfg.courierBaseFee);
-    const courierPerKm = num(cfg.courierPerKmFee);
+    const requiredVehicle = this.pickVehicle(totalWeightKg, cfg, input.vehicleHint);
+    const tier = this.tierRates(requiredVehicle, cfg);
+
     const platformCommissionRate = num(cfg.commissionRate);
     const serviceFeeRate = num(cfg.serviceFeeRate);
 
@@ -63,8 +88,8 @@ export class PricingService {
         ? input.sellerCommissionRate
         : platformCommissionRate;
 
-    const deliveryFee = round(deliveryBase + distanceKm * deliveryPerKm);
-    const courierFee = round(courierBase + distanceKm * courierPerKm);
+    const deliveryFee = round(tier.deliveryBase + distanceKm * tier.deliveryPerKm);
+    const courierFee = round(tier.courierBase + distanceKm * tier.courierPerKm);
     const serviceFee = round(subtotal * serviceFeeRate);
     const total = subtotal + deliveryFee + serviceFee;
 
@@ -84,7 +109,43 @@ export class PricingService {
       platformRevenueAmount: platformRevenue,
       commissionRateSnapshot: commissionRate,
       distanceKm,
+      totalWeightKg,
+      requiredVehicle,
     };
+  }
+
+  private tierRates(v: VehicleType, cfg: PlatformConfig) {
+    switch (v) {
+      case VehicleType.TRUCK:
+        return {
+          deliveryBase: num(cfg.truckBaseFee),
+          deliveryPerKm: num(cfg.truckPerKmFee),
+          courierBase: num(cfg.truckCourierBase),
+          courierPerKm: num(cfg.truckCourierPerKm),
+        };
+      case VehicleType.VAN:
+        return {
+          deliveryBase: num(cfg.vanBaseFee),
+          deliveryPerKm: num(cfg.vanPerKmFee),
+          courierBase: num(cfg.vanCourierBase),
+          courierPerKm: num(cfg.vanCourierPerKm),
+        };
+      case VehicleType.CAR:
+        return {
+          deliveryBase: num(cfg.carBaseFee),
+          deliveryPerKm: num(cfg.carPerKmFee),
+          courierBase: num(cfg.carCourierBase),
+          courierPerKm: num(cfg.carCourierPerKm),
+        };
+      case VehicleType.BIKE:
+      default:
+        return {
+          deliveryBase: num(cfg.deliveryBaseFee),
+          deliveryPerKm: num(cfg.deliveryPerKmFee),
+          courierBase: num(cfg.courierBaseFee),
+          courierPerKm: num(cfg.courierPerKmFee),
+        };
+    }
   }
 }
 

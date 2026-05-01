@@ -57,18 +57,40 @@ function StepIndicator({ step }: { step: Step }) {
 
 const STEP_TITLES: Record<Step, string> = { 1: 'Manzil', 2: "To'lov", 3: 'Tasdiqlash' };
 
-// These constants mirror the backend's PlatformConfig defaults so the customer
-// preview matches what the backend will charge. Updated centrally there.
-const DELIVERY_BASE_FEE = 6000;
-const DELIVERY_PER_KM_FEE = 1400;
+// These rates mirror the backend's PlatformConfig defaults so the customer
+// preview lines up with what the backend will charge. Tiered by total order
+// weight: BIKE → CAR → VAN → TRUCK (mebel/qurilish).
+type Vehicle = 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
 const SERVICE_FEE_RATE = 0.02;
 
-function calcDeliveryFee(lat: number, lng: number): number {
+const TIER_RATES: Record<Vehicle, { base: number; perKm: number; maxKg: number; label: string; icon: string }> = {
+  BIKE:  { base: 6000,  perKm: 1400, maxKg: 10,        label: 'Velosipid',     icon: '🚲' },
+  CAR:   { base: 15000, perKm: 2000, maxKg: 50,        label: 'Avto',          icon: '🚗' },
+  VAN:   { base: 35000, perKm: 3500, maxKg: 300,       label: 'Furgon',        icon: '🚐' },
+  TRUCK: { base: 70000, perKm: 5500, maxKg: Infinity,  label: 'Yuk mashinasi', icon: '🚛' },
+};
+
+const VEHICLE_RANK: Record<Vehicle, number> = { BIKE: 0, CAR: 1, VAN: 2, TRUCK: 3 };
+
+function pickVehicle(weightKg: number, hint: Vehicle = 'BIKE'): Vehicle {
+  let byWeight: Vehicle = 'BIKE';
+  if (weightKg > TIER_RATES.VAN.maxKg) byWeight = 'TRUCK';
+  else if (weightKg > TIER_RATES.CAR.maxKg) byWeight = 'VAN';
+  else if (weightKg > TIER_RATES.BIKE.maxKg) byWeight = 'CAR';
+  return VEHICLE_RANK[hint] >= VEHICLE_RANK[byWeight] ? hint : byWeight;
+}
+
+function calcDistanceKm(lat: number, lng: number): number {
   const centerLat = 41.2995, centerLng = 69.2401;
   const kmLat = Math.abs(lat - centerLat) * 111;
   const kmLng = Math.abs(lng - centerLng) * 85;
-  const km = Math.sqrt(kmLat * kmLat + kmLng * kmLng);
-  return Math.round(DELIVERY_BASE_FEE + km * DELIVERY_PER_KM_FEE);
+  return Math.sqrt(kmLat * kmLat + kmLng * kmLng);
+}
+
+function calcDeliveryFee(lat: number, lng: number, vehicle: Vehicle): number {
+  const km = calcDistanceKm(lat, lng);
+  const t = TIER_RATES[vehicle];
+  return Math.round(t.base + km * t.perKm);
 }
 
 function calcServiceFee(subtotal: number): number {
@@ -139,7 +161,23 @@ export default function CheckoutPage() {
     setLoadingAddress(false);
   }, []);
 
-  const deliveryFee = pickup ? 0 : (selected ? calcDeliveryFee(selected[0], selected[1]) : 8000);
+  // Total weight + vehicle hint from cart items
+  const totalWeightKg = items.reduce(
+    (acc, i) => acc + (i.weightKg ?? 1) * i.quantity,
+    0,
+  );
+  const vehicleHint = items.reduce<Vehicle>((acc, i) => {
+    const v = (i.requiresVehicle ?? 'BIKE') as Vehicle;
+    return VEHICLE_RANK[v] > VEHICLE_RANK[acc] ? v : acc;
+  }, 'BIKE');
+  const requiredVehicle = pickVehicle(totalWeightKg, vehicleHint);
+  const tier = TIER_RATES[requiredVehicle];
+
+  const deliveryFee = pickup
+    ? 0
+    : selected
+      ? calcDeliveryFee(selected[0], selected[1], requiredVehicle)
+      : tier.base + Math.round(2 * tier.perKm); // ~2km placeholder
   const sub = subtotal();
   const serviceFee = calcServiceFee(sub);
   const total = sub + deliveryFee + serviceFee;
@@ -331,13 +369,38 @@ export default function CheckoutPage() {
             {/* Price breakdown */}
             <div className="card">
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>Narx tafsilotlari</h3>
+              {requiredVehicle !== 'BIKE' && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 12px', marginBottom: 10,
+                  background: 'linear-gradient(135deg, #f1f5f9, #e0e7ff)',
+                  borderRadius: 12, border: '1px solid #c7d2fe',
+                }}>
+                  <span style={{ fontSize: 22 }}>{tier.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                      {tier.label} kerak
+                    </div>
+                    <div style={{ fontSize: 11, color: '#475569' }}>
+                      Buyurtma og&apos;irligi ~{Math.round(totalWeightKg)} kg · {requiredVehicle === 'TRUCK' ? 'yuk mashinasi tariflari amal qiladi' : 'kattaroq transport tariflari'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="price-row">
                 <span className="price-row-label">Mahsulotlar</span>
                 <span className="price-row-value">{money(sub)} so&apos;m</span>
               </div>
               <div className="price-row">
                 <span className="price-row-label">
-                  Yetkazib berish {pickup && <span style={{ color: '#10b981', fontSize: 11, marginLeft: 6 }}>(olib ketish)</span>}
+                  Yetkazib berish
+                  {pickup && <span style={{ color: '#10b981', fontSize: 11, marginLeft: 6 }}>(olib ketish)</span>}
+                  {!pickup && requiredVehicle !== 'BIKE' && (
+                    <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 6 }}>
+                      ({tier.icon} {tier.label})
+                    </span>
+                  )}
                 </span>
                 <span className="price-row-value">{deliveryFee === 0 ? 'Bepul' : `${money(deliveryFee)} so'm`}</span>
               </div>
