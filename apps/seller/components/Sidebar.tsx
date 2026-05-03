@@ -8,12 +8,12 @@ import { IconChart, IconBox, IconCart, IconTrendUp, IconCard, IconSettings } fro
 type IconCmp = React.ComponentType<{ size?: number; stroke?: number }>;
 
 const NAV: { href: string; label: string; Icon: IconCmp; badge?: boolean }[] = [
-  { href: '/dashboard', label: 'Dashboard', Icon: IconChart },
-  { href: '/products', label: 'Products', Icon: IconBox },
-  { href: '/orders', label: 'Orders', Icon: IconCart, badge: true },
+  { href: '/dashboard', label: 'Boshqaruv', Icon: IconChart },
+  { href: '/products', label: 'Mahsulotlar', Icon: IconBox },
+  { href: '/orders', label: 'Buyurtmalar', Icon: IconCart, badge: true },
   { href: '/analytics', label: 'Tahlil', Icon: IconTrendUp },
   { href: '/payouts', label: "To'lovlar", Icon: IconCard },
-  { href: '/settings', label: 'Settings', Icon: IconSettings },
+  { href: '/settings', label: 'Sozlamalar', Icon: IconSettings },
 ];
 
 export function SellerSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
@@ -36,11 +36,11 @@ export function SellerSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
         <div className="sidebar-brand-mark">L</div>
         <div>
           <div className="sidebar-brand-name">Lochin</div>
-          <div className="sidebar-brand-role">Seller Panel</div>
+          <div className="sidebar-brand-role">Sotuvchi Paneli</div>
         </div>
       </div>
 
-      <div className="sidebar-group-label">Navigation</div>
+      <div className="sidebar-group-label">Navigatsiya</div>
 
       {NAV.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -60,13 +60,13 @@ export function SellerSidebar({ pendingCount = 0 }: { pendingCount?: number }) {
         <div className="avatar">{initials(name ?? 'Seller')}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <strong style={{ fontSize: 13, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {name || 'My Store'}
+            {name || "Do'konim"}
           </strong>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Seller</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Sotuvchi</span>
         </div>
         <button
           onClick={handleLogout}
-          title="Logout"
+          title="Chiqish"
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
             color: 'var(--text-muted)', fontSize: 16, padding: 4,

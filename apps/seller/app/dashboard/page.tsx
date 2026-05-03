@@ -47,13 +47,7 @@ function AnimatedKpi({ label, value, formatted }: { label: string; value: number
 type Stats = { todayOrders: number; todayRevenue: number; activeOrders: number; totalProducts: number };
 type Order = { id: string; code: string; customerName: string; status: string; totalAmount: number; createdAt: string };
 
-const DEMO_STATS: Stats = { todayOrders: 14, todayRevenue: 1_850_000, activeOrders: 3, totalProducts: 42 };
-const DEMO_ORDERS: Order[] = [
-  { id: '1', code: 'ORD-001', customerName: 'Dilnoza K.', status: 'PENDING', totalAmount: 185000, createdAt: new Date(Date.now() - 5 * 60000).toISOString() },
-  { id: '2', code: 'ORD-002', customerName: 'Jamshid T.', status: 'PREPARING', totalAmount: 340000, createdAt: new Date(Date.now() - 22 * 60000).toISOString() },
-  { id: '3', code: 'ORD-003', customerName: 'Zulfiya M.', status: 'ACCEPTED', totalAmount: 95000, createdAt: new Date(Date.now() - 45 * 60000).toISOString() },
-  { id: '4', code: 'ORD-004', customerName: 'Bobur N.', status: 'DELIVERED', totalAmount: 220000, createdAt: new Date(Date.now() - 2 * 3600000).toISOString() },
-];
+const EMPTY_STATS: Stats = { todayOrders: 0, todayRevenue: 0, activeOrders: 0, totalProducts: 0 };
 
 const STATUS_COLOR: Record<string, string> = {
   PENDING: 'gray', ACCEPTED: 'gray', PREPARING: 'gray',
@@ -62,9 +56,9 @@ const STATUS_COLOR: Record<string, string> = {
 
 function timeAgo(iso: string) {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 60) return `${diff}s oldin`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}d oldin`;
+  return `${Math.floor(diff / 3600)}s oldin`;
 }
 
 const REVENUE_DATA = [120, 185, 210, 95, 340, 280, 185].map((v, i) => ({
@@ -88,11 +82,13 @@ const VEHICLE_ICON: Record<NewOrderToast['requiredVehicle'], string> = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [stats, setStats] = useState<Stats>(DEMO_STATS);
-  const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS);
+  const [stats, setStats] = useState<Stats>(EMPTY_STATS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<NewOrderToast | null>(null);
 
   const load = useCallback(async (token: string) => {
+    setLoading(true);
     try {
       const [s, o] = await Promise.all([
         api<Partial<Stats>>('/orders/seller/dashboard', { token }),
@@ -102,11 +98,13 @@ export default function DashboardPage() {
         todayOrders: s.todayOrders ?? 0,
         todayRevenue: s.todayRevenue ?? 0,
         activeOrders: s.activeOrders ?? 0,
-        totalProducts: s.totalProducts ?? DEMO_STATS.totalProducts,
+        totalProducts: s.totalProducts ?? 0,
       });
       const orderList = Array.isArray(o) ? o : (o.items ?? []);
       setOrders(orderList.slice(0, 5));
-    } catch { /* keep previous data */ }
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -147,7 +145,7 @@ export default function DashboardPage() {
     <div className="app-shell">
       <SellerSidebar pendingCount={stats.activeOrders} />
       <div className="app-main">
-        <SellerTopbar title="Dashboard" subtitle="Lochin · Seller" />
+        <SellerTopbar title="Boshqaruv paneli" subtitle="Lochin · Sotuvchi" />
         <main className="app-content fade-in">
           <div className="stack">
             {/* KPI row — animated counters */}
@@ -166,7 +164,7 @@ export default function DashboardPage() {
               {/* Revenue bar chart */}
               <div className="card">
                 <div className="card-h">
-                  <h3>Revenue this week</h3>
+                  <h3>Bu haftadagi daromad</h3>
                   <span className="muted text-sm">('000 so'm)</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 120 }}>
@@ -188,16 +186,16 @@ export default function DashboardPage() {
 
               {/* Quick actions */}
               <div className="card">
-                <div className="card-h"><h3>Quick actions</h3></div>
+                <div className="card-h"><h3>Tezkor amallar</h3></div>
                 <div className="stack-sm">
                   <a href="/products" className="btn full" style={{ justifyContent: 'flex-start', gap: 10 }}>
-                    Manage Products
+                    Mahsulotlarni boshqarish
                   </a>
                   <a href="/orders" className="btn ghost full" style={{ justifyContent: 'flex-start', gap: 10 }}>
-                    View All Orders
+                    Barcha buyurtmalar
                   </a>
                   <a href="/orders?filter=pending" className="btn ghost full" style={{ justifyContent: 'flex-start', gap: 10 }}>
-                    Pending Orders ({stats.activeOrders})
+                    Faol buyurtmalar ({stats.activeOrders})
                   </a>
                 </div>
               </div>
@@ -206,18 +204,18 @@ export default function DashboardPage() {
             {/* Recent orders */}
             <div className="card">
               <div className="card-h">
-                <h3>Recent orders</h3>
-                <a href="/orders" className="btn ghost sm">View all →</a>
+                <h3>So'nggi buyurtmalar</h3>
+                <a href="/orders" className="btn ghost sm">Barchasi →</a>
               </div>
               <div className="table-wrap">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Order</th>
-                      <th>Customer</th>
-                      <th>Status</th>
-                      <th>Amount</th>
-                      <th>Time</th>
+                      <th>Buyurtma</th>
+                      <th>Mijoz</th>
+                      <th>Holat</th>
+                      <th>Summa</th>
+                      <th>Vaqt</th>
                     </tr>
                   </thead>
                   <tbody>

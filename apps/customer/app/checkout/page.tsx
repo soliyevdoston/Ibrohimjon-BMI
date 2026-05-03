@@ -81,7 +81,7 @@ function pickVehicle(weightKg: number, hint: Vehicle = 'BIKE'): Vehicle {
 }
 
 function calcDistanceKm(lat: number, lng: number): number {
-  const centerLat = 41.2995, centerLng = 69.2401;
+  const centerLat = 40.3834, centerLng = 71.7833;
   const kmLat = Math.abs(lat - centerLat) * 111;
   const kmLng = Math.abs(lng - centerLng) * 85;
   return Math.sqrt(kmLat * kmLat + kmLng * kmLng);
@@ -219,7 +219,7 @@ export default function CheckoutPage() {
         body: {
           sellerId,
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-          deliveryAddressText: address || 'Toshkent',
+          deliveryAddressText: address || "Farg'ona",
           deliveryLat: selected[0],
           deliveryLng: selected[1],
           paymentMethod,

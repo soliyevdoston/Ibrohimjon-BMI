@@ -17,33 +17,12 @@ type AvailableOrder = {
 };
 type DeliveryStatus = 'accepted' | 'picked_up' | 'on_the_way' | 'delivered';
 
-/* ── Demo data ── */
-const DEMO_ORDERS: AvailableOrder[] = [
-  {
-    id: 'd1', code: 'ORD-128', sellerName: 'Toshkent Nonvoyxonasi',
-    sellerAddress: 'Yunusobod, Toshkent', customerAddress: 'Chilonzor, Toshkent',
-    distanceKm: 3.2, estimatedMinutes: 18, earnings: 12000,
-    sellerPos: [41.310, 69.281], customerPos: [41.285, 69.220],
-  },
-  {
-    id: 'd2', code: 'ORD-129', sellerName: 'Samarqand Go\'shti',
-    sellerAddress: 'Mirzo Ulugbek, Toshkent', customerAddress: 'Shayxontohur, Toshkent',
-    distanceKm: 5.1, estimatedMinutes: 27, earnings: 18000,
-    sellerPos: [41.320, 69.310], customerPos: [41.300, 69.255],
-  },
-  {
-    id: 'd3', code: 'ORD-130', sellerName: 'Farida\'s Kitchen',
-    sellerAddress: 'Olmazor, Toshkent', customerAddress: 'Sergeli, Toshkent',
-    distanceKm: 6.8, estimatedMinutes: 35, earnings: 22000,
-    sellerPos: [41.340, 69.240], customerPos: [41.260, 69.215],
-  },
-];
 
 const STATUS_STEPS: { status: DeliveryStatus; label: string; nextLabel: string; nextStatus: DeliveryStatus | null }[] = [
-  { status: 'accepted',    label: 'Going to pickup',  nextLabel: 'Picked up',     nextStatus: 'picked_up' },
-  { status: 'picked_up',  label: 'Order picked up',   nextLabel: 'Start delivery', nextStatus: 'on_the_way' },
-  { status: 'on_the_way', label: 'On the way',         nextLabel: 'Delivered ✓',   nextStatus: 'delivered' },
-  { status: 'delivered',  label: 'Delivered!',          nextLabel: '',              nextStatus: null },
+  { status: 'accepted',    label: 'Olib ketishga ketmoqda', nextLabel: 'Olib ketildi',       nextStatus: 'picked_up' },
+  { status: 'picked_up',  label: 'Buyurtma olib ketildi',  nextLabel: 'Yetkazishni boshlash', nextStatus: 'on_the_way' },
+  { status: 'on_the_way', label: "Yo'lda",                  nextLabel: 'Yetkazildi ✓',        nextStatus: 'delivered' },
+  { status: 'delivered',  label: 'Yetkazildi!',              nextLabel: '',                    nextStatus: null },
 ];
 
 
@@ -77,10 +56,10 @@ export default function CourierDashboard() {
   const router = useRouter();
   // Online status — driven by browser network connectivity (navigator.onLine)
   const [isOnline, setIsOnline] = useState(true);
-  const [orders, setOrders] = useState<AvailableOrder[]>(DEMO_ORDERS);
+  const [orders, setOrders] = useState<AvailableOrder[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<AvailableOrder | null>(null);
   const [deliveryStatus, setDeliveryStatus] = useState<DeliveryStatus>('accepted');
-  const [courierPos, setCourierPos] = useState<[number, number]>([41.2995, 69.2401]);
+  const [courierPos, setCourierPos] = useState<[number, number]>([40.3834, 71.7833]);
   const [showPanel, setShowPanel] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('nearest');
@@ -132,7 +111,7 @@ export default function CourierDashboard() {
           customerPos: [cLat, cLng],
         };
       });
-      setOrders(mapped.length ? mapped : DEMO_ORDERS);
+      setOrders(mapped);
     } catch {/* keep current */}
   }, [token]);
 
@@ -473,12 +452,12 @@ export default function CourierDashboard() {
                     display: 'flex', gap: 16,
                   }}>
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Distance</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Masofa</div>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{order.distanceKm} km</div>
                     </div>
                     <div style={{ width: 1, background: 'var(--border)' }} />
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Est. time</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Taxm. vaqt</div>
                       <div style={{ fontWeight: 700, fontSize: 14 }}>{order.estimatedMinutes} min</div>
                     </div>
                   </div>
@@ -539,7 +518,7 @@ export default function CourierDashboard() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 14 }}>{activeDelivery.code}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {currentStep?.label ?? 'Delivery'}
+              {currentStep?.label ?? 'Yetkazib berish'}
             </div>
           </div>
           <span className="chip gray">
@@ -646,7 +625,7 @@ export default function CourierDashboard() {
                 style={{ fontSize: 13 }}
                 onClick={() => setShowPanel(false)}
               >
-                Hide panel (tap map to show)
+                Panelni yashirish (xaritani bosing)
               </button>
             </div>
           )}
@@ -665,7 +644,7 @@ export default function CourierDashboard() {
             backdropFilter: 'blur(8px)',
           }}
         >
-          Show order panel ↑
+          Buyurtma panelini ko'rsatish ↑
         </button>
       )}
     </div>

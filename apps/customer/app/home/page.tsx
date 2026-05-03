@@ -476,7 +476,7 @@ export default function HomePage() {
                   <span>🎉</span> Bepul yetkazib berish qo&apos;llanadi!
                   <button onClick={() => router.push('/checkout')}
                     style={{ marginLeft: 'auto', fontSize: 12, padding: '4px 12px', borderRadius: 999, background: '#10b981', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
-                    Checkout
+                    To'lovga o'tish
                   </button>
                 </div>
               ) : (

@@ -149,19 +149,19 @@ export class SeedService {
     const seller = await this.prisma.seller.upsert({
       where: { userId: sellerUser.id },
       update: {
-        legalName: 'Lochin Demo Market LLC',
-        brandName: 'Lochin Market',
-        addressText: 'Yunusobod, Toshkent',
-        addressLat: 41.3111,
-        addressLng: 69.2797,
+        legalName: 'Lochin Bozor MChJ',
+        brandName: 'Lochin Bozor',
+        addressText: "Mustaqillik ko'chasi 12, Farg'ona",
+        addressLat: 40.3834,
+        addressLng: 71.7833,
       },
       create: {
         userId: sellerUser.id,
-        legalName: 'Lochin Demo Market LLC',
-        brandName: 'Lochin Market',
-        addressText: 'Yunusobod, Toshkent',
-        addressLat: 41.3111,
-        addressLng: 69.2797,
+        legalName: 'Lochin Bozor MChJ',
+        brandName: 'Lochin Bozor',
+        addressText: "Mustaqillik ko'chasi 12, Farg'ona",
+        addressLat: 40.3834,
+        addressLng: 71.7833,
       },
     });
     await this.prisma.courier.upsert({

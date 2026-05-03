@@ -15,12 +15,12 @@ type Profile = {
 };
 
 const DEMO: Profile = {
-  name: 'Lochin Store',
-  phone: '+998 90 123 45 67',
-  brand: 'My Store',
-  address: 'Toshkent, Yunusobod tumani',
-  description: 'Fresh and quality products delivered to your door',
-  workingHours: '09:00 – 22:00',
+  name: 'Lochin Bozor',
+  phone: '+998 73 123 45 67',
+  brand: "Lochin Bozor",
+  address: "Mustaqillik ko'chasi 12, Farg'ona",
+  description: "Farg'ona shahrida tez va sifatli yetkazib berish xizmati",
+  workingHours: '08:00 – 22:00',
 };
 
 export default function SettingsPage() {
@@ -80,7 +80,7 @@ export default function SettingsPage() {
     <div className="app-shell">
       <SellerSidebar />
       <div className="app-main">
-        <SellerTopbar title="Settings" subtitle="Account & preferences" />
+        <SellerTopbar title="Sozlamalar" subtitle="Hisob va sozlamalar" />
         <main className="app-content fade-in">
           <div className="stack">
 
@@ -88,33 +88,33 @@ export default function SettingsPage() {
             <div className="card">
               <div className="card-h">
                 <div>
-                  <h3>Store profile</h3>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Visible to customers</div>
+                  <h3>Do'kon profili</h3>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Mijozlarga ko'rinadi</div>
                 </div>
               </div>
               <div className="grid-2" style={{ gap: 16 }}>
                 <div>
-                  <label className="label">Store / brand name</label>
+                  <label className="label">Do'kon / brend nomi</label>
                   <input className="input" value={form.brand} onChange={(e) => set('brand', e.target.value)} />
                 </div>
                 <div>
-                  <label className="label">Owner full name</label>
+                  <label className="label">Egasining to'liq ismi</label>
                   <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} />
                 </div>
                 <div>
-                  <label className="label">Phone number</label>
+                  <label className="label">Telefon raqami</label>
                   <input className="input" value={form.phone} onChange={(e) => set('phone', e.target.value)} readOnly style={{ opacity: 0.6 }} />
                 </div>
                 <div>
-                  <label className="label">Working hours</label>
+                  <label className="label">Ish vaqti</label>
                   <input className="input" value={form.workingHours} onChange={(e) => set('workingHours', e.target.value)} placeholder="09:00 – 22:00" />
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label className="label">Address</label>
+                  <label className="label">Manzil</label>
                   <input className="input" value={form.address} onChange={(e) => set('address', e.target.value)} />
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
-                  <label className="label">Store description</label>
+                  <label className="label">Do'kon tavsifi</label>
                   <textarea
                     className="input"
                     rows={3}
@@ -130,16 +130,16 @@ export default function SettingsPage() {
             <div className="card">
               <div className="card-h">
                 <div>
-                  <h3>Notifications</h3>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Choose what alerts you receive</div>
+                  <h3>Bildirishnomalar</h3>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Qanday bildirishnomalar olishni tanlang</div>
                 </div>
               </div>
               <div className="stack" style={{ gap: 14 }}>
                 {([
-                  { key: 'newOrder',    label: 'New order received',      hint: 'Ping when a customer places an order' },
-                  { key: 'orderReady', label: 'Order picked up by courier', hint: 'When courier picks up your order' },
-                  { key: 'lowStock',   label: 'Low stock alert',           hint: 'When product stock falls below 10' },
-                  { key: 'promotions', label: 'Platform promotions',       hint: 'Lochin campaigns and discounts' },
+                  { key: 'newOrder',    label: 'Yangi buyurtma keldi',          hint: 'Mijoz buyurtma berganda xabar beradi' },
+                  { key: 'orderReady', label: 'Kuryer buyurtmani oldi',         hint: 'Kuryer buyurtmangizni olganda xabar beradi' },
+                  { key: 'lowStock',   label: 'Zaxira kam qoldi',               hint: 'Mahsulot zaxirasi 10 tadan kam bo\'lganda' },
+                  { key: 'promotions', label: 'Platforma aksiyalari',            hint: 'Lochin kampaniyalari va chegirmalari' },
                 ] as const).map((n) => (
                   <label key={n.key} style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
                     <div style={{
@@ -171,8 +171,8 @@ export default function SettingsPage() {
             <div className="card">
               <div className="card-h">
                 <div>
-                  <h3>Security</h3>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>OTP — phone-based, no password needed</div>
+                  <h3>Xavfsizlik</h3>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>OTP — telefon orqali, parol shart emas</div>
                 </div>
               </div>
               <div style={{
@@ -181,12 +181,12 @@ export default function SettingsPage() {
               }}>
                 <span style={{ fontSize: 24 }}>🔐</span>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>Authentication via OTP</div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>OTP orqali autentifikatsiya</div>
                   <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                    Your account is secured by one-time SMS codes. No password is stored.
+                    Hisobingiz bir martalik SMS kodlar orqali himoyalangan.
                   </div>
                 </div>
-                <span className="chip green" style={{ marginLeft: 'auto', flexShrink: 0 }}>Secure</span>
+                <span className="chip green" style={{ marginLeft: 'auto', flexShrink: 0 }}>Xavfsiz</span>
               </div>
             </div>
 
@@ -194,26 +194,26 @@ export default function SettingsPage() {
             <div className="card" style={{ border: '1px solid rgba(239,68,68,.3)' }}>
               <div className="card-h">
                 <div>
-                  <h3 style={{ color: 'var(--danger)' }}>Danger zone</h3>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Irreversible actions</div>
+                  <h3 style={{ color: 'var(--danger)' }}>Xavfli zona</h3>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Qaytarib bo'lmaydigan amallar</div>
                 </div>
               </div>
               <div className="hstack" style={{ justifyContent: 'space-between', padding: '10px 0' }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>Deactivate store</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Customers can't place orders while deactivated</div>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>Do'konni o'chirish</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>O'chirilgan paytda mijozlar buyurtma bera olmaydi</div>
                 </div>
-                <button className="btn danger sm" onClick={() => alert('Contact support to deactivate your store.')}>
-                  Deactivate
+                <button className="btn danger sm" onClick={() => alert("Do'konni o'chirish uchun qo'llab-quvvatlash xizmatiga murojaat qiling.")}>
+                  O'chirish
                 </button>
               </div>
             </div>
 
             {/* Save bar */}
             <div className="hstack" style={{ justifyContent: 'flex-end', gap: 10, paddingBottom: 32 }}>
-              <button className="btn ghost" onClick={() => setForm(DEMO)}>Discard</button>
+              <button className="btn ghost" onClick={() => setForm(DEMO)}>Bekor qilish</button>
               <button className="btn" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save changes'}
+                {saving ? 'Saqlanmoqda…' : saved ? '✓ Saqlandi' : "O'zgarishlarni saqlash"}
               </button>
             </div>
 

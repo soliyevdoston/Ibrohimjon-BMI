@@ -14,13 +14,13 @@ type Product = {
 };
 
 const CATEGORIES = [
-  { id: 'food', name: 'Food & Drinks' },
-  { id: 'grocery', name: 'Grocery' },
-  { id: 'electronics', name: 'Electronics' },
-  { id: 'home', name: 'Home & Garden' },
-  { id: 'beauty', name: 'Beauty & Care' },
-  { id: 'fashion', name: 'Fashion' },
-  { id: 'other', name: 'Other' },
+  { id: 'food', name: 'Ovqat va ichimliklar' },
+  { id: 'grocery', name: 'Oziq-ovqat' },
+  { id: 'electronics', name: 'Elektronika' },
+  { id: 'home', name: "Uy va bog'" },
+  { id: 'beauty', name: "Go'zallik va parvarish" },
+  { id: 'fashion', name: 'Moda' },
+  { id: 'other', name: 'Boshqa' },
 ];
 
 const EMPTY: Product = {

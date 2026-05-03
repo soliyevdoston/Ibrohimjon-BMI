@@ -17,24 +17,17 @@ type Product = {
   isActive: boolean;
 };
 
-const DEMO: Product[] = [
-  { id: '1', title: 'Fresh Tomatoes', description: 'Organic red tomatoes from Fergana', price: 18000, stock: 150, categoryId: 'grocery', isActive: true },
-  { id: '2', title: 'Uzbek Bread (Non)', description: 'Freshly baked traditional bread', price: 8000, stock: 80, categoryId: 'food', isActive: true },
-  { id: '3', title: 'Green Tea 100g', description: 'Premium Uzbek green tea', price: 35000, stock: 60, categoryId: 'food', isActive: true },
-  { id: '4', title: 'Pomegranate Juice 1L', description: 'Natural juice, no preservatives', price: 45000, stock: 40, categoryId: 'grocery', isActive: false },
-  { id: '5', title: 'Olive Oil 500ml', description: 'Extra virgin olive oil', price: 89000, stock: 25, categoryId: 'grocery', isActive: true },
-];
 
 const CATEGORY_LABEL: Record<string, string> = {
-  food: 'Food', grocery: 'Grocery', electronics: 'Electronics',
-  home: 'Home', beauty: 'Beauty', fashion: 'Fashion', other: 'Other',
+  food: 'Ovqat', grocery: 'Oziq-ovqat', electronics: 'Elektronika',
+  home: "Uy-ro'zg'or", beauty: "Go'zallik", fashion: 'Moda', other: 'Boshqa',
 };
 
 const COLORS = ['#F97316', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6', '#ec4899'];
 
 export default function ProductsPage() {
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>(DEMO);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<{ type: 'create' | 'edit'; product?: Product } | null>(null);
@@ -48,7 +41,7 @@ export default function ProductsPage() {
     try {
       const res = await api<{ items: Product[] }>(`/products/mine?search=${encodeURIComponent(search)}`, { token });
       setProducts(res.items);
-    } catch { /* use demo */ } finally { setLoading(false); }
+    } catch { /* ignore */ } finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -57,7 +50,7 @@ export default function ProductsPage() {
   }, [router]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this product? This cannot be undone.')) return;
+    if (!confirm("Bu mahsulotni o'chirasizmi? Bu amalni qaytarib bo'lmaydi.")) return;
     try {
       await api(`/products/${id}`, { method: 'DELETE', token });
       setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -74,7 +67,7 @@ export default function ProductsPage() {
     <div className="app-shell">
       <SellerSidebar />
       <div className="app-main">
-        <SellerTopbar title="Products" subtitle="Manage your catalog" />
+        <SellerTopbar title="Mahsulotlar" subtitle="Katalogni boshqarish" />
         <main className="app-content fade-in">
           <div className="stack">
             {/* Toolbar */}
@@ -82,12 +75,12 @@ export default function ProductsPage() {
               <input
                 className="input"
                 style={{ maxWidth: 280 }}
-                placeholder="Search products…"
+                placeholder="Mahsulot qidirish…"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
               <div className="spacer" />
-              <button className="btn" onClick={() => setModal({ type: 'create' })}>+ New Product</button>
+              <button className="btn" onClick={() => setModal({ type: 'create' })}>+ Yangi mahsulot</button>
             </div>
 
             {/* Table */}
@@ -96,12 +89,12 @@ export default function ProductsPage() {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Product</th>
-                      <th>Category</th>
-                      <th>Price</th>
-                      <th>Stock</th>
-                      <th>Status</th>
-                      <th style={{ width: 120 }}>Actions</th>
+                      <th>Mahsulot</th>
+                      <th>Kategoriya</th>
+                      <th>Narx</th>
+                      <th>Zaxira</th>
+                      <th>Holat</th>
+                      <th style={{ width: 120 }}>Amallar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -116,7 +109,7 @@ export default function ProductsPage() {
                     ) : paged.length === 0 ? (
                       <tr>
                         <td colSpan={6} style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
-                          No products found
+                          Mahsulotlar topilmadi
                         </td>
                       </tr>
                     ) : paged.map((p, idx) => (
@@ -147,13 +140,13 @@ export default function ProductsPage() {
                         </td>
                         <td>
                           <span className={`chip ${p.isActive ? 'green' : 'gray'}`}>
-                            {p.isActive ? 'Active' : 'Inactive'}
+                            {p.isActive ? 'Faol' : 'Nofaol'}
                           </span>
                         </td>
                         <td>
                           <div className="hstack" style={{ gap: 6 }}>
-                            <button className="btn ghost sm" onClick={() => setModal({ type: 'edit', product: p })}>Edit</button>
-                            <button className="btn danger sm" onClick={() => handleDelete(p.id)}>Del</button>
+                            <button className="btn ghost sm" onClick={() => setModal({ type: 'edit', product: p })}>Tahrirlash</button>
+                            <button className="btn danger sm" onClick={() => handleDelete(p.id)}>O'chirish</button>
                           </div>
                         </td>
                       </tr>
@@ -164,9 +157,9 @@ export default function ProductsPage() {
 
               {totalPages > 1 && (
                 <div className="hstack" style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', gap: 8 }}>
-                  <button className="btn ghost sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>← Prev</button>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Page {page} of {totalPages}</span>
-                  <button className="btn ghost sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next →</button>
+                  <button className="btn ghost sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>← Oldingi</button>
+                  <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{page} / {totalPages}</span>
+                  <button className="btn ghost sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Keyingi →</button>
                 </div>
               )}
             </div>

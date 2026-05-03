@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Lochin — Fast delivery',
-  description: 'Order food and products with fast delivery',
+  title: "Lochin — Tez yetkazib berish",
+  description: "Farg'ona shahri bo'ylab tez va qulay yetkazib berish xizmati",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

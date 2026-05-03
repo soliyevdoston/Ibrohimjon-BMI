@@ -7,9 +7,8 @@ import { Timeline, type TimelineStatus } from '@/components/Timeline';
 import { api, money } from '@/lib/api';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 
-// Demo Tashkent coordinates
-const SELLER_POS: [number, number] = [41.310, 69.281];   // Yunusobod
-const CUSTOMER_POS: [number, number] = [41.295, 69.240]; // City center
+const SELLER_POS: [number, number] = [40.3834, 71.7833]; // Farg'ona shahar markazi
+const CUSTOMER_POS: [number, number] = [40.3960, 71.8100]; // Farg'ona, Do'stlik ko'chasi
 
 type OrderItem = {
   id: string;
@@ -113,7 +112,7 @@ export default function OrderTrackingPage() {
         status: 'on_the_way',
         createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
         total: 78000,
-        deliveryAddress: 'Toshkent, Yunusobod tumani, 19-mavze, 42-uy',
+        deliveryAddress: "Farg'ona, Mustaqillik ko'chasi 42-uy",
         items: [
           { id: '1', title: 'Osh (plov)', price: 35000, quantity: 2, unitPrice: 35000 },
           { id: '2', title: 'Lag\'mon', price: 25000, quantity: 1, unitPrice: 25000 },

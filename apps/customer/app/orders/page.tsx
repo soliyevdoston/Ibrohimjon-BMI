@@ -60,35 +60,6 @@ function formatDate(iso: string) {
   }
 }
 
-const DEMO_ORDERS: Order[] = [
-  {
-    id: 'demo-1',
-    code: 'ORD-001',
-    status: 'on_the_way',
-    createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    total: 78000,
-    items: [{ id: '1', quantity: 2 }, { id: '2', quantity: 1 }],
-    deliveryAddress: 'Yunusobod tumani, 19-mavze',
-  },
-  {
-    id: 'demo-2',
-    code: 'ORD-002',
-    status: 'delivered',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    total: 45000,
-    items: [{ id: '3', quantity: 1 }],
-    deliveryAddress: 'Chilonzor tumani',
-  },
-  {
-    id: 'demo-3',
-    code: 'ORD-003',
-    status: 'cancelled',
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    total: 120000,
-    items: [{ id: '4', quantity: 3 }],
-    deliveryAddress: 'Shayxontohur tumani',
-  },
-];
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -136,7 +107,7 @@ export default function OrdersPage() {
             ?? [];
         setOrders(list.map(normalize));
       } catch {
-        setOrders(DEMO_ORDERS);
+        setOrders([]);
       } finally {
         setLoading(false);
       }
