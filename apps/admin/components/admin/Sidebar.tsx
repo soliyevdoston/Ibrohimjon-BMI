@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   IconBox,
   IconBuilding,
@@ -73,7 +73,15 @@ const groups: Group[] = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isOpen, close } = useNav();
+
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('name');
+    router.replace('/login');
+  };
 
   return (
     <>
@@ -130,10 +138,11 @@ export function AdminSidebar() {
             <span>admin@lochin.uz</span>
           </div>
           <button
-            aria-label="Sign out"
-            title="Sign out"
+            aria-label="Chiqish"
+            title="Chiqish"
             className="icon-btn"
             style={{ width: 32, height: 32 }}
+            onClick={handleLogout}
           >
             <IconLogout size={16} />
           </button>

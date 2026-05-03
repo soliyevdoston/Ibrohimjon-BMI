@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
-import { NavProvider } from '@/components/admin/NavContext';
-import { AdminSidebar } from '@/components/admin/Sidebar';
-import { AdminTopbar } from '@/components/admin/Topbar';
 import './globals.css';
 
 const inter = Inter({
@@ -27,15 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.variable}>
       <body style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}>
-        <NavProvider>
-          <div className="app-shell">
-            <AdminSidebar />
-            <div className="app-main">
-              <AdminTopbar />
-              <main className="app-content fade-in">{children}</main>
-            </div>
-          </div>
-        </NavProvider>
+        {children}
       </body>
     </html>
   );
