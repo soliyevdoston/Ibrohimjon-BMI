@@ -69,8 +69,8 @@ export function LayerSwitcher({
             cursor: 'pointer',
             fontSize: 12,
             fontWeight: 600,
-            background: current === s ? '#FACC15' : 'transparent',
-            color: current === s ? '#1a1a00' : '#374151',
+            background: current === s ? '#7C3AED' : 'transparent',
+            color: current === s ? '#ffffff' : '#374151',
             transition: 'background 0.15s, color 0.15s',
             whiteSpace: 'nowrap',
           }}

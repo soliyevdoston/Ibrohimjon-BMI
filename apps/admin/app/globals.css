@@ -8,11 +8,11 @@
   --text-secondary: #5b6576;
   --text-muted: #8a94a6;
 
-  /* Brand — Admin Blue */
-  --primary: #2563EB;
-  --primary-600: #1D4ED8;
-  --primary-50: #EFF6FF;
-  --primary-100: #DBEAFE;
+  /* Brand — Lochin Purple */
+  --primary: #7C3AED;
+  --primary-600: #6D28D9;
+  --primary-50: #EDE9FE;
+  --primary-100: #DDD6FE;
 
   --success: #10b981;
   --success-50: #ecfdf5;
@@ -418,7 +418,7 @@ p {
 }
 
 .kpi:hover::before {
-  background: linear-gradient(90deg, #2563EB, #60A5FA);
+  background: linear-gradient(90deg, #7C3AED, #6D28D9);
 }
 
 .kpi-row {
@@ -442,7 +442,7 @@ p {
   font-size: 16px;
 }
 
-.kpi-ico.indigo { background: linear-gradient(135deg, #DBEAFE, #BFDBFE); color: #1D4ED8; border: 1px solid #BFDBFE; }
+.kpi-ico.indigo { background: linear-gradient(135deg, #EDE9FE, #DDD6FE); color: #6D28D9; border: 1px solid #DDD6FE; }
 .kpi-ico.green  { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857; border: 1px solid #a7f3d0; }
 .kpi-ico.amber  { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; border: 1px solid #fde68a; }
 .kpi-ico.rose   { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #b91c1c; border: 1px solid #fecaca; }

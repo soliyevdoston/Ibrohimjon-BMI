@@ -250,7 +250,7 @@ export default function CourierDashboard() {
         {/* Header — gradient online/offline */}
         <div style={{
           background: isOnline
-            ? 'linear-gradient(135deg, #FACC15 0%, #EAB308 100%)'
+            ? 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)'
             : 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
           color: '#fff',
           padding: '48px 20px 20px',

@@ -56,9 +56,9 @@ export default function AdminLoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
             width: 60, height: 60, borderRadius: 18, margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
+            background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
             display: 'grid', placeItems: 'center',
-            boxShadow: '0 8px 24px rgba(37,99,235,0.35)',
+            boxShadow: '0 8px 24px rgba(124,58,237,0.35)',
           }}>
             <span style={{ fontSize: 28 }}>⚡</span>
           </div>
@@ -93,7 +93,7 @@ export default function AdminLoginPage() {
                 border: '1.5px solid #e2e8f0', fontSize: 14, outline: 'none',
                 boxSizing: 'border-box',
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#2563EB')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#7C3AED')}
               onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
             />
           </div>
@@ -113,7 +113,7 @@ export default function AdminLoginPage() {
                 border: '1.5px solid #e2e8f0', fontSize: 14, outline: 'none',
                 boxSizing: 'border-box',
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = '#2563EB')}
+              onFocus={(e) => (e.currentTarget.style.borderColor = '#7C3AED')}
               onBlur={(e) => (e.currentTarget.style.borderColor = '#e2e8f0')}
             />
           </div>
@@ -133,7 +133,7 @@ export default function AdminLoginPage() {
             disabled={loading}
             style={{
               width: '100%', padding: '12px 0', borderRadius: 10,
-              background: loading ? '#93c5fd' : '#2563EB',
+              background: loading ? '#C4B5FD' : '#7C3AED',
               color: '#fff', border: 'none', fontSize: 15, fontWeight: 700,
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s',

@@ -236,9 +236,9 @@ export default function OrdersPage() {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: 8,
-                            border: '1px solid #FED7AA',
-                            background: '#FFF7ED',
-                            color: '#EA580C',
+                            border: '1px solid var(--primary-100)',
+                            background: 'var(--primary-50)',
+                            color: 'var(--primary-600)',
                             fontWeight: 600,
                           }}
                         >
