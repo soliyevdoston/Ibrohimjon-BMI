@@ -137,7 +137,7 @@ export class AuthService {
     let payload: { sub: string; phone: string; role: UserRole };
     try {
       payload = await this.jwtService.verifyAsync(refreshToken, {
-        secret: this.configService.get('JWT_REFRESH_SECRET', 'lochin-refresh-secret-2026'),
+        secret: process.env.JWT_REFRESH_SECRET || 'lochin-refresh-secret-2026',
       });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
@@ -169,20 +169,17 @@ export class AuthService {
   }
 
   private async issueTokens(userId: string, identity: string, role: UserRole) {
+    const accessSecret = process.env.JWT_ACCESS_SECRET || 'lochin-access-secret-2026';
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || 'lochin-refresh-secret-2026';
+
     const accessToken = await this.jwtService.signAsync(
       { sub: userId, phone: identity, role },
-      {
-        secret: this.configService.get('JWT_ACCESS_SECRET') || 'lochin-access-secret-2026',
-        expiresIn: this.configService.get('JWT_ACCESS_TTL') || '15m',
-      },
+      { secret: accessSecret, expiresIn: '15m' },
     );
 
     const refreshToken = await this.jwtService.signAsync(
       { sub: userId, phone: identity, role },
-      {
-        secret: this.configService.get('JWT_REFRESH_SECRET') || 'lochin-refresh-secret-2026',
-        expiresIn: this.configService.get('JWT_REFRESH_TTL') || '30d',
-      },
+      { secret: refreshSecret, expiresIn: '30d' },
     );
 
     await this.prisma.refreshToken.create({
