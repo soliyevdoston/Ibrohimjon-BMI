@@ -5,6 +5,8 @@ import compression from 'compression';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { SeedService } from './modules/admin/seed.service';
+import { PrismaService } from './common/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -38,6 +40,21 @@ async function bootstrap() {
 
   const port = parseInt(process.env.PORT ?? '4000', 10) || 4000;
   await app.listen(port, '0.0.0.0');
+
+  // Auto-seed demo data if DB is empty (first deploy)
+  const logger = new Logger('Bootstrap');
+  try {
+    const prisma = app.get(PrismaService);
+    const count = await prisma.user.count();
+    if (count === 0) {
+      logger.log('DB empty — running initial seed…');
+      const seed = app.get(SeedService);
+      await seed.runFullSeed();
+      logger.log('Initial seed complete');
+    }
+  } catch (e) {
+    logger.error('Auto-seed failed (non-fatal):', (e as Error).message);
+  }
 }
 
 bootstrap();
