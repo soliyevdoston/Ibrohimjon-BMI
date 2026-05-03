@@ -2,7 +2,8 @@
 // This way the frontend works on any host without env-var configuration.
 const PROD_API = 'https://ibrohimjon-bmi.onrender.com/api/v1';
 const BASE = process.env.NEXT_PUBLIC_API_URL || PROD_API;
-const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? '';
+const DEFAULT_MAPTILER_KEY = 'OuhRqlcIjPk0S9JgN6Dy';
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || DEFAULT_MAPTILER_KEY;
 
 export const API_BASE_URL = BASE;
 export const WS_BASE_URL =

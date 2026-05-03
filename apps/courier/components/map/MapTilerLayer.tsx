@@ -2,7 +2,8 @@
 import { TileLayer } from 'react-leaflet';
 import { useState } from 'react';
 
-const KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? '';
+const DEFAULT_KEY = 'OuhRqlcIjPk0S9JgN6Dy';
+const KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || DEFAULT_KEY;
 
 export type MapStyle = 'streets' | 'satellite';
 
@@ -68,8 +69,8 @@ export function LayerSwitcher({
             cursor: 'pointer',
             fontSize: 12,
             fontWeight: 600,
-            background: current === s ? '#4f46e5' : 'transparent',
-            color: current === s ? '#fff' : '#374151',
+            background: current === s ? '#FACC15' : 'transparent',
+            color: current === s ? '#1a1a00' : '#374151',
             transition: 'background 0.15s, color 0.15s',
             whiteSpace: 'nowrap',
           }}
