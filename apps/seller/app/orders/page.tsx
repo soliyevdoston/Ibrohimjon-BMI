@@ -147,7 +147,7 @@ export default function OrdersPage() {
     if (!nextStatus) return;
     setLoadingId(order.id);
     try {
-      await api(`/orders/${order.id}/status`, { method: 'PATCH', body: { status: nextStatus }, token });
+      await api(`/orders/${order.id}/seller-status`, { method: 'PATCH', body: { status: nextStatus }, token });
       setOrders((prev) => prev.map((o) => o.id === order.id ? { ...o, status: nextStatus } : o));
     } catch (e) { alert((e as Error).message); }
     finally { setLoadingId(null); }
@@ -157,7 +157,7 @@ export default function OrdersPage() {
     if (!confirm('Reject and cancel this order?')) return;
     setLoadingId(order.id);
     try {
-      await api(`/orders/${order.id}/status`, { method: 'PATCH', body: { status: 'CANCELED' }, token });
+      await api(`/orders/${order.id}/seller-status`, { method: 'PATCH', body: { status: 'CANCELED' }, token });
       setOrders((prev) => prev.filter((o) => o.id !== order.id));
     } catch (e) { alert((e as Error).message); }
     finally { setLoadingId(null); }

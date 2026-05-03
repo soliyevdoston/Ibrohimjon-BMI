@@ -225,8 +225,8 @@ export class OrdersService {
     }
 
     const allowedTransition: Record<string, string[]> = {
-      PENDING: ['ACCEPTED'],
-      ACCEPTED: ['PREPARING'],
+      PENDING: ['ACCEPTED', 'CANCELED'],
+      ACCEPTED: ['PREPARING', 'CANCELED'],
       PREPARING: ['READY_FOR_PICKUP'],
       READY_FOR_PICKUP: [],
     };
