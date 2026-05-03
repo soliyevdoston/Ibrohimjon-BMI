@@ -282,7 +282,7 @@ export default function HomePage() {
       }));
       setProducts(list);
     } catch {
-      setProducts(DEMO_PRODUCTS);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
@@ -467,26 +467,26 @@ export default function HomePage() {
             <div style={{
               margin: '0 0 12px',
               padding: '10px 14px',
-              background: isFree ? 'linear-gradient(135deg,#d1fae5,#a7f3d0)' : '#f0fdf4',
-              border: `1.5px solid ${isFree ? '#10b981' : '#86efac'}`,
+              background: isFree ? 'var(--primary-light)' : 'var(--surface-alt)',
+              border: `1.5px solid ${isFree ? 'var(--primary)' : 'var(--border-dark)'}`,
               borderRadius: 12,
             }}>
               {isFree ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#065f46' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: 'var(--primary-dark)' }}>
                   <span>🎉</span> Bepul yetkazib berish qo&apos;llanadi!
                   <button onClick={() => router.push('/checkout')}
-                    style={{ marginLeft: 'auto', fontSize: 12, padding: '4px 12px', borderRadius: 999, background: '#10b981', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
-                    To'lovga o'tish
+                    style={{ marginLeft: 'auto', fontSize: 12, padding: '4px 12px', borderRadius: 999, background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
+                    To&apos;lovga o&apos;tish
                   </button>
                 </div>
               ) : (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#166534', marginBottom: 6 }}>
-                    <span>Yana <strong>{String(Math.round(left)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} so'm</strong> — bepul yetkazib berish</span>
-                    <span style={{ fontWeight: 700 }}>{pct}%</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text)', marginBottom: 6 }}>
+                    <span>Yana <strong>{String(Math.round(left)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} so&apos;m</strong> — bepul yetkazib berish</span>
+                    <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{pct}%</span>
                   </div>
-                  <div style={{ height: 5, background: '#bbf7d0', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', background: '#10b981', borderRadius: 999, width: `${pct}%`, transition: 'width 0.4s' }} />
+                  <div style={{ height: 5, background: 'var(--border)', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: 'var(--primary)', borderRadius: 999, width: `${pct}%`, transition: 'width 0.4s' }} />
                   </div>
                 </div>
               )}

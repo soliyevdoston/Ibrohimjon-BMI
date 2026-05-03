@@ -103,7 +103,7 @@ export default function CardsPage() {
       <div style={{ padding: '16px', maxWidth: 480, margin: '0 auto' }}>
         {error && (
           <div style={{
-            background: '#fee2e2', color: '#991b1b', padding: 12,
+            background: 'var(--danger-light)', color: 'var(--danger)', padding: 12,
             borderRadius: 10, fontSize: 13, marginBottom: 12,
           }}>{error}</div>
         )}
@@ -393,7 +393,7 @@ function AddCardModal({ onClose, onSaved }: {
 
         {err && (
           <div style={{
-            background: '#fee2e2', color: '#991b1b', padding: 10,
+            background: 'var(--danger-light)', color: 'var(--danger)', padding: 10,
             borderRadius: 8, fontSize: 12, marginBottom: 10,
           }}>{err}</div>
         )}

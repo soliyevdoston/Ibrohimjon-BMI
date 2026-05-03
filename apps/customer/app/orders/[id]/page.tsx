@@ -307,7 +307,7 @@ export default function OrderTrackingPage() {
       {/* Delivered success banner */}
       {isDelivered && (
         <div style={{
-          background: 'var(--success-light)',
+          background: 'var(--primary-light)',
           padding: '20px 16px',
           textAlign: 'center',
           display: 'flex',
@@ -316,8 +316,8 @@ export default function OrderTrackingPage() {
           gap: 8,
         }}>
           <div style={{ fontSize: 48 }}>🎉</div>
-          <div style={{ fontWeight: 800, fontSize: 18, color: '#065f46' }}>Buyurtma yetkazildi!</div>
-          <div style={{ fontSize: 14, color: '#047857' }}>Tabriklaymiz! Xaridingiz muvaffaqiyatli yakunlandi</div>
+          <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--primary-dark)' }}>Buyurtma yetkazildi!</div>
+          <div style={{ fontSize: 14, color: 'var(--primary)' }}>Tabriklaymiz! Xaridingiz muvaffaqiyatli yakunlandi</div>
         </div>
       )}
 
@@ -326,7 +326,7 @@ export default function OrderTrackingPage() {
         {isActiveOrder && (
           <div style={{
             marginBottom: 16,
-            background: 'linear-gradient(135deg, #7C3AED 0%, #7C3AED 100%)',
+            background: 'var(--primary)',
             borderRadius: 18, padding: '16px 20px',
             display: 'flex', alignItems: 'center', gap: 0,
           }}>

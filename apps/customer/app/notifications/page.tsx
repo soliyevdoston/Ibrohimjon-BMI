@@ -46,7 +46,7 @@ export default function NotificationsPage() {
   const unreadCount = items.filter(n => !n.read).length;
 
   return (
-    <div style={{ background: 'var(--canvas)', minHeight: '100dvh', paddingBottom: 80 }}>
+    <div style={{ background: 'var(--bg)', minHeight: '100dvh', paddingBottom: 80 }}>
       {/* Header */}
       <div style={{
         background: 'var(--surface)',
@@ -63,7 +63,7 @@ export default function NotificationsPage() {
           </div>
           {unreadCount > 0 && (
             <button onClick={markAllRead} style={{
-              background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10,
+              background: 'var(--surface-alt)', border: '1px solid var(--border)', borderRadius: 10,
               color: 'var(--text)', padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
             }}>
               Barchasini o'qish
@@ -76,7 +76,7 @@ export default function NotificationsPage() {
         {/* Filter tabs */}
         <div style={{
           display: 'flex', gap: 8, marginBottom: 16,
-          background: 'var(--surface-2)', borderRadius: 12, padding: 4,
+          background: 'var(--surface-alt)', borderRadius: 12, padding: 4,
         }}>
           {([['all', 'Barchasi'], ['unread', "O'qilmagan"]] as const).map(([k, l]) => (
             <button key={k} onClick={() => setFilter(k)} style={{
@@ -117,7 +117,7 @@ export default function NotificationsPage() {
               >
                 <div style={{
                   width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-                  background: 'var(--surface-2)',
+                  background: 'var(--surface-alt)',
                   border: '1px solid var(--border)',
                   display: 'grid', placeItems: 'center',
                   color: 'var(--text)',

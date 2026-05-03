@@ -171,7 +171,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               aspectRatio: '1',
               borderRadius: 20,
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+              background: 'var(--surface-alt)',
               border: '1px solid var(--border)',
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -228,10 +228,10 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       aspectRatio: '1',
                       borderRadius: 12,
                       overflow: 'hidden',
-                      border: activeImage === i ? '2px solid #7C3AED' : '2px solid var(--border)',
+                      border: activeImage === i ? '2px solid var(--primary)' : '2px solid var(--border)',
                       cursor: 'pointer',
                       padding: 0,
-                      background: '#f1f5f9',
+                      background: 'var(--surface-alt)',
                       transition: 'border 150ms ease',
                     }}
                   >
@@ -249,8 +249,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <div style={{
                 display: 'inline-block',
                 fontSize: 11, fontWeight: 700,
-                color: '#6D28D9',
-                background: '#eef2ff',
+                color: 'var(--primary-dark)',
+                background: 'var(--primary-light)',
                 padding: '5px 12px',
                 borderRadius: 999,
                 marginBottom: 12,
@@ -287,7 +287,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {product.description && (
               <div style={{
                 padding: '14px 16px',
-                background: 'var(--surface-2, #f9fafb)',
+                background: 'var(--surface-alt)',
                 borderRadius: 14,
                 border: '1px solid var(--border)',
                 marginBottom: 22,
@@ -306,7 +306,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               alignItems: 'center',
               gap: 14,
               padding: '14px 18px',
-              background: 'var(--surface-2, #f9fafb)',
+              background: 'var(--surface-alt)',
               borderRadius: 14,
               border: '1px solid var(--border)',
               marginBottom: 16,
@@ -319,7 +319,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   style={{
                     width: 38, height: 38, borderRadius: 10,
                     border: 'none',
-                    background: qty <= 1 ? '#e5e7eb' : '#0f172a',
+                    background: qty <= 1 ? 'var(--border)' : 'var(--text)',
                     color: '#fff',
                     fontSize: 20, fontWeight: 700,
                     cursor: qty <= 1 ? 'not-allowed' : 'pointer',
@@ -332,7 +332,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   style={{
                     width: 38, height: 38, borderRadius: 10,
                     border: 'none',
-                    background: qty >= (product.stock || 99) ? '#e5e7eb' : '#0f172a',
+                    background: qty >= (product.stock || 99) ? 'var(--border)' : 'var(--text)',
                     color: '#fff',
                     fontSize: 20, fontWeight: 700,
                     cursor: qty >= (product.stock || 99) ? 'not-allowed' : 'pointer',
@@ -349,7 +349,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 height: 56,
                 border: 'none',
                 borderRadius: 14,
-                background: outOfStock ? '#e5e7eb' : 'linear-gradient(135deg, #7C3AED, #7C3AED)',
+                background: outOfStock ? 'var(--border)' : 'var(--primary)',
                 color: '#fff',
                 fontSize: 16, fontWeight: 700,
                 letterSpacing: 0.3,
@@ -377,7 +377,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 onClick={() => router.push('/home')}
                 style={{
                   background: 'transparent', border: 'none',
-                  color: '#7C3AED', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  color: 'var(--primary)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
               >Barchasi →</button>
             </div>
