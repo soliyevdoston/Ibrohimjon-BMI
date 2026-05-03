@@ -7,13 +7,11 @@ import { api, money, reverseGeocode } from '@/lib/api';
 import type { PickupPoint } from '@/lib/locations';
 
 type Step = 1 | 2 | 3;
-type PaymentMethod = 'cash' | 'card' | 'payme' | 'click';
+type PaymentMethod = 'cash' | 'card';
 
-const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; desc: string }[] = [
-  { id: 'cash',  label: 'Naqd pul',  desc: "Yetkazib berishda to'lang" },
-  { id: 'card',  label: 'Karta',     desc: 'Bank kartasi orqali' },
-  { id: 'payme', label: 'Payme',     desc: 'Payme ilovasi orqali' },
-  { id: 'click', label: 'Click',     desc: 'Click ilovasi orqali' },
+const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; desc: string; icon: string }[] = [
+  { id: 'cash', label: 'Naqd pul', desc: "Yetkazib berishda to'lang", icon: '💵' },
+  { id: 'card', label: 'Karta',    desc: 'Bank kartasi orqali',        icon: '💳' },
 ];
 
 function PinIcon() {
@@ -282,18 +280,18 @@ export default function CheckoutPage() {
             {/* Free delivery banner */}
             {freeDeliveryAbove > 0 && (
               <div style={{
-                background: isFreeDelivery ? 'linear-gradient(135deg, #d1fae5, #a7f3d0)' : 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-                border: `1.5px solid ${isFreeDelivery ? '#10b981' : '#86efac'}`,
+                background: isFreeDelivery ? 'var(--primary-light)' : 'var(--surface-alt)',
+                border: `1.5px solid ${isFreeDelivery ? 'var(--primary)' : 'var(--border-dark)'}`,
                 borderRadius: 14, padding: '12px 16px',
               }}>
                 {isFreeDelivery ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 22 }}>🎉</span>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#065f46' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary-dark)' }}>
                         Bepul yetkazib berish!
                       </div>
-                      <div style={{ fontSize: 12, color: '#047857' }}>
+                      <div style={{ fontSize: 12, color: 'var(--primary)' }}>
                         Buyurtmangiz {money(freeDeliveryAbove)} so'm chegarasidan oshdi
                       </div>
                     </div>
@@ -301,17 +299,17 @@ export default function CheckoutPage() {
                 ) : (
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                         Yana {money(freeDeliveryLeft)} so'm — bepul yetkazib berish
                       </div>
-                      <div style={{ fontSize: 11, color: '#16a34a', fontWeight: 700 }}>
+                      <div style={{ fontSize: 11, color: 'var(--primary)', fontWeight: 700 }}>
                         {freeDeliveryProgress}%
                       </div>
                     </div>
-                    <div style={{ height: 6, background: '#bbf7d0', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: 6, background: 'var(--border)', borderRadius: 999, overflow: 'hidden' }}>
                       <div style={{
                         height: '100%', borderRadius: 999,
-                        background: 'linear-gradient(90deg, #10b981, #059669)',
+                        background: 'var(--primary)',
                         width: `${freeDeliveryProgress}%`,
                         transition: 'width 0.4s ease',
                       }} />
@@ -429,15 +427,15 @@ export default function CheckoutPage() {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '10px 12px', marginBottom: 10,
-                  background: 'linear-gradient(135deg, #f1f5f9, #e0e7ff)',
-                  borderRadius: 12, border: '1px solid #c7d2fe',
+                  background: 'var(--surface-alt)',
+                  borderRadius: 12, border: '1px solid var(--border-dark)',
                 }}>
                   <span style={{ fontSize: 22 }}>{tier.icon}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                       {tier.label} kerak
                     </div>
-                    <div style={{ fontSize: 11, color: '#475569' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                       Buyurtma og&apos;irligi ~{Math.round(totalWeightKg)} kg · {requiredVehicle === 'TRUCK' ? 'yuk mashinasi tariflari amal qiladi' : 'kattaroq transport tariflari'}
                     </div>
                   </div>
@@ -464,13 +462,13 @@ export default function CheckoutPage() {
                 </span>
               </div>
               {freeDeliveryLeft > 0 && !pickup && (
-                <div style={{ marginTop: 6, padding: '8px 10px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#166534', marginBottom: 5 }}>
+                <div style={{ marginTop: 6, padding: '8px 10px', background: 'var(--surface-alt)', borderRadius: 8, border: '1px solid var(--border-dark)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text)', marginBottom: 5 }}>
                     <span>Yana {money(freeDeliveryLeft)} so'm qo&apos;shing — bepul yetkazib berish</span>
-                    <span>{freeDeliveryProgress}%</span>
+                    <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{freeDeliveryProgress}%</span>
                   </div>
-                  <div style={{ height: 4, background: '#bbf7d0', borderRadius: 999, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', background: '#10b981', borderRadius: 999, width: `${freeDeliveryProgress}%` }} />
+                  <div style={{ height: 4, background: 'var(--border)', borderRadius: 999, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: 'var(--primary)', borderRadius: 999, width: `${freeDeliveryProgress}%` }} />
                   </div>
                 </div>
               )}
@@ -499,17 +497,31 @@ export default function CheckoutPage() {
             {/* Payment method */}
             <div className="card">
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>To&apos;lov usuli</h3>
-              <div className="payment-methods">
-                {PAYMENT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    className={`payment-method-btn${paymentMethod === opt.id ? ' selected' : ''}`}
-                    onClick={() => setPaymentMethod(opt.id)}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{opt.label}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400, marginTop: 2 }}>{opt.desc}</div>
-                  </button>
-                ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {PAYMENT_OPTIONS.map((opt) => {
+                  const sel = paymentMethod === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => setPaymentMethod(opt.id)}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        gap: 6, padding: '16px 12px', borderRadius: 14,
+                        border: `2px solid ${sel ? 'var(--primary)' : 'var(--border)'}`,
+                        background: sel ? 'var(--primary-light)' : 'var(--surface)',
+                        cursor: 'pointer', transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <span style={{ fontSize: 26 }}>{opt.icon}</span>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: sel ? 'var(--primary-dark)' : 'var(--text)' }}>
+                        {opt.label}
+                      </div>
+                      <div style={{ fontSize: 11, color: sel ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 400, textAlign: 'center' }}>
+                        {opt.desc}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               {paymentMethod === 'card' && (
@@ -529,8 +541,8 @@ export default function CheckoutPage() {
                               style={{
                                 display: 'flex', alignItems: 'center', gap: 10,
                                 padding: '12px 14px', borderRadius: 12,
-                                border: `1.5px solid ${sel ? 'var(--text)' : 'var(--border)'}`,
-                                background: sel ? 'var(--surface-alt)' : 'var(--surface)',
+                                border: `1.5px solid ${sel ? 'var(--primary)' : 'var(--border)'}`,
+                                background: sel ? 'var(--primary-light)' : 'var(--surface)',
                                 cursor: 'pointer', textAlign: 'left', width: '100%',
                               }}
                             >
@@ -543,7 +555,7 @@ export default function CheckoutPage() {
                                   {c.holderName} · {String(c.expiryMonth).padStart(2, '0')}/{String(c.expiryYear).slice(-2)}
                                 </div>
                               </div>
-                              {sel && <span style={{ color: 'var(--text)' }}><CheckIcon /></span>}
+                              {sel && <span style={{ color: 'var(--primary)' }}><CheckIcon /></span>}
                             </button>
                           );
                         })}
@@ -552,26 +564,34 @@ export default function CheckoutPage() {
                         onClick={() => router.push('/profile/cards')}
                         style={{
                           marginTop: 10, width: '100%', padding: '10px',
-                          background: 'transparent', border: '1px dashed var(--border)',
+                          background: 'transparent', border: '1px dashed var(--border-dark)',
                           borderRadius: 10, fontSize: 13, fontWeight: 600,
-                          color: 'var(--text)', cursor: 'pointer',
+                          color: 'var(--primary)', cursor: 'pointer',
                         }}
                       >
                         + Yangi karta qo&apos;shish
                       </button>
                     </>
                   ) : (
-                    <button
-                      onClick={() => router.push('/profile/cards')}
-                      style={{
-                        width: '100%', padding: '14px',
-                        background: 'var(--surface-alt)', border: '1px dashed var(--border)',
-                        borderRadius: 12, fontSize: 13, fontWeight: 600,
-                        color: 'var(--text)', cursor: 'pointer',
-                      }}
-                    >
-                      💳 Karta qo&apos;shing va shu yerda to&apos;lang
-                    </button>
+                    <div style={{
+                      background: 'var(--surface-alt)', border: '1.5px solid var(--border-dark)',
+                      borderRadius: 14, padding: '20px 16px', textAlign: 'center',
+                    }}>
+                      <div style={{ fontSize: 32, marginBottom: 10 }}>💳</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+                        Avval karta qo&apos;shing
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 14, lineHeight: 1.5 }}>
+                        Profilga karta qo&apos;shib, keyin shu yerda to&apos;lang
+                      </div>
+                      <button
+                        onClick={() => router.push('/profile/cards')}
+                        className="btn btn-full"
+                        style={{ height: 44, fontSize: 14 }}
+                      >
+                        Karta qo&apos;shish →
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
