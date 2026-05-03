@@ -733,13 +733,3 @@ export default function HomePage() {
   );
 }
 
-const DEMO_PRODUCTS: Product[] = [
-  { id: '1', title: 'Osh (plov)',         price: 35000,   stock: 10, categoryId: 'food',        seller: { id: 's1', name: 'Osh markazi' } },
-  { id: '2', title: "Lag'mon",            price: 25000,   stock: 5,  categoryId: 'food',        seller: { id: 's1', name: 'Osh markazi' } },
-  { id: '3', title: 'Non',               price: 5000,    stock: 20, categoryId: 'grocery',     seller: { id: 's2', name: 'Yangi non' } },
-  { id: '4', title: 'Samsung Galaxy A55', price: 4500000, stock: 3,  categoryId: 'electronics', seller: { id: 's3', name: 'Tech market' } },
-  { id: '5', title: "Yostiq to'plami",    price: 120000,  stock: 8,  categoryId: 'home',        seller: { id: 's4', name: 'Dom market' } },
-  { id: '6', title: 'Atir suvi',          price: 250000,  stock: 0,  categoryId: 'beauty',      seller: { id: 's5', name: 'Beauty shop' } },
-  { id: '7', title: 'Manti',             price: 30000,   stock: 15, categoryId: 'food',        seller: { id: 's1', name: 'Osh markazi' } },
-  { id: '8', title: 'Tuxum (10 ta)',      price: 22000,   stock: 50, categoryId: 'grocery',     seller: { id: 's2', name: 'Yangi non' } },
-];
