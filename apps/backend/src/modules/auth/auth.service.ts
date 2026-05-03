@@ -173,7 +173,7 @@ export class AuthService {
       { sub: userId, phone: identity, role },
       {
         secret: this.configService.get('JWT_ACCESS_SECRET', 'lochin-access-secret-2026'),
-        expiresIn: this.configService.get('JWT_ACCESS_TTL', '15m'),
+        expiresIn: this.configService.get('JWT_ACCESS_TTL') || '15m',
       },
     );
 
@@ -181,7 +181,7 @@ export class AuthService {
       { sub: userId, phone: identity, role },
       {
         secret: this.configService.get('JWT_REFRESH_SECRET', 'lochin-refresh-secret-2026'),
-        expiresIn: this.configService.get('JWT_REFRESH_TTL', '30d'),
+        expiresIn: this.configService.get('JWT_REFRESH_TTL') || '30d',
       },
     );
 
