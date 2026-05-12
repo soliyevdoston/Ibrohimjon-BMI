@@ -85,12 +85,6 @@ function LoginForm() {
     }
   };
 
-  const fillDemo = () => {
-    setEmail('customer@lochin.uz');
-    setPassword('customer123');
-    setMode('login');
-  };
-
   const handleGoogleCredential = useCallback(async (idToken: string) => {
     setError('');
     setLoading(true);
@@ -307,35 +301,6 @@ function LoginForm() {
           </>
         )}
 
-        <div style={{
-          marginTop: 18,
-          padding: '12px 14px',
-          background: 'var(--surface-2, #f9fafb)',
-          border: '1px dashed var(--border, #e5e7eb)',
-          borderRadius: 12,
-          fontSize: 12,
-          color: 'var(--text-secondary)',
-        }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>Demo akkaunt:</div>
-          <div style={{ fontFamily: 'monospace', fontSize: 11, lineHeight: 1.6 }}>
-            customer@lochin.uz<br />customer123
-          </div>
-          <button
-            type="button"
-            onClick={fillDemo}
-            style={{
-              marginTop: 8,
-              border: 'none',
-              background: 'var(--text)',
-              color: 'var(--surface)',
-              padding: '6px 12px',
-              borderRadius: 8,
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >Demo bilan to&apos;ldirish</button>
-        </div>
       </form>
     </div>
   );
