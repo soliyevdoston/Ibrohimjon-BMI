@@ -5,7 +5,12 @@ import Script from 'next/script';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '';
+// Google OAuth Client ID public (brauzerda ishlatiladi, sir emas).
+// Env qo'yilsa shu, qo'yilmasa hardcoded fallback — shunday qilib tugma
+// Vercel'da env sozlanmagan bo'lsa ham ko'rinadi.
+const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  '302395779594-uqamsqdrh3u359gd23pre4pkr8ijai54.apps.googleusercontent.com';
 
 // Google Identity Services minimal types — only what we actually call.
 interface GoogleIdConfig {
