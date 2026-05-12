@@ -1,5 +1,5 @@
 'use client';
-import { useState, Suspense, useEffect, useRef, useCallback } from 'react';
+import { useState, Suspense, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { api } from '@/lib/api';
@@ -19,22 +19,12 @@ interface GoogleIdConfig {
   ux_mode?: 'popup' | 'redirect';
   auto_select?: boolean;
 }
-interface GoogleIdButtonOptions {
-  type?: 'standard' | 'icon';
-  theme?: 'outline' | 'filled_blue' | 'filled_black';
-  size?: 'large' | 'medium' | 'small';
-  text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
-  shape?: 'rectangular' | 'pill' | 'circle' | 'square';
-  width?: number;
-  logo_alignment?: 'left' | 'center';
-}
 declare global {
   interface Window {
     google?: {
       accounts: {
         id: {
           initialize: (config: GoogleIdConfig) => void;
-          renderButton: (parent: HTMLElement, options: GoogleIdButtonOptions) => void;
           prompt: () => void;
         };
       };
@@ -58,7 +48,6 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleReady, setGoogleReady] = useState(false);
-  const googleBtnRef = useRef<HTMLDivElement | null>(null);
 
   const redirectTo = searchParams.get('redirect') ?? '/home';
 
@@ -108,10 +97,8 @@ function LoginForm() {
     }
   }, [redirectTo, router, setAuth]);
 
-  // Initialise Google Identity Services once the script loads. We render the
-  // official "Continue with Google" button AND trigger the One Tap prompt
-  // (akkaunt tanlash oynasi) so users see an account picker even if the
-  // button doesn't render (e.g. ad-blocker, browser quirks).
+  // Google Identity Services'ni initsializatsiya qilamiz. Tugma bosilganda
+  // akkaunt tanlash oynasi ochiladi.
   useEffect(() => {
     if (!googleReady || !GOOGLE_CLIENT_ID) return;
     if (!window.google?.accounts?.id) return;
@@ -122,20 +109,7 @@ function LoginForm() {
       ux_mode: 'popup',
       auto_select: false,
     });
-    if (googleBtnRef.current) {
-      window.google.accounts.id.renderButton(googleBtnRef.current, {
-        type: 'standard',
-        theme: 'outline',
-        size: 'large',
-        text: mode === 'register' ? 'signup_with' : 'continue_with',
-        shape: 'pill',
-        logo_alignment: 'left',
-        width: 320,
-      });
-    }
-    // Auto pop-up: akkaunt tanlash oynasi sahifa ochilishi bilan chiqadi.
-    window.google.accounts.id.prompt();
-  }, [googleReady, handleGoogleCredential, mode]);
+  }, [googleReady, handleGoogleCredential]);
 
   const openGoogleChooser = () => {
     if (window.google?.accounts?.id) {
@@ -275,16 +249,11 @@ function LoginForm() {
               <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
             </div>
 
-            {/* Rasmiy Google tugmasi (renderButton). Brauzer/ad-blocker bloklasa
-                tagdagi fallback tugma orqali ham akkaunt tanlash oynasini ochish mumkin. */}
-            <div ref={googleBtnRef} style={{ display: 'flex', justifyContent: 'center', minHeight: 0 }} />
-
             <button
               type="button"
               onClick={openGoogleChooser}
               disabled={loading || !googleReady}
               style={{
-                marginTop: 10,
                 width: '100%',
                 height: 48,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
