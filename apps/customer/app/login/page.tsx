@@ -1,5 +1,5 @@
 'use client';
-import { useState, Suspense, useEffect, useCallback } from 'react';
+import { useState, Suspense, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import { api } from '@/lib/api';
@@ -19,12 +19,22 @@ interface GoogleIdConfig {
   ux_mode?: 'popup' | 'redirect';
   auto_select?: boolean;
 }
+interface GoogleIdButtonOptions {
+  type?: 'standard' | 'icon';
+  theme?: 'outline' | 'filled_blue' | 'filled_black';
+  size?: 'large' | 'medium' | 'small';
+  text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
+  shape?: 'rectangular' | 'pill' | 'circle' | 'square';
+  width?: number;
+  logo_alignment?: 'left' | 'center';
+}
 declare global {
   interface Window {
     google?: {
       accounts: {
         id: {
           initialize: (config: GoogleIdConfig) => void;
+          renderButton: (parent: HTMLElement, options: GoogleIdButtonOptions) => void;
           prompt: () => void;
         };
       };
@@ -48,6 +58,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleReady, setGoogleReady] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement | null>(null);
 
   const redirectTo = searchParams.get('redirect') ?? '/home';
 
@@ -97,11 +108,12 @@ function LoginForm() {
     }
   }, [redirectTo, router, setAuth]);
 
-  // Google Identity Services'ni initsializatsiya qilamiz. Tugma bosilganda
-  // akkaunt tanlash oynasi ochiladi.
+  // Google Identity Services'ni initsializatsiya qilamiz va rasmiy
+  // "Continue with Google" tugmasini render qilamiz. Bu tugma bosilganda
+  // akkaunt tanlash popup ochiladi (renderButton'ning ishonchli yo'li).
   useEffect(() => {
     if (!googleReady || !GOOGLE_CLIENT_ID) return;
-    if (!window.google?.accounts?.id) return;
+    if (!window.google?.accounts?.id || !googleBtnRef.current) return;
 
     window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
@@ -109,13 +121,17 @@ function LoginForm() {
       ux_mode: 'popup',
       auto_select: false,
     });
-  }, [googleReady, handleGoogleCredential]);
-
-  const openGoogleChooser = () => {
-    if (window.google?.accounts?.id) {
-      window.google.accounts.id.prompt();
-    }
-  };
+    googleBtnRef.current.innerHTML = '';
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      text: mode === 'register' ? 'signup_with' : 'continue_with',
+      shape: 'pill',
+      logo_alignment: 'left',
+      width: 320,
+    });
+  }, [googleReady, handleGoogleCredential, mode]);
 
   return (
     <div style={{
@@ -232,7 +248,10 @@ function LoginForm() {
           {loading ? 'Yuborilmoqda…' : (mode === 'login' ? 'Kirish' : 'Ro\'yxatdan o\'tish')}
         </button>
 
-        {/* Google sign-in. Tugma faqat GOOGLE_CLIENT_ID sozlangan bo'lsa ko'rinadi. */}
+        {/* Google sign-in — bizning go'zal tugma ko'rinadi, lekin uning ustiga
+            Google'ning rasmiy tugmasi ko'rinmas (opacity:0) qilib qo'yiladi.
+            Foydalanuvchi bizning tugmani bosadi, aslida Google tugmasi bosilgan
+            bo'ladi va akkaunt tanlash popup ochiladi. */}
         {GOOGLE_CLIENT_ID && (
           <>
             <Script
@@ -249,29 +268,42 @@ function LoginForm() {
               <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
             </div>
 
-            <button
-              type="button"
-              onClick={openGoogleChooser}
-              disabled={loading || !googleReady}
-              style={{
-                width: '100%',
-                height: 48,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: 999,
-                cursor: googleReady ? 'pointer' : 'wait',
-                fontSize: 14, fontWeight: 600, color: 'var(--text)',
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
-                <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.7 4.7-6.2 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z" />
-                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.1 4 9.2 8.4 6.3 14.7z" />
-                <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.5-4.6 2.4-7.2 2.4-5.1 0-9.5-3.3-11.2-7.9l-6.5 5C9 39.5 16 44 24 44z" />
-                <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.6l6.2 5.2C40 35 44 30 44 24c0-1.3-.1-2.3-.4-3.5z" />
-              </svg>
-              Google bilan kirish
-            </button>
+            <div style={{ position: 'relative', width: '100%', maxWidth: 320, height: 48, margin: '0 auto' }}>
+              {/* Bizning ko'rinadigan tugma */}
+              <div
+                aria-hidden
+                style={{
+                  position: 'absolute', inset: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 999,
+                  fontSize: 14, fontWeight: 600, color: 'var(--text)',
+                  pointerEvents: 'none',
+                  opacity: googleReady ? 1 : 0.6,
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 48 48">
+                  <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.7 4.7-6.2 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z" />
+                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3l5.7-5.7C34 6.1 29.3 4 24 4 16.1 4 9.2 8.4 6.3 14.7z" />
+                  <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.5-4.6 2.4-7.2 2.4-5.1 0-9.5-3.3-11.2-7.9l-6.5 5C9 39.5 16 44 24 44z" />
+                  <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.1 5.6l6.2 5.2C40 35 44 30 44 24c0-1.3-.1-2.3-.4-3.5z" />
+                </svg>
+                Google bilan kirish
+              </div>
+
+              {/* Rasmiy Google tugmasi — ko'rinmas, lekin click qabul qiladi */}
+              <div
+                ref={googleBtnRef}
+                style={{
+                  position: 'absolute', inset: 0,
+                  width: '100%', height: '100%',
+                  opacity: 0,
+                  display: 'flex', justifyContent: 'center', alignItems: 'center',
+                  cursor: googleReady ? 'pointer' : 'wait',
+                }}
+              />
+            </div>
           </>
         )}
 
