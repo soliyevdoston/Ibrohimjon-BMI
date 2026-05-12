@@ -10,13 +10,16 @@ import { JwtService } from '@nestjs/jwt';
 import { OtpPurpose, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import dayjs from 'dayjs';
-import { randomInt } from 'crypto';
+import { randomInt, randomBytes } from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from 'src/common/prisma.service';
 
 @Injectable()
 export class AuthService {
   private readonly otpTtlSeconds: number;
   private readonly otpRetryLimit: number;
+  private readonly googleClient: OAuth2Client;
+  private readonly googleClientId: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -25,6 +28,8 @@ export class AuthService {
   ) {
     this.otpTtlSeconds = Number(this.configService.get('OTP_TTL_SECONDS', 120));
     this.otpRetryLimit = Number(this.configService.get('OTP_RETRY_LIMIT', 5));
+    this.googleClientId = this.configService.get<string>('GOOGLE_CLIENT_ID') ?? '';
+    this.googleClient = new OAuth2Client(this.googleClientId);
   }
 
   async requestOtp(phone: string, purpose: OtpPurpose, ipAddress?: string) {
@@ -130,6 +135,54 @@ export class AuthService {
         isEmailVerified: true,
       },
     });
+    return this.issueTokens(user.id, user.email ?? '', user.role);
+  }
+
+  async loginWithGoogle(idToken: string) {
+    if (!this.googleClientId) {
+      throw new BadRequestException(
+        'Google login serverda sozlanmagan (GOOGLE_CLIENT_ID yo\'q)',
+      );
+    }
+
+    let payload;
+    try {
+      const ticket = await this.googleClient.verifyIdToken({
+        idToken,
+        audience: this.googleClientId,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Google tokenni tasdiqlab bo\'lmadi');
+    }
+
+    if (!payload?.email) {
+      throw new UnauthorizedException('Google akkauntda email topilmadi');
+    }
+    if (!payload.email_verified) {
+      throw new UnauthorizedException('Google email tasdiqlanmagan');
+    }
+
+    const email = payload.email.trim().toLowerCase();
+    const fullName = payload.name?.trim() || undefined;
+
+    // Foydalanuvchini email bo'yicha topib, yoki yangi yaratish.
+    // Google bilan kirgan mijoz uchun parol o'rnatilmaydi (random hash).
+    const user = await this.prisma.user.upsert({
+      where: { email },
+      update: {
+        isEmailVerified: true,
+        ...(fullName ? { fullName } : {}),
+      },
+      create: {
+        email,
+        fullName,
+        role: UserRole.CUSTOMER,
+        isEmailVerified: true,
+        passwordHash: await bcrypt.hash(randomBytes(24).toString('hex'), 10),
+      },
+    });
+
     return this.issueTokens(user.id, user.email ?? '', user.role);
   }
 

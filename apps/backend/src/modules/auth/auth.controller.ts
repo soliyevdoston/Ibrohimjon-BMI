@@ -5,6 +5,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
 import { EmailRegisterDto } from './dto/email-register.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -28,6 +29,11 @@ export class AuthController {
   @Post('email/register')
   registerEmail(@Body() dto: EmailRegisterDto) {
     return this.authService.registerWithEmail(dto.email, dto.password, dto.fullName, dto.role);
+  }
+
+  @Post('google')
+  googleLogin(@Body() dto: GoogleLoginDto) {
+    return this.authService.loginWithGoogle(dto.idToken);
   }
 
   @Post('refresh')
