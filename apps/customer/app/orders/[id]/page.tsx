@@ -83,7 +83,6 @@ export default function OrderTrackingPage() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [courierPos, setCourierPos] = useState<[number, number]>(SELLER_POS);
   const [eta, setEta] = useState<number | null>(null);
   const deliveryIdRef = useRef<string | null>(null);
@@ -254,18 +253,6 @@ export default function OrderTrackingPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="page">
-        <div style={{ padding: 16, textAlign: 'center' }}>
-          <p style={{ color: 'var(--danger)' }}>{error}</p>
-          <Link href="/orders">
-            <button className="btn" style={{ marginTop: 16 }}>Buyurtmalarga qaytish</button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   const isActiveOrder = order && ['confirmed', 'preparing', 'picked_up', 'on_the_way'].includes(order.status);
   const isDelivered = order?.status === 'delivered';
