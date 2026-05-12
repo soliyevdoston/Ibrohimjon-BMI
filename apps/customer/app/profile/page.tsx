@@ -80,18 +80,15 @@ export default function ProfilePage() {
     <div className="page" style={{ paddingBottom: 88 }}>
       {/* Header */}
       <div style={{
-        background: 'var(--surface)',
+        background:
+          'radial-gradient(circle at 50% 0%, rgba(124,58,237,0.16) 0%, transparent 65%),' +
+          'linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%)',
         borderBottom: '1px solid var(--border)',
-        padding: '48px 20px 24px',
+        padding: '48px 20px 28px',
         paddingTop: 'max(48px, calc(env(safe-area-inset-top) + 24px))',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
       }}>
-        <div style={{
-          width: 72, height: 72, borderRadius: '50%',
-          background: 'var(--surface-alt)', border: '2px solid var(--border)',
-          display: 'grid', placeItems: 'center',
-          fontSize: 28, fontWeight: 800, color: 'var(--text)',
-        }}>
+        <div className="avatar avatar-lg">
           {initials(profile.name)}
         </div>
         {editing ? (
@@ -134,18 +131,24 @@ export default function ProfilePage() {
         )}
 
         {/* Stats */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 4, width: '100%', maxWidth: 360 }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 8, width: '100%', maxWidth: 360 }}>
           {[
-            { label: "Buyurtmalar", value: profile.ordersCount ?? 0 },
-            { label: "Xarajatlar", value: `${money(profile.totalSpent ?? 0)} so'm` },
+            { label: "Buyurtmalar", value: profile.ordersCount ?? 0, icon: '📦' },
+            { label: "Xarajatlar", value: `${money(profile.totalSpent ?? 0)} so'm`, icon: '💎' },
           ].map((s) => (
             <div key={s.label} style={{
-              flex: 1, background: 'var(--surface-alt)', borderRadius: 12,
+              flex: 1,
+              background: 'rgba(255,255,255,0.85)',
+              backdropFilter: 'blur(8px)',
+              borderRadius: 14,
               border: '1px solid var(--border)',
-              padding: '10px 12px', textAlign: 'center',
+              padding: '12px 12px',
+              textAlign: 'center',
+              boxShadow: '0 4px 16px rgba(124,58,237,0.08)',
             }}>
-              <div style={{ fontWeight: 800, fontSize: 18 }}>{s.value}</div>
-              <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>{s.label}</div>
+              <div style={{ fontSize: 18, marginBottom: 2 }}>{s.icon}</div>
+              <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{s.value}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2, fontWeight: 600 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -156,32 +159,45 @@ export default function ProfilePage() {
 
           {/* Quick links */}
           {[
-            { label: "Barcha buyurtmalar", href: '/orders' },
-            { label: "Mening kartalarim", href: '/profile/cards' },
-            { label: "Saqlangan manzillar", href: '/orders' },
+            { label: "Barcha buyurtmalar", sub: 'Faol va o\'tgan buyurtmalar', icon: '📦', href: '/orders' },
+            { label: "Mening kartalarim", sub: "To'lov kartalari", icon: '💳', href: '/profile/cards' },
+            { label: "Saqlangan manzillar", sub: 'Yetkazib berish manzillari', icon: '📍', href: '/orders' },
           ].map((item) => (
             <button
               key={item.label}
-              className="card"
-              style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left', width: '100%', border: '1px solid var(--border)' }}
+              className="menu-row"
+              style={{ width: '100%', textAlign: 'left' }}
               onClick={() => router.push(item.href)}
             >
-              <span style={{ fontWeight: 600, fontSize: 15, flex: 1 }}>{item.label}</span>
-              <span style={{ color: 'var(--text-muted)', fontSize: 18 }}>›</span>
+              <div className="menu-row-icon">
+                <span style={{ fontSize: 20 }}>{item.icon}</span>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div className="menu-row-label">{item.label}</div>
+                <div className="menu-row-sub">{item.sub}</div>
+              </div>
+              <span className="menu-row-chevron" style={{ fontSize: 22 }}>›</span>
             </button>
           ))}
 
           {/* OTP security note */}
           <div style={{
-            background: 'var(--surface-alt)', borderRadius: 14, padding: '14px 16px',
+            background: 'linear-gradient(135deg, var(--primary-light) 0%, #f5f1ff 100%)',
+            borderRadius: 14, padding: '14px 16px',
             display: 'flex', alignItems: 'center', gap: 12,
-            border: '1px solid var(--border)',
+            border: '1px solid #ddd6fe',
+            marginTop: 8,
           }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: '#fff', display: 'grid', placeItems: 'center',
+              fontSize: 20, flexShrink: 0,
+            }}>🔒</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>OTP autentifikatsiya</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Akkaunt SMS kod orqali himoyalangan</div>
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--primary-dark)' }}>Akkaunt himoyalangan</div>
+              <div style={{ fontSize: 12, color: 'var(--primary)' }}>SMS kod va xavfsizlik tekshiruvlari yoqilgan</div>
             </div>
-            <span className="chip chip-gray">Xavfsiz</span>
+            <span className="badge-pill chip-green">Xavfsiz</span>
           </div>
 
           {/* App version */}
@@ -191,8 +207,16 @@ export default function ProfilePage() {
 
           {/* Logout */}
           <button
-            className="btn danger full"
-            style={{ marginTop: 8, height: 50, fontSize: 15 }}
+            className="btn btn-full"
+            style={{
+              marginTop: 8,
+              height: 50,
+              fontSize: 15,
+              background: 'transparent',
+              color: 'var(--danger)',
+              border: '2px solid var(--danger-light)',
+              boxShadow: 'none',
+            }}
             onClick={handleLogout}
           >
             Chiqish

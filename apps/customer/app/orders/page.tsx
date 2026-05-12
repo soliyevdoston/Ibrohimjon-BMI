@@ -122,14 +122,19 @@ export default function OrdersPage() {
     <div className="page">
       {/* Header */}
       <div style={{
-        background: 'var(--surface)',
+        background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'saturate(180%) blur(14px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(14px)',
         borderBottom: '1px solid var(--border)',
         padding: '20px 16px 16px',
         position: 'sticky',
         top: 0,
         zIndex: 50,
       }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800 }}>Buyurtmalarim</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px' }}>Buyurtmalarim</h1>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+          Faol va o&apos;tgan buyurtmalaringiz
+        </div>
       </div>
 
       <div style={{ padding: '16px', maxWidth: 680, margin: '0 auto' }}>
@@ -245,18 +250,20 @@ function OrderCard({ order }: { order: Order }) {
       {/* Track button for active orders */}
       {['on_the_way', 'picked_up'].includes(order.status) && (
         <div style={{
-          background: 'var(--surface-alt)',
-          borderRadius: 10,
-          border: '1px solid var(--border)',
-          padding: '8px 12px',
+          background: 'linear-gradient(135deg, var(--primary-light) 0%, #f5f1ff 100%)',
+          borderRadius: 12,
+          border: '1px solid #ddd6fe',
+          padding: '10px 14px',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
           fontSize: 13,
-          color: 'var(--text)',
-          fontWeight: 600,
+          color: 'var(--primary-dark)',
+          fontWeight: 700,
         }}>
-          Kuryer yo&apos;lda — kuzatish
+          <span style={{ fontSize: 18, animation: 'pulse 1.6s ease-in-out infinite' }}>🛵</span>
+          Kuryer yo&apos;lda — bosib kuzating
+          <span style={{ marginLeft: 'auto', fontSize: 18 }}>→</span>
         </div>
       )}
     </div>

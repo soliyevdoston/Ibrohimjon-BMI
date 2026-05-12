@@ -134,44 +134,62 @@ function LoginForm() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px 16px',
-      background: 'var(--bg)',
+      background:
+        'radial-gradient(circle at 15% 10%, rgba(124,58,237,0.18) 0%, transparent 45%),' +
+        'radial-gradient(circle at 90% 80%, rgba(124,58,237,0.12) 0%, transparent 55%),' +
+        'var(--bg)',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      <form onSubmit={handleSubmit} className="card fade-in" style={{ width: '100%', maxWidth: 420, padding: '36px 32px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28, gap: 6 }}>
+      <form onSubmit={handleSubmit} className="card fade-in" style={{
+        width: '100%',
+        maxWidth: 420,
+        padding: '36px 32px',
+        borderRadius: 24,
+        boxShadow: '0 4px 12px rgba(15,23,42,.06), 0 24px 60px rgba(124,58,237,.12)',
+        border: '1px solid rgba(229, 224, 248, 0.8)',
+        backdropFilter: 'blur(8px)',
+        background: 'rgba(255, 255, 255, 0.95)',
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 28, gap: 8 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: 18,
-            background: 'var(--text)', color: 'var(--surface)',
+            width: 72, height: 72, borderRadius: 20,
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
+            color: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, fontWeight: 800, letterSpacing: '-1px', marginBottom: 4,
+            fontSize: 34, fontWeight: 800, letterSpacing: '-1px', marginBottom: 6,
+            boxShadow: '0 10px 30px rgba(124,58,237,.35), 0 1px 0 rgba(255,255,255,.2) inset',
           }}>L</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>Lochin</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>Lochin</div>
           <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
-            Tez yetkazib berish xizmati
+            Tez va qulay yetkazib berish
           </div>
         </div>
 
         <div style={{
           display: 'flex',
           gap: 4,
-          padding: 4,
-          background: 'var(--surface-2, #f3f4f6)',
-          borderRadius: 12,
-          marginBottom: 22,
+          padding: 5,
+          background: 'var(--surface-alt)',
+          border: '1px solid var(--border)',
+          borderRadius: 14,
+          marginBottom: 24,
         }}>
           <button
             type="button"
             onClick={() => setMode('login')}
             style={{
               flex: 1,
-              padding: '8px 12px',
+              padding: '10px 12px',
               border: 'none',
-              borderRadius: 8,
+              borderRadius: 10,
               cursor: 'pointer',
               fontSize: 13,
-              fontWeight: 600,
-              background: mode === 'login' ? 'var(--surface, #fff)' : 'transparent',
-              color: mode === 'login' ? 'var(--text)' : 'var(--text-muted)',
-              boxShadow: mode === 'login' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              fontWeight: 700,
+              transition: 'all 200ms ease',
+              background: mode === 'login' ? '#fff' : 'transparent',
+              color: mode === 'login' ? 'var(--primary-dark)' : 'var(--text-muted)',
+              boxShadow: mode === 'login' ? '0 2px 6px rgba(124,58,237,.12)' : 'none',
             }}
           >Kirish</button>
           <button
@@ -179,15 +197,16 @@ function LoginForm() {
             onClick={() => setMode('register')}
             style={{
               flex: 1,
-              padding: '8px 12px',
+              padding: '10px 12px',
               border: 'none',
-              borderRadius: 8,
+              borderRadius: 10,
               cursor: 'pointer',
               fontSize: 13,
-              fontWeight: 600,
-              background: mode === 'register' ? 'var(--surface, #fff)' : 'transparent',
-              color: mode === 'register' ? 'var(--text)' : 'var(--text-muted)',
-              boxShadow: mode === 'register' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              fontWeight: 700,
+              transition: 'all 200ms ease',
+              background: mode === 'register' ? '#fff' : 'transparent',
+              color: mode === 'register' ? 'var(--primary-dark)' : 'var(--text-muted)',
+              boxShadow: mode === 'register' ? '0 2px 6px rgba(124,58,237,.12)' : 'none',
             }}
           >Ro&apos;yxatdan o&apos;tish</button>
         </div>
