@@ -67,9 +67,11 @@ export default function CustomerHomePage() {
           />
           <select className="select" defaultValue="">
             <option value="">All categories</option>
-            <option value="food">Food</option>
-            <option value="grocery">Grocery</option>
+            <option value="electronics">Electronics</option>
+            <option value="appliances">Appliances</option>
+            <option value="mebel">Furniture</option>
             <option value="home">Home</option>
+            <option value="beauty">Beauty</option>
           </select>
           <input className="input" type="number" placeholder="Max price" min={0} />
         </div>

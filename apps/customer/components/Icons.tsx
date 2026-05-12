@@ -52,14 +52,6 @@ export const IconRefresh = make(
     <polyline points="3 20 3 15 8 15" />
   </>,
 );
-export const IconUtensils = make(
-  <>
-    <path d="M3 2v7a3 3 0 003 3v10" />
-    <path d="M9 2v10" />
-    <path d="M6 2v7" />
-    <path d="M18 2c-2 0-3 2-3 5s1 5 3 5v10" />
-  </>,
-);
 export const IconSparkle = make(
   <>
     <path d="M12 3v3" />

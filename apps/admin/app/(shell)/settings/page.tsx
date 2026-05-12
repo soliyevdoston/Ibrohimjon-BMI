@@ -6,7 +6,6 @@ import { Toast } from '@/components/admin/Toast';
 
 interface PlatformConfig {
   commissionRate: number;
-  serviceFeeRate: number;
   deliveryBaseFee: number;
   deliveryPerKmFee: number;
   freeDeliveryAbove: number;
@@ -18,7 +17,6 @@ interface PlatformConfig {
 export default function AdminSettingsPage() {
   const [cfg, setCfg] = useState<PlatformConfig>({
     commissionRate: 0.10,
-    serviceFeeRate: 0.02,
     deliveryBaseFee: 6000,
     deliveryPerKmFee: 1400,
     freeDeliveryAbove: 0,
@@ -34,7 +32,6 @@ export default function AdminSettingsPage() {
     api<PlatformConfig>('/admin/config')
       .then((data) => setCfg({
         commissionRate: Number(data.commissionRate),
-        serviceFeeRate: Number(data.serviceFeeRate),
         deliveryBaseFee: Number(data.deliveryBaseFee),
         deliveryPerKmFee: Number(data.deliveryPerKmFee),
         freeDeliveryAbove: Number(data.freeDeliveryAbove),
@@ -131,22 +128,20 @@ export default function AdminSettingsPage() {
         <div className="card">
           <div className="card-h">
             <div>
-              <h3>Komissiya va servis</h3>
-              <div className="card-sub">Platforma daromadi</div>
+              <h3>Sotuvchi komissiyasi</h3>
+              <div className="card-sub">Platforma sotuvchidan ushlab qoladigan foiz</div>
             </div>
           </div>
           <div className="stack">
             <div>
-              <div className="label">Sotuvchi komissiyasi (%)</div>
+              <div className="label">Komissiya (%)</div>
               <input className="input" type="number" step="0.01"
                 value={Math.round(cfg.commissionRate * 100)}
                 onChange={(e) => set('commissionRate', String(parseFloat(e.target.value) / 100))} />
-            </div>
-            <div>
-              <div className="label">Servis to&apos;lovi (%)</div>
-              <input className="input" type="number" step="0.01"
-                value={Math.round(cfg.serviceFeeRate * 100)}
-                onChange={(e) => set('serviceFeeRate', String(parseFloat(e.target.value) / 100))} />
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6, lineHeight: 1.5 }}>
+                Mijoz faqat mahsulot + yetkazib berishni to&apos;laydi. Platforma daromadi
+                shu komissiya va yetkazib berish marjasidan tashkil topadi.
+              </div>
             </div>
           </div>
         </div>

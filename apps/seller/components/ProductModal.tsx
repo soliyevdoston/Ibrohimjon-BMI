@@ -14,18 +14,23 @@ type Product = {
 };
 
 const CATEGORIES = [
-  { id: 'food', name: 'Ovqat va ichimliklar' },
-  { id: 'grocery', name: 'Oziq-ovqat' },
+  { id: 'mebel', name: 'Mebel' },
+  { id: 'appliances', name: 'Maishiy texnika' },
+  { id: 'construction', name: 'Qurilish' },
+  { id: 'sport', name: 'Sport va dam' },
+  { id: 'garden', name: "Bog' va dacha" },
   { id: 'electronics', name: 'Elektronika' },
-  { id: 'home', name: "Uy va bog'" },
-  { id: 'beauty', name: "Go'zallik va parvarish" },
-  { id: 'fashion', name: 'Moda' },
+  { id: 'home', name: "Uy-ro'zg'or" },
+  { id: 'drinks', name: 'Ichimliklar' },
+  { id: 'sweets', name: 'Shirinliklar' },
+  { id: 'pharmacy', name: 'Dorixona' },
+  { id: 'beauty', name: "Go'zallik" },
   { id: 'other', name: 'Boshqa' },
 ];
 
 const EMPTY: Product = {
   title: '', description: '', price: '', stock: '',
-  categoryId: 'food', imageUrl: '', isActive: true,
+  categoryId: 'electronics', imageUrl: '', isActive: true,
 };
 
 const MAX_DIMENSION = 1000;

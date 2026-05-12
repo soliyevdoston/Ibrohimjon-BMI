@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/BottomNav';
 import {
   IconCheck, IconX, IconBell, IconStore, IconScooter,
-  IconGift, IconRefresh, IconUtensils, IconSparkle,
+  IconGift, IconRefresh, IconSparkle,
 } from '@/components/Icons';
 
 type IconCmp = React.ComponentType<{ size?: number; stroke?: number; style?: React.CSSProperties }>;
@@ -22,10 +22,10 @@ type Notif = {
 const DEMO: Notif[] = [
   { id: 'n1', type: 'order', title: 'Buyurtma yetkazildi', body: "ORD-128 buyurtmangiz yetkazib berildi. Xaridingiz uchun rahmat!", time: '14:32', read: false, Icon: IconCheck },
   { id: 'n2', type: 'order', title: "Kuryer yo'lda", body: 'Jasur siz tomon ketmoqda. Taxminiy vaqt: 12 daqiqa.', time: '14:18', read: false, Icon: IconScooter },
-  { id: 'n3', type: 'promo', title: '20% chegirma', body: 'Bugun kechgacha Toshkent Nonvoyxonasidan buyurtma bering, 20% chegirmadan foydalaning.', time: '12:00', read: false, Icon: IconGift },
-  { id: 'n4', type: 'order', title: 'Buyurtma qabul qilindi', body: 'ORD-128 buyurtmangiz restoran tomonidan qabul qilindi.', time: 'Kecha 19:45', read: true, Icon: IconStore },
+  { id: 'n3', type: 'promo', title: '20% chegirma — texnikaga', body: "Bugun kechgacha smartfon va noutbuklarga 20% chegirma.", time: '12:00', read: false, Icon: IconGift },
+  { id: 'n4', type: 'order', title: 'Buyurtma qabul qilindi', body: 'ORD-128 buyurtmangiz sotuvchi tomonidan qabul qilindi.', time: 'Kecha 19:45', read: true, Icon: IconStore },
   { id: 'n5', type: 'order', title: 'Buyurtma bekor qilindi', body: 'ORD-124 buyurtmangiz bekor qilindi. Pul qaytariladi.', time: 'Kecha 15:30', read: true, Icon: IconX },
-  { id: 'n6', type: 'promo', title: 'Yangi restoran ochildi', body: 'Sushi Art endi Lochin platformasida. Birinchi buyurtmada 15% chegirma.', time: '25 Apr', read: true, Icon: IconUtensils },
+  { id: 'n6', type: 'promo', title: 'Yangi do\'kon platformada', body: 'Mebel Galereyasi endi Lochin platformasida. Birinchi buyurtmada 15% chegirma.', time: '25 Apr', read: true, Icon: IconStore },
   { id: 'n7', type: 'system', title: 'Ilovani yangilang', body: 'Lochin 2.1 versiyasi mavjud. Yangi xususiyatlar va tezroq ishlash.', time: '24 Apr', read: true, Icon: IconRefresh },
   { id: 'n8', type: 'promo', title: "Do'stingizni taklif qiling", body: "Har bir do'st uchun 5,000 so'm bonus oling. Referal kodingiz: JASUR123", time: '23 Apr', read: true, Icon: IconSparkle },
 ];

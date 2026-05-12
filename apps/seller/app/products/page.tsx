@@ -19,8 +19,10 @@ type Product = {
 
 
 const CATEGORY_LABEL: Record<string, string> = {
-  food: 'Ovqat', grocery: 'Oziq-ovqat', electronics: 'Elektronika',
-  home: "Uy-ro'zg'or", beauty: "Go'zallik", fashion: 'Moda', other: 'Boshqa',
+  mebel: 'Mebel', appliances: 'Texnika', construction: 'Qurilish',
+  sport: 'Sport', garden: "Bog'", electronics: 'Elektronika',
+  home: "Uy-ro'zg'or", drinks: 'Ichimliklar', sweets: 'Shirinliklar',
+  pharmacy: 'Dorixona', beauty: "Go'zallik", other: 'Boshqa',
 };
 
 const COLORS = ['#F97316', '#10b981', '#f59e0b', '#ef4444', '#0ea5e9', '#8b5cf6', '#ec4899'];

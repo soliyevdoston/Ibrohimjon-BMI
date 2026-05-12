@@ -28,6 +28,8 @@ type Order = {
   updatedAt?: string;
   total?: number;
   totalAmount?: number;
+  subtotalAmount?: number;
+  deliveryFeeAmount?: number;
   deliveryAddress?: string;
   deliveryLat?: number;
   deliveryLng?: number;
@@ -111,11 +113,13 @@ export default function OrderTrackingPage() {
         code: `ORD-${id.slice(0, 6).toUpperCase()}`,
         status: 'on_the_way',
         createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-        total: 78000,
+        subtotalAmount: 1670000,
+        deliveryFeeAmount: 25000,
+        total: 1695000,
         deliveryAddress: "Farg'ona, Mustaqillik ko'chasi 42-uy",
         items: [
-          { id: '1', title: 'Osh (plov)', price: 35000, quantity: 2, unitPrice: 35000 },
-          { id: '2', title: 'Lag\'mon', price: 25000, quantity: 1, unitPrice: 25000 },
+          { id: '1', title: 'JBL Flip 6 kolonka', price: 1450000, quantity: 1, unitPrice: 1450000 },
+          { id: '2', title: 'Quvvat banki 20000mAh', price: 220000, quantity: 1, unitPrice: 220000 },
         ],
         courier: {
           id: 'c1',
@@ -227,7 +231,15 @@ export default function OrderTrackingPage() {
     return CUSTOMER_POS;
   };
 
-  const total = order?.total ?? order?.totalAmount ?? 0;
+  const total = Number(order?.total ?? order?.totalAmount ?? 0);
+  const itemsSubtotal = order?.items?.reduce((acc, it) => {
+    const price = Number(it.price ?? it.unitPrice ?? it.product?.price ?? 0);
+    return acc + price * it.quantity;
+  }, 0) ?? 0;
+  const subtotal = Number(order?.subtotalAmount ?? itemsSubtotal);
+  const deliveryFee = order?.deliveryFeeAmount !== undefined
+    ? Number(order.deliveryFeeAmount)
+    : Math.max(0, total - subtotal);
 
   if (loading) {
     return (
@@ -397,8 +409,18 @@ export default function OrderTrackingPage() {
             {total > 0 && (
               <>
                 <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 700, fontSize: 15 }}>Jami</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                  <span>Mahsulotlar</span>
+                  <span style={{ fontWeight: 600 }}>{money(subtotal)} so&apos;m</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10 }}>
+                  <span>Yetkazib berish (kuryer)</span>
+                  <span style={{ fontWeight: 600, color: deliveryFee === 0 ? '#10b981' : undefined }}>
+                    {deliveryFee === 0 ? 'Bepul' : `${money(deliveryFee)} so'm`}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                  <span style={{ fontWeight: 700, fontSize: 15 }}>Jami to&apos;lov</span>
                   <span style={{ fontWeight: 800, fontSize: 18, color: 'var(--primary)' }}>{money(total)} so&apos;m</span>
                 </div>
               </>

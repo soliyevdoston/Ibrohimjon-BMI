@@ -83,7 +83,6 @@ export class PricingService {
     const tier = this.tierRates(requiredVehicle, cfg);
 
     const platformCommissionRate = num(cfg.commissionRate);
-    const serviceFeeRate = num(cfg.serviceFeeRate);
 
     const commissionRate =
       input.sellerCommissionRate !== undefined
@@ -95,13 +94,15 @@ export class PricingService {
     const isFreeDelivery = freeDeliveryAbove > 0 && subtotal >= freeDeliveryAbove;
     const deliveryFee = isFreeDelivery ? 0 : rawDeliveryFee;
     const courierFee = round(tier.courierBase + distanceKm * tier.courierPerKm);
-    const serviceFee = round(subtotal * serviceFeeRate);
-    const total = subtotal + deliveryFee + serviceFee;
+    // Mijoz faqat mahsulot + yetkazib berishni to'laydi. Platforma daromadi
+    // sotuvchi komissiyasi + yetkazib berish marjasidan iborat.
+    const serviceFee = 0;
+    const total = subtotal + deliveryFee;
 
     const platformCommission = round(subtotal * commissionRate);
     const sellerPayout = subtotal - platformCommission;
     const deliveryMargin = deliveryFee - courierFee;
-    const platformRevenue = platformCommission + deliveryMargin + serviceFee;
+    const platformRevenue = platformCommission + deliveryMargin;
 
     return {
       subtotalAmount: subtotal,

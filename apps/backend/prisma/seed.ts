@@ -13,17 +13,18 @@ const CATEGORIES = [
   { name: 'Qurilish',        slug: 'construction' },
   { name: 'Sport va dam',    slug: 'sport' },
   { name: "Bog' va dacha",   slug: 'garden' },
-  // Existing small-item categories (kept for variety)
+  // Market-style small items
   { name: 'Electronics',     slug: 'electronics' },
   { name: 'Home',            slug: 'home' },
   { name: 'Drinks',          slug: 'drinks' },
-  { name: 'Bakery',          slug: 'bakery' },
   { name: 'Sweets',          slug: 'sweets' },
   { name: 'Pharmacy',        slug: 'pharmacy' },
   { name: 'Beauty',          slug: 'beauty' },
 ];
 
-const REMOVED_SLUGS = ['food', 'groceries', 'dairy', 'meat', 'flowers'];
+// Yandex Market modeli: faqat tovarlar. Quyidagi slug'lar (taom/restoran)
+// arxivlandi — agar baza'da bo'lsa, ularning mahsulotlari o'chiriladi.
+const REMOVED_SLUGS = ['food', 'groceries', 'dairy', 'meat', 'flowers', 'bakery'];
 
 type SeedProduct = {
   title: string;
@@ -203,14 +204,6 @@ const PRODUCTS: SeedProduct[] = [
   { title: 'Coca-Cola 1L',              description: 'Sovutilgan, uzoq saqlash mumkin',                     price: 15000, stock: 200, categorySlug: 'drinks', imageUrl: UNSPLASH('photo-1554866585-cd94860890b7') },
   { title: 'Mineral suv 1.5L',          description: 'Tabiiy gazsiz suv',                                    price: 8000,  stock: 250, categorySlug: 'drinks', imageUrl: UNSPLASH('photo-1564419320461-6870880221ad') },
   { title: 'Olma sharbati 1L',          description: 'Idishlangan tabiiy sharbat',                           price: 22000, stock: 100, categorySlug: 'drinks', imageUrl: UNSPLASH('photo-1622597467836-f3e6b3c5f6e0') },
-
-  // ===== BAKERY (TORTLAR) =====
-  { title: 'Shokoladli tort 1kg',      description: '8 kishilik to\'liq tort',                              price: 95000, stock: 15,  categorySlug: 'bakery', imageUrl: UNSPLASH('photo-1578985545062-69928b1d9587') },
-  { title: 'Napoleon tort',             description: 'Klassik qatlamali tort, 800g',                         price: 85000, stock: 12,  categorySlug: 'bakery', imageUrl: UNSPLASH('photo-1486427944299-d1955d23e34d') },
-  { title: 'Medovik (asal tort)',       description: 'O\'zbek uslubidagi asal torti',                        price: 78000, stock: 18,  categorySlug: 'bakery', imageUrl: UNSPLASH('photo-1571115177098-24ec42ed204d') },
-  { title: 'Cheesecake',                 description: 'Klassik New York cheesecake',                          price: 110000, stock: 10, categorySlug: 'bakery', imageUrl: UNSPLASH('photo-1524351199678-941a58a3df50') },
-  { title: 'Tiramisu',                  description: 'Italyan an\'anaviy tortchasi',                         price: 92000, stock: 14,  categorySlug: 'bakery', imageUrl: UNSPLASH('photo-1571877227200-a0d98ea607e9') },
-  { title: 'Cookies (10 dona)',         description: 'Shokolad bo\'laklari bilan',                           price: 28000, stock: 70,  categorySlug: 'bakery', imageUrl: UNSPLASH('photo-1499636136210-6f4ee915583e') },
 
   // ===== SWEETS =====
   { title: 'Shokolad Milka (100g)',    description: 'Sutli shokolad',                                       price: 18000, stock: 120, categorySlug: 'sweets', imageUrl: UNSPLASH('photo-1606312619070-d48b4c652a52') },

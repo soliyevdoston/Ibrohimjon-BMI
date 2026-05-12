@@ -59,7 +59,6 @@ const STEP_TITLES: Record<Step, string> = { 1: 'Manzil', 2: "To'lov", 3: 'Tasdiq
 // preview lines up with what the backend will charge. Tiered by total order
 // weight: BIKE → CAR → VAN → TRUCK (mebel/qurilish).
 type Vehicle = 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
-const SERVICE_FEE_RATE = 0.02;
 
 const TIER_RATES: Record<Vehicle, { base: number; perKm: number; maxKg: number; label: string; icon: string }> = {
   BIKE:  { base: 6000,  perKm: 1400, maxKg: 10,        label: 'Velosipid',     icon: '🚲' },
@@ -89,10 +88,6 @@ function calcDeliveryFee(lat: number, lng: number, vehicle: Vehicle): number {
   const km = calcDistanceKm(lat, lng);
   const t = TIER_RATES[vehicle];
   return Math.round(t.base + km * t.perKm);
-}
-
-function calcServiceFee(subtotal: number): number {
-  return Math.round(subtotal * SERVICE_FEE_RATE);
 }
 
 interface SavedCard {
@@ -190,8 +185,7 @@ export default function CheckoutPage() {
     ? Math.min(100, Math.round((sub / freeDeliveryAbove) * 100))
     : 0;
   const freeDeliveryLeft = freeDeliveryAbove > 0 && !isFreeDelivery ? freeDeliveryAbove - sub : 0;
-  const serviceFee = calcServiceFee(sub);
-  const total = sub + deliveryFee + serviceFee;
+  const total = sub + deliveryFee;
 
   const handlePlaceOrder = async () => {
     if (!selected) return;
@@ -472,12 +466,6 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               )}
-              <div className="price-row">
-                <span className="price-row-label" title="Platforma servis to'lovi">
-                  Servis to&apos;lovi <span style={{ color: '#9ca3af', fontSize: 11, marginLeft: 4 }}>(2%)</span>
-                </span>
-                <span className="price-row-value">{money(serviceFee)} so&apos;m</span>
-              </div>
               <div style={{ height: 1, background: 'var(--border)', margin: '10px 0' }} />
               <div className="price-row" style={{ fontSize: 16 }}>
                 <span style={{ fontWeight: 700 }}>Jami to&apos;lov</span>

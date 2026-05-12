@@ -15,7 +15,6 @@ const CATEGORIES = [
   { name: 'Electronics',     slug: 'electronics' },
   { name: 'Home',            slug: 'home' },
   { name: 'Drinks',          slug: 'drinks' },
-  { name: 'Bakery',          slug: 'bakery' },
   { name: 'Sweets',          slug: 'sweets' },
   { name: 'Pharmacy',        slug: 'pharmacy' },
   { name: 'Beauty',          slug: 'beauty' },

@@ -281,7 +281,7 @@ export default function PaymentsPage() {
             </div>
             <div style={{ display: 'flex', alignItems: 'stretch', gap: 0, overflowX: 'auto' }}>
               <FlowNode Icon={IconUser} label="Mijoz" amount={moneyK(flowAmount)} sub="Jami to'lov" />
-              <FlowArrow label={`${moneyK(flowAmount)} so'm`} sub="Mahsulot + Yetkazib berish + Servis" />
+              <FlowArrow label={`${moneyK(flowAmount)} so'm`} sub="Mahsulot + Yetkazib berish" />
               <FlowNode Icon={IconShield} label="Platforma" amount={moneyK(flowPlatform)} sub="Sof daromad" highlight />
               <FlowArrow label={`${moneyK(flowSeller)} so'm`} sub="Mahsulot − komissiya" />
               <FlowNode Icon={IconStore} label="Sotuvchi" amount={moneyK(flowSeller)} sub="To'lov" />
@@ -294,7 +294,7 @@ export default function PaymentsPage() {
             <Kpi label="GMV (jami)" value={moneyK(overview.gmv) + " so'm"} Icon={IconUser} sub={`${overview.paidOrders} ta buyurtma`} />
             <Kpi label="Komissiya" value={moneyK(overview.totalCommission) + " so'm"} Icon={IconMoney} sub={`Bugun: ${moneyK(overview.todayCommission)}`} />
             <Kpi label="Kuryerlarga" value={moneyK(overview.totalCourierFees) + " so'm"} Icon={IconScooter} sub="Yetkazib berish" />
-            <Kpi label="Platforma sof" value={moneyK(overview.totalPlatformRevenue) + " so'm"} Icon={IconShield} sub="Komissiya + servis + delivery margin" />
+            <Kpi label="Platforma sof" value={moneyK(overview.totalPlatformRevenue) + " so'm"} Icon={IconShield} sub="Komissiya + delivery margin" />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
@@ -414,7 +414,6 @@ function ConfigForm({ config, onSave }: {
 }) {
   const [draft, setDraft] = useState({
     commissionRate: Number(config.commissionRate) * 100,
-    serviceFeeRate: Number(config.serviceFeeRate) * 100,
     deliveryBaseFee: Number(config.deliveryBaseFee),
     deliveryPerKmFee: Number(config.deliveryPerKmFee),
     courierBaseFee: Number(config.courierBaseFee),
@@ -428,7 +427,6 @@ function ConfigForm({ config, onSave }: {
     try {
       await onSave({
         commissionRate: draft.commissionRate / 100,
-        serviceFeeRate: draft.serviceFeeRate / 100,
         deliveryBaseFee: draft.deliveryBaseFee,
         deliveryPerKmFee: draft.deliveryPerKmFee,
         courierBaseFee: draft.courierBaseFee,
@@ -441,8 +439,7 @@ function ConfigForm({ config, onSave }: {
   };
 
   const fields: Array<[keyof typeof draft, string, string]> = [
-    ['commissionRate', "Default komissiya (%)", "Sotuvchi mahsulot summasidan"],
-    ['serviceFeeRate', "Servis to'lovi (%)", "Mijoz subtotal'dan"],
+    ['commissionRate', "Sotuvchi komissiyasi (%)", "Mahsulot summasidan platforma ushlab qoladi"],
     ['deliveryBaseFee', "Delivery base (so'm)", "Mijoz to'laydigan boshlang'ich narx"],
     ['deliveryPerKmFee', "Delivery per km (so'm)", "Mijoz har km uchun"],
     ['courierBaseFee', "Courier base (so'm)", "Kuryer boshlang'ich daromadi"],

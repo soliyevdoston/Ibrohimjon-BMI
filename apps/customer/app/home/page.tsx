@@ -34,10 +34,9 @@ const CATEGORY_LABELS: Record<string, { name: string; icon: string }> = {
   construction: { name: 'Qurilish',         icon: '🧱' },
   sport:        { name: 'Sport',            icon: '🚴' },
   garden:       { name: "Bog' va dacha",    icon: '🌳' },
-  // Existing
+  // Market goods
   electronics:  { name: 'Smart',            icon: '📱' },
   home:         { name: "Uy-ro'zg'or",      icon: '🏠' },
-  bakery:       { name: 'Tortlar',          icon: '🎂' },
   drinks:       { name: 'Ichimliklar',      icon: '🥤' },
   sweets:       { name: 'Shirinliklar',     icon: '🍫' },
   pharmacy:     { name: 'Dorixona',         icon: '💊' },
@@ -52,8 +51,8 @@ const UNS = (id: string) => `https://images.unsplash.com/${id}?w=1400&q=80&auto=
 
 const BANNER_BY_SLUG: Record<string, Slide[]> = {
   '': [
-    { image: UNS('photo-1604329760661-e71dc83f8f26'), emoji: '🛵', title: 'Tez va qulay yetkazib berish', sub: 'Minglab mahsulotlar — bir joyda.\n30 daqiqada eshigingizgacha.' },
-    { image: UNS('photo-1578985545062-69928b1d9587'), emoji: '🍰', title: 'Tortlar va shirinliklar', sub: 'Tug\'ilgan kun va bayramlar uchun mukammal tanlov.' },
+    { image: UNS('photo-1604329760661-e71dc83f8f26'), emoji: '🛵', title: 'Tez va qulay yetkazib berish', sub: 'Minglab tovarlar — bir joyda.\n30 daqiqada eshigingizgacha.' },
+    { image: UNS('photo-1555041469-a586c61ea9bc'), emoji: '🛋️', title: 'Mebel va uy interyeri', sub: 'Divan, krovat, shkaflar — uyingizga qulaylik.' },
     { image: UNS('photo-1592750475338-74b7b21085ab'), emoji: '📱', title: 'Eng so\'nggi texnika', sub: 'iPhone, MacBook, AirPods — yangi avlod gadjetlari.' },
     { image: UNS('photo-1606312619070-d48b4c652a52'), emoji: '🍫', title: 'Shokolad va shirinliklar', sub: 'Eng yaxshi brendlar — uzoq saqlanadigan ta\'mlar.' },
     { image: UNS('photo-1622597467836-f3e6b3c5f6e0'), emoji: '🎁', title: 'Birinchi buyurtmaga 15% chegirma', sub: 'Yangi mijozlar uchun maxsus taklif.' },
@@ -63,12 +62,6 @@ const BANNER_BY_SLUG: Record<string, Slide[]> = {
     { image: UNS('photo-1556679343-c7306c1976bc'), emoji: '🍵', title: 'Quruq choy paketi', sub: 'Yashil va qora choy — uy zaxirangiz uchun.' },
     { image: UNS('photo-1622597467836-f3e6b3c5f6e0'), emoji: '🧃', title: 'Tabiiy sharbatlar', sub: 'Idishlangan, qo\'shimchasiz, sevimli ta\'mlar.' },
     { image: UNS('photo-1564419320461-6870880221ad'), emoji: '💧', title: 'Mineral suv zaxirasi', sub: '1.5L idishlarda — kuniga 8 stakan.' },
-  ],
-  bakery: [
-    { image: UNS('photo-1578985545062-69928b1d9587'), emoji: '🎂', title: 'Tortlar bayramingizga', sub: 'Shokoladli, Napoleon, Medovik — har didga.' },
-    { image: UNS('photo-1524351199678-941a58a3df50'), emoji: '🍰', title: 'Cheesecake va Tiramisu', sub: 'Italyan va Amerika klassikasi.' },
-    { image: UNS('photo-1486427944299-d1955d23e34d'), emoji: '🍮', title: 'Hashamat tortlari', sub: 'Maxsus buyurtma asosida tayyorlangan.' },
-    { image: UNS('photo-1499636136210-6f4ee915583e'), emoji: '🍪', title: 'Cookies to\'plami', sub: 'Shokolad bo\'laklari bilan — uzoq saqlanadi.' },
   ],
   sweets: [
     { image: UNS('photo-1606312619070-d48b4c652a52'), emoji: '🍫', title: 'Shokolad olami', sub: 'Milka, Lindt, sutli va qora — eng yaxshi brendlar.' },
@@ -91,7 +84,7 @@ const BANNER_BY_SLUG: Record<string, Slide[]> = {
   home: [
     { image: UNS('photo-1631049307264-da0ec9d70304'), emoji: '🛏', title: 'Yumshoq yostiq va adyol', sub: 'Tabiiy paxta, yumshoq tinch uyqu uchun.' },
     { image: UNS('photo-1565374790459-72c35adb3aab'), emoji: '💡', title: 'Zamonaviy yoritish', sub: 'LED chiroqlar, smart lampalar — uyga energiya.' },
-    { image: UNS('photo-1547074620-f17b3f0bcaa5'), emoji: '🍳', title: 'Oshxona texnikalari', sub: 'Choynak, blender, mikser — har taomingizga.' },
+    { image: UNS('photo-1547074620-f17b3f0bcaa5'), emoji: '🍳', title: 'Oshxona texnikalari', sub: 'Choynak, blender, mikser — kundalik ishlaringizga.' },
   ],
   beauty: [
     { image: UNS('photo-1541643600914-78b084683601'), emoji: '💎', title: 'Hashamatli atirlar', sub: 'Chanel, Dior, Gucci — siz haqiqiy ayol.' },
