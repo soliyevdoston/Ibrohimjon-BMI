@@ -15,12 +15,12 @@ type Profile = {
 };
 
 const DEMO: Profile = {
-  name: 'Lochin Bozor',
-  phone: '+998 73 123 45 67',
-  brand: "Lochin Bozor",
-  address: "Mustaqillik ko'chasi 12, Farg'ona",
-  description: "Farg'ona shahrida tez va sifatli yetkazib berish xizmati",
-  workingHours: '08:00 – 22:00',
+  name: '',
+  phone: '',
+  brand: '',
+  address: '',
+  description: '',
+  workingHours: '',
 };
 
 export default function SettingsPage() {

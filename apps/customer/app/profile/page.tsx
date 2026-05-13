@@ -14,9 +14,9 @@ type Profile = {
 
 const DEMO: Profile = {
   name: 'Foydalanuvchi',
-  phone: '+998 90 000 00 00',
-  ordersCount: 12,
-  totalSpent: 1_450_000,
+  phone: '',
+  ordersCount: 0,
+  totalSpent: 0,
 };
 
 export default function ProfilePage() {

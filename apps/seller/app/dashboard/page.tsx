@@ -61,12 +61,15 @@ function timeAgo(iso: string) {
   return `${Math.floor(diff / 3600)}s oldin`;
 }
 
-const REVENUE_DATA = [120, 185, 210, 95, 340, 280, 185].map((v, i) => ({
+// Weekly bar chart placeholder — bars are zero until backend exposes
+// per-day revenue for the logged-in seller. See useEffect below for the
+// (currently no-op) fetch.
+const REVENUE_DATA = [0, 0, 0, 0, 0, 0, 0].map((v, i) => ({
   id: i,
   day: ['Du', 'Se', 'Cho', 'Pa', 'Ju', 'Sh', 'Ya'][i],
   value: v,
 }));
-const MAX_REV = Math.max(...REVENUE_DATA.map((d) => d.value));
+const MAX_REV = Math.max(1, ...REVENUE_DATA.map((d) => d.value));
 
 interface NewOrderToast {
   orderId: string;

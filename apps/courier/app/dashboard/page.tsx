@@ -64,10 +64,12 @@ export default function CourierDashboard() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('nearest');
   const [refreshing, setRefreshing] = useState(false);
-  const [todayEarnings] = useState(84_000);
-  const [todayDeliveries] = useState(7);
-  const [rating] = useState(4.9);
-  const [acceptRate] = useState(96);
+  // Start at zero until /payouts/courier/summary is wired into the
+  // dashboard. Values were previously hardcoded to demo numbers.
+  const [todayEarnings, setTodayEarnings] = useState(0);
+  const [todayDeliveries, setTodayDeliveries] = useState(0);
+  const [rating] = useState(0);
+  const [acceptRate] = useState(0);
   const gpsCleanupRef = useRef<(() => void) | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
@@ -118,6 +120,19 @@ export default function CourierDashboard() {
   useEffect(() => {
     if (!localStorage.getItem('access_token')) { router.replace('/login'); return; }
     loadAvailable();
+
+    // Fetch real earnings/deliveries for today from the ledger summary
+    type Summary = { recentEntries: { type: string; amount: number; createdAt: string }[] };
+    api<Summary>('/payouts/courier/summary', { token })
+      .then((s) => {
+        const today = new Date().toDateString();
+        const todays = s.recentEntries.filter(
+          (e) => e.type === 'COURIER_FEE' && new Date(e.createdAt).toDateString() === today,
+        );
+        setTodayEarnings(todays.reduce((sum, e) => sum + e.amount, 0));
+        setTodayDeliveries(todays.length);
+      })
+      .catch(() => {/* keep zeros */});
 
     let cancelled = false;
     type CourierProfile = { id: string; vehicleType: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK' };
