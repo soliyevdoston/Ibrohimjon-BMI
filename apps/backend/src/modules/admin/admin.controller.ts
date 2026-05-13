@@ -39,6 +39,13 @@ export class AdminController {
     return this.adminService.dashboard();
   }
 
+  @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  stats() {
+    return this.adminService.stats();
+  }
+
   @Get('users')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

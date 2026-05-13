@@ -25,42 +25,25 @@ export type Product = {
   createdAt: string;
 };
 
-const SEED_CATEGORIES: Category[] = [
-  { id: 'cat-bakery',      name: 'Tortlar',          icon: '🎂', parentId: null, productCount: 6  },
-  { id: 'cat-drinks',      name: 'Ichimliklar',      icon: '🥤', parentId: null, productCount: 4  },
-  { id: 'cat-sweets',      name: 'Shirinliklar',     icon: '🍫', parentId: null, productCount: 6  },
-  { id: 'cat-pharmacy',    name: 'Dorixona',         icon: '💊', parentId: null, productCount: 5  },
-  { id: 'cat-electronics', name: 'Texnika',          icon: '📱', parentId: null, productCount: 10 },
-  { id: 'cat-home',        name: "Uy-ro'zg'or",      icon: '🏠', parentId: null, productCount: 4  },
-  { id: 'cat-beauty',      name: "Go'zallik",        icon: '💄', parentId: null, productCount: 4  },
-];
+const SEED_CATEGORIES: Category[] = [];
 
-const SEED_PRODUCTS: Product[] = [
-  { id: 'p1',  title: 'Shokoladli tort',         sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-bakery',      price: 95000,    stock: 15, status: 'approved', createdAt: '2025-04-12' },
-  { id: 'p2',  title: 'Cheesecake',               sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-bakery',      price: 110000,   stock: 10, status: 'approved', createdAt: '2025-04-15' },
-  { id: 'p3',  title: 'Tiramisu',                 sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-bakery',      price: 92000,    stock: 14, status: 'approved', createdAt: '2025-04-09' },
-  { id: 'p4',  title: 'Coca-Cola 1L',             sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-drinks',      price: 15000,    stock: 200, status: 'approved', createdAt: '2025-04-08' },
-  { id: 'p5',  title: 'Mineral suv 1.5L',         sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-drinks',      price: 8000,     stock: 250, status: 'approved', createdAt: '2025-04-07' },
-  { id: 'p6',  title: 'Shokolad Lindt',           sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-sweets',      price: 38000,    stock: 80,  status: 'approved', createdAt: '2025-04-20' },
-  { id: 'p7',  title: 'Asal (500g)',              sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-sweets',      price: 75000,    stock: 60,  status: 'approved', createdAt: '2025-04-26' },
-  { id: 'p8',  title: 'Vitamin C',                sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-pharmacy',    price: 35000,    stock: 100, status: 'approved', createdAt: '2025-04-27' },
-  { id: 'p9',  title: 'iPhone 15 Pro 256GB',     sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-electronics', price: 14500000, stock: 8,   status: 'approved', createdAt: '2025-04-28' },
-  { id: 'p10', title: 'AirPods Pro 2',            sellerId: 's1', sellerName: 'Lochin Market', categoryId: 'cat-electronics', price: 3200000,  stock: 25,  status: 'pending',  createdAt: '2025-04-29' },
-];
+const SEED_PRODUCTS: Product[] = [];
 
 type EntityCourier = MockCourier & { branchId?: string };
 type EntitySeller = MockSeller & { categoryId?: string; lat?: number; lng?: number; address?: string };
 type EntityCustomer = MockCustomer & { isBlocked?: boolean };
 
+// Bumped to v-clean so any pre-existing demo data stuck in users' localStorage
+// is invalidated on next load (project handover state).
 const KEYS = {
-  branches: 'admin.branches.v1',
-  pickups: 'admin.pickups.v1',
-  couriers: 'admin.couriers.v1',
-  sellers: 'admin.sellers.v1',
-  customers: 'admin.customers.v1',
-  categories: 'admin.categories.v2',
-  products: 'admin.products.v2',
-  orders: 'admin.orders.v1',
+  branches: 'admin.branches.v-clean',
+  pickups: 'admin.pickups.v-clean',
+  couriers: 'admin.couriers.v-clean',
+  sellers: 'admin.sellers.v-clean',
+  customers: 'admin.customers.v-clean',
+  categories: 'admin.categories.v-clean',
+  products: 'admin.products.v-clean',
+  orders: 'admin.orders.v-clean',
 } as const;
 
 function loadOrSeed<T>(key: string, seed: T[]): T[] {

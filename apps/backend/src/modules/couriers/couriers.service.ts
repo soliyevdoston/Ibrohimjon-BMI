@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { VehicleType } from "@prisma/client";
 import { PrismaService } from "src/common/prisma.service";
 
@@ -31,8 +35,12 @@ export class CouriersService {
       where: { userId },
       update: {
         ...(vehicleType ? { vehicleType } : {}),
-        ...(payload.vehicleModel !== undefined ? { vehicleModel: payload.vehicleModel } : {}),
-        ...(payload.vehiclePlate !== undefined ? { vehiclePlate: payload.vehiclePlate } : {}),
+        ...(payload.vehicleModel !== undefined
+          ? { vehicleModel: payload.vehicleModel }
+          : {}),
+        ...(payload.vehiclePlate !== undefined
+          ? { vehiclePlate: payload.vehiclePlate }
+          : {}),
         ...(maxLoadKg !== undefined ? { maxLoadKg } : {}),
       },
       create: {
@@ -73,11 +81,15 @@ export class CouriersService {
   }
 }
 
-function parseVehicleType(raw: VehicleType | string | undefined): VehicleType | undefined {
+function parseVehicleType(
+  raw: VehicleType | string | undefined,
+): VehicleType | undefined {
   if (!raw) return undefined;
   const upper = String(raw).toUpperCase() as VehicleType;
   if (!VEHICLE_TYPES.includes(upper)) {
-    throw new BadRequestException("Vehicle type noto`g`ri (BIKE/CAR/VAN/TRUCK)");
+    throw new BadRequestException(
+      "Vehicle type noto`g`ri (BIKE/CAR/VAN/TRUCK)",
+    );
   }
   return upper;
 }

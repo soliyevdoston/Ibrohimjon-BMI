@@ -2,27 +2,34 @@
 
 import { DonutChart } from '@/components/admin/DonutChart';
 import { RevenueChart } from '@/components/admin/RevenueChart';
-import { mockKPIs, mockRevenueByHour, mockSellers, uzs } from '@/lib/admin-mock';
+import { useAdminStats } from '@/lib/admin-api';
 
-const daily = [
-  { h: 'Mon', v: 2.1 },
-  { h: 'Tue', v: 3.4 },
-  { h: 'Wed', v: 2.9 },
-  { h: 'Thu', v: 4.2 },
-  { h: 'Fri', v: 5.1 },
-  { h: 'Sat', v: 6.8 },
-  { h: 'Sun', v: 6.2 },
-];
+function uzs(value: number) {
+  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' soʼm';
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  DELIVERED:        '#0f172a',
+  ON_THE_WAY:       '#374151',
+  PICKED_UP:        '#4b5563',
+  COURIER_ACCEPTED: '#52525b',
+  READY_FOR_PICKUP: '#6b7280',
+  PREPARING:        '#9ca3af',
+  ACCEPTED:         '#a3a3a3',
+  PENDING:          '#d4d4d8',
+  CANCELED:         '#e5e7eb',
+  FAILED:           '#fca5a5',
+};
 
 export default function AdminAnalyticsPage() {
-  const topSellers = [...mockSellers].sort((a, b) => b.revenueToday - a.revenueToday).slice(0, 5);
-  const statusSegments = [
-    { label: 'Delivered',  value: 186, color: '#0f172a' },
-    { label: 'On the way', value: 37,  color: '#374151' },
-    { label: 'Preparing',  value: 18,  color: '#6b7280' },
-    { label: 'Pending',    value: 4,   color: '#9ca3af' },
-    { label: 'Canceled',   value: 3,   color: '#d1d5db' },
-  ];
+  const { data: stats, loading } = useAdminStats();
+
+  const topSellers = stats?.topSellers ?? [];
+  const statusSegments = (stats?.statusDistribution ?? []).map((s) => ({
+    label: s.status,
+    value: s.count,
+    color: STATUS_COLORS[s.status] ?? '#9ca3af',
+  }));
   const total = statusSegments.reduce((s, x) => s + x.value, 0);
 
   return (
@@ -30,24 +37,24 @@ export default function AdminAnalyticsPage() {
       <div className="grid-3">
         <div className="kpi">
           <div className="kpi-row">
-            <span className="kpi-label">Revenue MTD</span>
+            <span className="kpi-label">Bu oygi tushum</span>
           </div>
-          <div className="kpi-value">{uzs(mockKPIs.revenueToday * 14)}</div>
-          <div className="kpi-meta">April 1 → today</div>
+          <div className="kpi-value">{uzs(stats?.revenueMonth ?? 0)}</div>
+          <div className="kpi-meta">{loading ? 'yuklanmoqda…' : 'oy boshidan hozirgacha'}</div>
         </div>
         <div className="kpi">
           <div className="kpi-row">
-            <span className="kpi-label">Conversion rate</span>
+            <span className="kpi-label">Mijozlar</span>
           </div>
-          <div className="kpi-value">7.8%</div>
-          <div className="kpi-meta">Visitors → orders</div>
+          <div className="kpi-value">{stats?.totals.customers ?? 0}</div>
+          <div className="kpi-meta">Ro&apos;yxatdan o&apos;tgan</div>
         </div>
         <div className="kpi">
           <div className="kpi-row">
-            <span className="kpi-label">Avg. delivery time</span>
+            <span className="kpi-label">O&apos;rtacha yetkazib berish</span>
           </div>
-          <div className="kpi-value">28 min</div>
-          <div className="kpi-meta">From accept to drop-off</div>
+          <div className="kpi-value">{stats?.avgDeliveryMinutes ?? 0} min</div>
+          <div className="kpi-meta">Qabuldan yetkazishgacha</div>
         </div>
       </div>
 
@@ -55,21 +62,21 @@ export default function AdminAnalyticsPage() {
         <div className="card">
           <div className="card-h">
             <div>
-              <h3>Revenue · last 7 days</h3>
-              <div className="card-sub">Millions soʼm</div>
+              <h3>Tushum · oxirgi 7 kun</h3>
+              <div className="card-sub">soʼm</div>
             </div>
           </div>
-          <RevenueChart points={daily} />
+          <RevenueChart points={stats?.revenueByDay ?? []} />
         </div>
 
         <div className="card">
           <div className="card-h">
             <div>
-              <h3>Today — revenue by hour</h3>
-              <div className="card-sub">Millions soʼm</div>
+              <h3>Bugun — soatma-soat</h3>
+              <div className="card-sub">soʼm</div>
             </div>
           </div>
-          <RevenueChart points={mockRevenueByHour} />
+          <RevenueChart points={stats?.revenueByHour ?? []} />
         </div>
       </div>
 
@@ -77,21 +84,32 @@ export default function AdminAnalyticsPage() {
         <div className="card">
           <div className="card-h">
             <div>
-              <h3>Orders by status</h3>
-              <div className="card-sub">Last 24 hours · {total} total</div>
+              <h3>Buyurtmalar holati</h3>
+              <div className="card-sub">Oxirgi 24 soat · {total} jami</div>
             </div>
           </div>
-          <DonutChart segments={statusSegments} centerLabel="Orders" />
+          {statusSegments.length === 0 ? (
+            <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+              Ma&apos;lumot yo&apos;q
+            </div>
+          ) : (
+            <DonutChart segments={statusSegments} centerLabel="Buyurtmalar" />
+          )}
         </div>
 
         <div className="card">
           <div className="card-h">
             <div>
-              <h3>Top 5 sellers · revenue today</h3>
-              <div className="card-sub">Ranked</div>
+              <h3>Top 5 sotuvchi · bugungi tushum</h3>
+              <div className="card-sub">Reyting bo&apos;yicha</div>
             </div>
           </div>
           <div className="stack" style={{ gap: 10 }}>
+            {topSellers.length === 0 && (
+              <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>
+                Hozircha sotuvchi yo&apos;q
+              </div>
+            )}
             {topSellers.map((s, i) => (
               <div
                 key={s.id}
@@ -102,7 +120,7 @@ export default function AdminAnalyticsPage() {
                   <span className="avatar" style={{ width: 28, height: 28, fontSize: 11 }}>{i + 1}</span>
                   <div>
                     <strong style={{ fontSize: 13 }}>{s.brand}</strong>
-                    <div className="muted" style={{ fontSize: 11 }}>{s.ordersToday} orders</div>
+                    <div className="muted" style={{ fontSize: 11 }}>{s.ordersToday} buyurtma</div>
                   </div>
                 </div>
                 <strong>{uzs(s.revenueToday)}</strong>

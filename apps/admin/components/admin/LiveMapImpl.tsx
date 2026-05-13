@@ -16,16 +16,7 @@ type CourierData = {
 
 const TASHKENT_CENTER: [number, number] = [41.3000, 69.2700];
 
-const SEED: CourierData[] = [
-  { id: 'c1', name: 'Jasur T.',    lat: 41.310, lng: 69.270, eta: 6,  vehicle: 'Scooter',   isBusy: true,  branchId: 'br-shayxontohur' },
-  { id: 'c2', name: 'Sherzod M.', lat: 41.285, lng: 69.310, eta: 11, vehicle: 'Motorbike', isBusy: true,  branchId: 'br-yashnobod'   },
-  { id: 'c3', name: 'Nodir K.',   lat: 41.325, lng: 69.295, eta: 14, vehicle: 'Car',        isBusy: false, branchId: 'br-mirzo-ulugbek' },
-  { id: 'c4', name: 'Aziz R.',    lat: 41.272, lng: 69.248, eta: 4,  vehicle: 'Bicycle',    isBusy: true,  branchId: 'br-chilonzor'   },
-  { id: 'c5', name: 'Laziz P.',   lat: 41.308, lng: 69.335, eta: 17, vehicle: 'Scooter',   isBusy: false, branchId: 'br-yashnobod'   },
-  { id: 'c6', name: 'Bekzod O.',  lat: 41.358, lng: 69.288, eta: 9,  vehicle: 'Motorbike', isBusy: true,  branchId: 'br-yunusobod'   },
-  { id: 'c7', name: 'Sanjar U.',  lat: 41.348, lng: 69.225, eta: 12, vehicle: 'Scooter',   isBusy: false, branchId: 'br-olmazor'     },
-  { id: 'c8', name: 'Diyor F.',   lat: 41.235, lng: 69.220, eta: 7,  vehicle: 'Car',        isBusy: true,  branchId: 'br-sergeli'     },
-];
+const SEED: CourierData[] = [];
 
 const VEHICLE_EMOJI: Record<string, string> = {
   Car: '🚗', Bicycle: '🚲', Motorbike: '🏍', Scooter: '🛵',

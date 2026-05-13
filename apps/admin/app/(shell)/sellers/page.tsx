@@ -1,51 +1,35 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { IconClose, IconCheck, IconPlus, IconSearch } from '@/components/admin/Icon';
-import { initials, uzs } from '@/lib/admin-mock';
-import { useSellers, useCategories, type MockSeller } from '@/lib/admin-store';
-import { SellerForm } from '@/components/admin/forms/SellerForm';
+import { IconSearch } from '@/components/admin/Icon';
+import { initials } from '@/lib/admin-mock';
+import { useApiSellers } from '@/lib/admin-api';
 
-type Seller = MockSeller & {
-  categoryId?: string;
-  lat?: number;
-  lng?: number;
-  address?: string;
-};
+function uzs(value: number) {
+  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' soʼm';
+}
 
 export default function AdminSellersPage() {
-  const { items: sellers, add, update, remove } = useSellers();
-  const { items: categories } = useCategories();
+  const { items: sellers, loading } = useApiSellers();
   const [q, setQ] = useState('');
   const [onlyActive, setOnlyActive] = useState(false);
-  const [editing, setEditing] = useState<Seller | null>(null);
-  const [adding, setAdding] = useState(false);
 
   const rows = useMemo(() => {
     return sellers.filter((s) => {
       if (onlyActive && !s.isActive) return false;
       if (q) {
         const needle = q.toLowerCase();
-        if (!s.brand.toLowerCase().includes(needle) && !s.owner.toLowerCase().includes(needle)) {
-          return false;
-        }
+        const haystack = `${s.brandName} ${s.legalName} ${s.user.fullName ?? ''} ${s.user.email ?? ''}`.toLowerCase();
+        if (!haystack.includes(needle)) return false;
       }
       return true;
     });
   }, [q, onlyActive, sellers]);
 
   const activeCount = sellers.filter((s) => s.isActive).length;
-  const totalRev = sellers.reduce((s, x) => s + x.revenueToday, 0);
-  const totalOrders = sellers.reduce((s, x) => s + x.ordersToday, 0);
-
-  const handleSave = (s: Seller) => {
-    if (sellers.find((x) => x.id === s.id)) update(s.id, s);
-    else add(s);
-  };
-
-  const handleDelete = (s: Seller) => {
-    if (confirm(`${s.brand} sotuvchisini o'chirishni xohlaysizmi?`)) remove(s.id);
-  };
+  const avgRating = sellers.length
+    ? sellers.reduce((sum, s) => sum + Number(s.rating ?? 0), 0) / sellers.length
+    : 0;
 
   return (
     <div className="stack">
@@ -60,19 +44,24 @@ export default function AdminSellersPage() {
         </div>
         <div className="kpi">
           <div className="kpi-row">
-            <span className="kpi-label">Bugungi buyurtmalar</span>
-            <span className="kpi-ico sky">📦</span>
+            <span className="kpi-label">O&apos;rtacha reyting</span>
+            <span className="kpi-ico amber">★</span>
           </div>
-          <div className="kpi-value">{totalOrders}</div>
-          <div className="kpi-meta">Barcha sotuvchilar</div>
+          <div className="kpi-value">{avgRating.toFixed(1)}</div>
+          <div className="kpi-meta">5.0 dan</div>
         </div>
         <div className="kpi">
           <div className="kpi-row">
-            <span className="kpi-label">Bugungi daromad</span>
-            <span className="kpi-ico green">💰</span>
+            <span className="kpi-label">Yangi (oxirgi 7 kun)</span>
+            <span className="kpi-ico green">📈</span>
           </div>
-          <div className="kpi-value">{uzs(totalRev)}</div>
-          <div className="kpi-meta">Yalpi tushum</div>
+          <div className="kpi-value">
+            {sellers.filter((s) => {
+              const days = (Date.now() - new Date(s.createdAt).getTime()) / 86400000;
+              return days <= 7;
+            }).length}
+          </div>
+          <div className="kpi-meta">Ro&apos;yxatdan o&apos;tgan</div>
         </div>
       </div>
 
@@ -80,7 +69,7 @@ export default function AdminSellersPage() {
         <div className="card-h">
           <div>
             <h3>Sotuvchilar</h3>
-            <div className="card-sub">{rows.length} ta ko'rsatilmoqda</div>
+            <div className="card-sub">{loading ? 'yuklanmoqda…' : `${rows.length} ta ko'rsatilmoqda`}</div>
           </div>
           <div className="hstack">
             <label className="hstack" style={{ gap: 6, fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -91,9 +80,6 @@ export default function AdminSellersPage() {
               <IconSearch size={15} />
               <input placeholder="Brend, egasi..." value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
-            <button className="btn" onClick={() => setAdding(true)}>
-              <IconPlus size={14} /> Sotuvchi qo'shish
-            </button>
           </div>
         </div>
 
@@ -102,75 +88,60 @@ export default function AdminSellersPage() {
             <thead>
               <tr>
                 <th>Brend</th>
+                <th>Yuridik nomi</th>
                 <th>Egasi</th>
-                <th>Kategoriya</th>
+                <th>Manzil</th>
                 <th>Holat</th>
                 <th>Reyting</th>
-                <th style={{ textAlign: 'right' }}>Mahsulotlar</th>
-                <th style={{ textAlign: 'right' }}>Bugungi buyurtmalar</th>
-                <th style={{ textAlign: 'right' }}>Daromad</th>
-                <th />
+                <th style={{ textAlign: 'right' }}>Komissiya</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((s) => {
-                const cat = categories.find((c) => c.id === s.categoryId);
-                return (
-                  <tr key={s.id}>
-                    <td>
-                      <div className="tcell-primary">
-                        <span
-                          className="avatar"
-                          style={{
-                            width: 32, height: 32, fontSize: 11,
-                            background: 'linear-gradient(135deg, #fde68a, #fca5a5)',
-                          }}
-                        >
-                          {initials(s.brand)}
-                        </span>
-                        <div>
-                          <strong>{s.brand}</strong>
-                          <div className="muted" style={{ fontSize: 12 }}>{s.phone}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{s.owner}</td>
-                    <td>
-                      {cat ? <span style={{ fontSize: 13 }}>{cat.icon} {cat.name}</span> : <span className="muted" style={{ fontSize: 12 }}>—</span>}
-                    </td>
-                    <td>
-                      <span className={`chip ${s.isActive ? 'green' : 'gray'}`}>
-                        {s.isActive ? 'Faol' : "To'xtatilgan"}
+              {rows.map((s) => (
+                <tr key={s.id}>
+                  <td>
+                    <div className="tcell-primary">
+                      <span
+                        className="avatar"
+                        style={{
+                          width: 32, height: 32, fontSize: 11,
+                          background: 'linear-gradient(135deg, #fde68a, #fca5a5)',
+                        }}
+                      >
+                        {initials(s.brandName)}
                       </span>
-                    </td>
-                    <td>
-                      <span className="hstack" style={{ gap: 4 }}>
-                        <span style={{ color: '#f59e0b' }}>★</span>
-                        <strong>{s.rating.toFixed(1)}</strong>
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>{s.productsCount}</td>
-                    <td style={{ textAlign: 'right' }}><strong>{s.ordersToday}</strong></td>
-                    <td style={{ textAlign: 'right' }}>{uzs(s.revenueToday)}</td>
-                    <td>
-                      <div className="hstack" style={{ gap: 4, justifyContent: 'flex-end' }}>
-                        <button className="icon-btn" style={{ width: 30, height: 30 }} onClick={() => setEditing(s)} aria-label="Tahrirlash">
-                          <IconCheck size={14} />
-                        </button>
-                        <button className="icon-btn" style={{ width: 30, height: 30, color: '#ef4444' }} onClick={() => handleDelete(s)} aria-label="O'chirish">
-                          <IconClose size={14} />
-                        </button>
+                      <div>
+                        <strong>{s.brandName}</strong>
+                        <div className="muted" style={{ fontSize: 12 }}>{s.user.phone ?? '—'}</div>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                  <td style={{ fontSize: 13 }}>{s.legalName}</td>
+                  <td>
+                    <div style={{ fontSize: 13 }}>{s.user.fullName ?? '—'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{s.user.email ?? '—'}</div>
+                  </td>
+                  <td style={{ fontSize: 12 }}>{s.addressText ?? '—'}</td>
+                  <td>
+                    <span className={`chip ${s.isActive ? 'green' : 'gray'}`}>
+                      {s.isActive ? 'Faol' : "To'xtatilgan"}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="hstack" style={{ gap: 4 }}>
+                      <span style={{ color: '#f59e0b' }}>★</span>
+                      <strong>{Number(s.rating).toFixed(1)}</strong>
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>{uzs(0)}</td>
+                </tr>
+              ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={7}>
                     <div className="empty">
                       <div className="empty-ico">∅</div>
-                      <strong>Sotuvchilar topilmadi</strong>
+                      <strong>{loading ? 'Yuklanmoqda…' : 'Sotuvchilar topilmadi'}</strong>
                     </div>
                   </td>
                 </tr>
@@ -179,16 +150,6 @@ export default function AdminSellersPage() {
           </table>
         </div>
       </div>
-
-      {(adding || editing) && (
-        <SellerForm
-          open
-          onClose={() => { setAdding(false); setEditing(null); }}
-          initial={editing}
-          categories={categories}
-          onSave={handleSave}
-        />
-      )}
     </div>
   );
 }

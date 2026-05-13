@@ -18,23 +18,7 @@ const TYPE_META: Record<Activity['type'], { emoji: string; tone: string }> = {
   payment:  { emoji: '💳', tone: '#06b6d4' },
 };
 
-const SAMPLE_EVENTS: Omit<Activity, 'id' | 'ts'>[] = [
-  { type: 'order',    title: 'Yangi buyurtma', detail: 'ORD-1042 · Aziza K. · 142 000 soʼm' },
-  { type: 'courier',  title: 'Kuryer onlayn', detail: 'Jasur T. ish boshladi · Yunusobod' },
-  { type: 'delivery', title: 'Yetkazib berildi', detail: 'ORD-1038 · 24 daqiqada · Chilonzor' },
-  { type: 'order',    title: 'Yangi buyurtma', detail: 'ORD-1041 · Bekzod A. · 87 500 soʼm' },
-  { type: 'payment',  title: 'Toʼlov qabul qilindi', detail: 'ORD-1040 · Click toʼlovi · 198 000 soʼm' },
-  { type: 'seller',   title: 'Sotuvchi qoʼshildi', detail: 'Bro Coffee · Yakkasaroy filiali' },
-  { type: 'courier',  title: 'Kuryer band', detail: 'Sherzod M. ORD-1039 ni qabul qildi' },
-  { type: 'delivery', title: 'Yetkazib berildi', detail: 'ORD-1037 · 18 daqiqada · Mirzo Ulugʼbek' },
-  { type: 'customer', title: 'Yangi mijoz', detail: 'Madina S. roʼyxatdan oʼtdi' },
-  { type: 'order',    title: 'Yangi buyurtma', detail: 'ORD-1043 · Otabek U. · 36 000 soʼm' },
-  { type: 'payment',  title: 'Naqd toʼlov', detail: 'ORD-1036 · 145 000 soʼm · kuryer qabul qildi' },
-  { type: 'delivery', title: 'Yetkazib berildi', detail: 'ORD-1035 · 31 daqiqada · Olmazor' },
-  { type: 'order',    title: 'Yangi buyurtma', detail: 'ORD-1044 · Dilnoza Y. · 64 000 soʼm' },
-  { type: 'courier',  title: 'Kuryer dam olishda', detail: 'Aziz R. tushlik tanaffusida · 15 daqiqa' },
-  { type: 'seller',   title: 'Mahsulot tasdiqlandi', detail: '"Cheesecake" · Lochin Market' },
-];
+const SAMPLE_EVENTS: Omit<Activity, 'id' | 'ts'>[] = [];
 
 let nextId = 1;
 const genId = () => `act-${nextId++}-${Math.random().toString(36).slice(2, 6)}`;
@@ -53,6 +37,10 @@ export function ActivityFeed({ height = 380 }: { height?: number }) {
   const [, setTick] = useState(0);
 
   useEffect(() => {
+    // No demo activity — real events should be wired through the realtime
+    // socket. Until that's hooked up the feed stays empty.
+    if (SAMPLE_EVENTS.length === 0) return;
+
     const seedNow = Date.now();
     const seeded: Activity[] = SAMPLE_EVENTS.slice(0, 6).map((e, i) => ({
       ...e,

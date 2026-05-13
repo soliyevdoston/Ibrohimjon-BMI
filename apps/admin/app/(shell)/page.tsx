@@ -14,68 +14,90 @@ import {
   IconOrders,
   IconTruck,
 } from '@/components/admin/Icon';
-import {
-  initials,
-  kpiTrends,
-  mockCouriers,
-  mockKPIs,
-  mockOrders,
-  mockRevenueByHour,
-  mockSellers,
-  uzs,
-} from '@/lib/admin-mock';
+import { initials } from '@/lib/admin-mock';
+import { useAdminStats, useApiOrders, numFromStr } from '@/lib/admin-api';
+
+function shortAgo(iso: string) {
+  const diff = Math.max(0, Date.now() - new Date(iso).getTime());
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function uzs(value: number) {
+  const formatted = String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return formatted + ' soʼm';
+}
 
 export default function DashboardPage() {
-  const busyCouriers = mockCouriers.filter((c) => c.isBusy).length;
-  const topSellers = [...mockSellers].sort((a, b) => b.revenueToday - a.revenueToday).slice(0, 5);
-  const latestOrders = mockOrders.slice(0, 6);
+  const { data: stats, loading } = useAdminStats();
+  const { items: orders } = useApiOrders();
 
-  const statusSegments = [
-    { label: 'Delivered',   value: 186, color: '#0f172a' },
-    { label: 'On the way',  value: 37,  color: '#374151' },
-    { label: 'Preparing',   value: 18,  color: '#6b7280' },
-    { label: 'Pending',     value: 4,   color: '#9ca3af' },
-    { label: 'Canceled',    value: 3,   color: '#d1d5db' },
-  ];
+  const kpis = stats?.kpis;
+  const revenueByHour = stats?.revenueByHour ?? [];
+  const topSellers = stats?.topSellers ?? [];
+
+  const STATUS_COLORS: Record<string, string> = {
+    DELIVERED:        '#0f172a',
+    ON_THE_WAY:       '#374151',
+    PICKED_UP:        '#4b5563',
+    COURIER_ACCEPTED: '#52525b',
+    READY_FOR_PICKUP: '#6b7280',
+    PREPARING:        '#9ca3af',
+    ACCEPTED:         '#a3a3a3',
+    PENDING:          '#d4d4d8',
+    CANCELED:         '#e5e7eb',
+    FAILED:           '#fca5a5',
+  };
+  const statusSegments = (stats?.statusDistribution ?? []).map((s) => ({
+    label: s.status,
+    value: s.count,
+    color: STATUS_COLORS[s.status] ?? '#9ca3af',
+  }));
+
+  const latestOrders = orders.slice(0, 6);
 
   return (
     <div className="stack">
       <div className="grid-4">
         <KpiCard
           label="Revenue today"
-          value={uzs(mockKPIs.revenueToday)}
-          delta={mockKPIs.revenueDelta}
-          hint="vs. yesterday"
+          value={uzs(kpis?.revenueToday ?? 0)}
+          delta={kpis?.revenueDelta ?? 0}
+          hint={loading ? 'loading…' : 'vs. yesterday'}
           tone="indigo"
           icon={IconMoney}
-          trendData={kpiTrends.revenue}
+          trendData={revenueByHour.map((r) => r.v)}
         />
         <KpiCard
           label="Orders"
-          value={String(mockKPIs.ordersToday).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-          delta={mockKPIs.ordersDelta}
+          value={String(kpis?.ordersToday ?? 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+          delta={kpis?.ordersDelta ?? 0}
           hint="since midnight"
           tone="sky"
           icon={IconOrders}
-          trendData={kpiTrends.orders}
+          trendData={revenueByHour.map((r) => r.v)}
         />
         <KpiCard
           label="Active deliveries"
-          value={String(mockKPIs.activeDeliveries).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-          delta={mockKPIs.activeDelta}
+          value={String(kpis?.activeDeliveries ?? 0)}
+          delta={kpis?.activeDelta ?? 0}
           hint="in progress"
           tone="amber"
           icon={IconLive}
-          trendData={kpiTrends.active}
+          trendData={[]}
         />
         <KpiCard
           label="Couriers online"
-          value={`${mockKPIs.onlineCouriers}`}
-          delta={mockKPIs.couriersDelta}
-          hint={`${busyCouriers} on delivery`}
+          value={String(kpis?.onlineCouriers ?? 0)}
+          delta={kpis?.couriersDelta ?? 0}
+          hint={`${kpis?.busyCouriers ?? 0} on delivery`}
           tone="green"
           icon={IconTruck}
-          trendData={kpiTrends.couriers}
+          trendData={[]}
         />
       </div>
 
@@ -84,15 +106,10 @@ export default function DashboardPage() {
           <div className="card-h">
             <div>
               <h3>Revenue today</h3>
-              <div className="card-sub">Hourly breakdown · millions soʼm</div>
-            </div>
-            <div className="hstack" style={{ gap: 6 }}>
-              <button className="btn soft sm">Today</button>
-              <button className="btn ghost sm">7 days</button>
-              <button className="btn ghost sm">30 days</button>
+              <div className="card-sub">Hourly breakdown · soʼm</div>
             </div>
           </div>
-          <RevenueChart points={mockRevenueByHour} />
+          <RevenueChart points={revenueByHour} />
         </div>
 
         <div className="card">
@@ -129,24 +146,30 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
+                {latestOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+                      Hozircha buyurtmalar yo'q
+                    </td>
+                  </tr>
+                )}
                 {latestOrders.map((o) => (
                   <tr key={o.id}>
-                    <td><strong>{o.code}</strong></td>
+                    <td><strong>#{o.id.slice(0, 8)}</strong></td>
                     <td>
                       <div className="tcell-primary">
                         <span className="avatar" style={{ width: 30, height: 30, fontSize: 11 }}>
-                          {initials(o.customerName)}
+                          {initials(o.customerId.slice(0, 6))}
                         </span>
                         <div>
-                          <strong>{o.customerName}</strong>
-                          <div className="muted" style={{ fontSize: 12 }}>{o.customerPhone}</div>
+                          <strong>{o.customerId.slice(0, 8)}</strong>
                         </div>
                       </div>
                     </td>
-                    <td>{o.sellerName}</td>
-                    <td><StatusChip status={o.status} /></td>
-                    <td style={{ textAlign: 'right' }}>{uzs(o.total)}</td>
-                    <td style={{ textAlign: 'right' }} className="muted">{o.placedAt}</td>
+                    <td>{o.sellerId.slice(0, 8)}</td>
+                    <td><StatusChip status={o.status as never} /></td>
+                    <td style={{ textAlign: 'right' }}>{uzs(numFromStr(o.totalAmount))}</td>
+                    <td style={{ textAlign: 'right' }} className="muted">{shortAgo(o.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -165,7 +188,13 @@ export default function DashboardPage() {
               </div>
               <IconChart size={16} />
             </div>
-            <DonutChart segments={statusSegments} centerLabel="Orders" />
+            {statusSegments.length === 0 ? (
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+                Ma'lumot yo'q
+              </div>
+            ) : (
+              <DonutChart segments={statusSegments} centerLabel="Orders" />
+            )}
           </div>
 
           <div className="card">
@@ -176,8 +205,13 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="stack" style={{ gap: 12 }}>
+              {topSellers.length === 0 && (
+                <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>
+                  Sotuvchilar yo'q
+                </div>
+              )}
               {topSellers.map((s, i) => {
-                const max = topSellers[0].revenueToday || 1;
+                const max = topSellers[0]?.revenueToday || 1;
                 const pct = Math.round((s.revenueToday / max) * 100);
                 return (
                   <div key={s.id}>
