@@ -25,7 +25,7 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(
+      const res = await api<{ accessToken: string; user: { role: string; fullName?: string; email?: string } }>(
         '/auth/email/login',
         { method: 'POST', body: { email: email.trim(), password } }
       );
@@ -36,6 +36,7 @@ export default function AdminLoginPage() {
       localStorage.setItem('access_token', res.accessToken);
       localStorage.setItem('role', res.user.role);
       localStorage.setItem('name', res.user.fullName ?? 'Admin');
+      localStorage.setItem('email', res.user.email ?? '');
       router.replace('/');
     } catch (err) {
       setError((err as Error).message);

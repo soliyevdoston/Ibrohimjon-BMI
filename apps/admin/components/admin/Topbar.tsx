@@ -1,8 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { IconBell, IconMenu, IconSearch } from './Icon';
 import { useNav } from './NavContext';
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? '')
+    .join('') || '?';
+}
 
 const routeMeta: Record<string, { title: string; crumb: string }> = {
   '/':          { title: 'Dashboard',       crumb: 'Admin / Overview' },
@@ -19,6 +29,15 @@ export function AdminTopbar() {
   const pathname = usePathname();
   const meta = routeMeta[pathname] || { title: 'Admin', crumb: 'Admin' };
   const { open } = useNav();
+  const [user, setUser] = useState<{ name: string; email: string }>({ name: '', email: '' });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setUser({
+      name: localStorage.getItem('name') ?? '',
+      email: localStorage.getItem('email') ?? '',
+    });
+  }, []);
 
   return (
     <header className="topbar">
@@ -47,7 +66,9 @@ export function AdminTopbar() {
           <IconBell size={16} />
           <span className="dot" />
         </button>
-        <div className="avatar only-desktop" title="Admin User">AD</div>
+        <div className="avatar only-desktop" title={user.name || 'Admin'}>
+          {initials(user.name || user.email || 'Admin')}
+        </div>
       </div>
     </header>
   );

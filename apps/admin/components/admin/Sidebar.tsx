@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -20,12 +21,13 @@ import {
   IconUsers,
 } from './Icon';
 import { useNav } from './NavContext';
+import { useAdminStats } from '@/lib/admin-api';
 
 type Item = {
   href: string;
   label: string;
   icon: React.ComponentType<{ size?: number; stroke?: number }>;
-  badge?: string;
+  badgeKey?: 'activeDeliveries';
 };
 
 type Group = { label: string; items: Item[] };
@@ -35,7 +37,7 @@ const groups: Group[] = [
     label: 'Overview',
     items: [
       { href: '/',           label: 'Dashboard',       icon: IconDashboard },
-      { href: '/live',       label: 'Live deliveries', icon: IconLive, badge: '12' },
+      { href: '/live',       label: 'Live deliveries', icon: IconLive, badgeKey: 'activeDeliveries' },
       { href: '/analytics',  label: 'Analytics',       icon: IconChart },
     ],
   },
@@ -71,15 +73,35 @@ const groups: Group[] = [
   },
 ];
 
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? '')
+    .join('') || '?';
+}
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { isOpen, close } = useNav();
+  const { data: stats } = useAdminStats();
+  const [user, setUser] = useState<{ name: string; email: string }>({ name: '', email: '' });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setUser({
+      name: localStorage.getItem('name') ?? '',
+      email: localStorage.getItem('email') ?? '',
+    });
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('role');
     localStorage.removeItem('name');
+    localStorage.removeItem('email');
     router.replace('/login');
   };
 
@@ -113,6 +135,8 @@ export function AdminSidebar() {
                   item.href === '/'
                     ? pathname === '/'
                     : pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const badgeValue =
+                  item.badgeKey === 'activeDeliveries' ? stats?.kpis.activeDeliveries ?? 0 : 0;
                 return (
                   <Link
                     key={item.href}
@@ -123,7 +147,7 @@ export function AdminSidebar() {
                       <Icon size={18} />
                     </span>
                     <span>{item.label}</span>
-                    {item.badge ? <span className="sb-count">{item.badge}</span> : null}
+                    {badgeValue > 0 ? <span className="sb-count">{badgeValue}</span> : null}
                   </Link>
                 );
               })}
@@ -132,10 +156,10 @@ export function AdminSidebar() {
         ))}
 
         <div className="sidebar-footer">
-          <div className="avatar">AD</div>
+          <div className="avatar">{initials(user.name || user.email || 'Admin')}</div>
           <div className="avatar-label" style={{ minWidth: 0, flex: 1 }}>
-            <strong>Admin User</strong>
-            <span>admin@lochin.uz</span>
+            <strong>{user.name || 'Admin'}</strong>
+            <span>{user.email || '—'}</span>
           </div>
           <button
             aria-label="Chiqish"
