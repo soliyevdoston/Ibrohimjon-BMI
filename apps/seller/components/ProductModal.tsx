@@ -7,6 +7,7 @@ type Product = {
   title: string;
   description: string;
   price: string;
+  originalPrice: string;
   stock: string;
   categoryId: string;
   imageUrl: string;
@@ -16,7 +17,7 @@ type Product = {
 type Category = { id: string; name: string; slug: string };
 
 const EMPTY: Product = {
-  title: '', description: '', price: '', stock: '',
+  title: '', description: '', price: '', originalPrice: '', stock: '',
   categoryId: '', imageUrl: '', isActive: true,
 };
 
@@ -48,14 +49,21 @@ async function compressToDataUrl(file: File): Promise<string> {
 }
 
 type Props = {
-  product?: Product & { id: string };
+  product?: (Product & { id: string }) & { originalPrice?: string | number | null };
   onClose: () => void;
   onSaved: () => void;
 };
 
 export function ProductModal({ product, onClose, onSaved }: Props) {
   const [form, setForm] = useState<Product>(
-    product ? { ...product, price: String(product.price), stock: String(product.stock) } : EMPTY
+    product
+      ? {
+          ...product,
+          price: String(product.price),
+          originalPrice: product.originalPrice ? String(product.originalPrice) : '',
+          stock: String(product.stock),
+        }
+      : EMPTY
   );
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
@@ -109,12 +117,18 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
     if (!form.categoryId) { setError('Kategoriya tanlang'); return; }
     if (!form.price || Number(form.price) <= 0) { setError("Narxni to'g'ri kiriting"); return; }
     if (!form.stock || Number(form.stock) < 0) { setError("Zaxira sonini to'g'ri kiriting"); return; }
+    const origNum = form.originalPrice ? Number(form.originalPrice) : 0;
+    if (origNum && origNum <= Number(form.price)) {
+      setError('Asl narx joriy narxdan katta bo\'lishi kerak (chegirma uchun)');
+      return;
+    }
     setLoading(true); setError('');
     try {
       const body = {
         title: form.title.trim(),
         description: form.description.trim(),
         price: Number(form.price),
+        originalPrice: origNum > 0 ? origNum : undefined,
         stock: Number(form.stock),
         categoryId: form.categoryId,
         imageUrl: form.imageUrl.trim() || undefined,
@@ -165,6 +179,26 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
               <label className="label">Zaxira *</label>
               <input className="input" type="number" placeholder="100" value={form.stock} onChange={set('stock')} min={0} style={{ marginTop: 4 }} />
             </div>
+          </div>
+
+          <div>
+            <label className="label">
+              Asl narx (chegirma uchun, ixtiyoriy)
+            </label>
+            <input
+              className="input"
+              type="number"
+              placeholder="30000 — bo'sh qoldirsa chegirma yo'q"
+              value={form.originalPrice}
+              onChange={set('originalPrice')}
+              min={0}
+              style={{ marginTop: 4 }}
+            />
+            {form.originalPrice && Number(form.originalPrice) > Number(form.price) && Number(form.price) > 0 && (
+              <div style={{ fontSize: 12, color: '#10b981', marginTop: 4, fontWeight: 600 }}>
+                –{Math.round((1 - Number(form.price) / Number(form.originalPrice)) * 100)}% chegirma
+              </div>
+            )}
           </div>
           <div>
             <label className="label">Kategoriya *</label>

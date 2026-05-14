@@ -11,6 +11,7 @@ type Product = {
   title: string;
   description: string;
   price: number;
+  originalPrice?: number | string | null;
   stock: number;
   categoryId: string;
   imageUrl?: string;
@@ -172,7 +173,14 @@ export default function ProductsPage() {
       {modal && (
         <ProductModal
           product={modal.product
-            ? { ...modal.product, price: String(modal.product.price), stock: String(modal.product.stock), id: modal.product.id, imageUrl: modal.product.imageUrl ?? '' }
+            ? {
+                ...modal.product,
+                price: String(modal.product.price),
+                originalPrice: modal.product.originalPrice ? String(modal.product.originalPrice) : '',
+                stock: String(modal.product.stock),
+                id: modal.product.id,
+                imageUrl: modal.product.imageUrl ?? '',
+              }
             : undefined}
           onClose={() => setModal(null)}
           onSaved={loadProducts}

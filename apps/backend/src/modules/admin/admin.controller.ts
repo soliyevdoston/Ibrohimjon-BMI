@@ -1,5 +1,5 @@
-import { Body, Controller, ForbiddenException, Get, Headers, Patch, Post, UseGuards } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { Body, Controller, Delete, ForbiddenException, Get, Headers, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { UserRole, VehicleType } from '@prisma/client';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -60,11 +60,59 @@ export class AdminController {
     return this.adminService.sellers();
   }
 
+  @Post('sellers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createSeller(@Body() body: {
+    email: string;
+    password: string;
+    fullName?: string;
+    brandName: string;
+    legalName: string;
+    phone?: string;
+    description?: string;
+    addressText?: string;
+    addressLat?: number;
+    addressLng?: number;
+  }) {
+    return this.adminService.createSeller(body);
+  }
+
+  @Patch('sellers/:id/active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  setSellerActive(@Param('id') sellerId: string, @Body() body: { isActive: boolean }) {
+    return this.adminService.updateSellerActive(sellerId, !!body.isActive);
+  }
+
+  @Delete('sellers/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteSeller(@Param('id') sellerId: string) {
+    return this.adminService.deleteSeller(sellerId);
+  }
+
   @Get('couriers')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   couriers() {
     return this.adminService.couriers();
+  }
+
+  @Post('couriers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createCourier(@Body() body: {
+    email: string;
+    password: string;
+    fullName?: string;
+    phone?: string;
+    vehicleType?: VehicleType;
+    vehicleModel?: string;
+    vehiclePlate?: string;
+    maxLoadKg?: number;
+  }) {
+    return this.adminService.createCourier(body);
   }
 
   @Get('orders')

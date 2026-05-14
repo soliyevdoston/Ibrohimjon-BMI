@@ -216,3 +216,50 @@ export function numFromStr(s: string | number | null | undefined): number {
 export function customerCount(users: ApiUser[]) {
   return users.filter((u) => u.role === 'CUSTOMER').length;
 }
+
+// ---------- Admin write actions ----------
+
+export function createSellerApi(body: {
+  email: string;
+  password: string;
+  fullName?: string;
+  brandName: string;
+  legalName: string;
+  phone?: string;
+  description?: string;
+  addressText?: string;
+  addressLat?: number;
+  addressLng?: number;
+}) {
+  return api<{ user: ApiUser; seller: ApiSeller }>('/admin/sellers', {
+    method: 'POST',
+    body,
+  });
+}
+
+export function createCourierApi(body: {
+  email: string;
+  password: string;
+  fullName?: string;
+  phone?: string;
+  vehicleType?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
+  vehicleModel?: string;
+  vehiclePlate?: string;
+  maxLoadKg?: number;
+}) {
+  return api<{ user: ApiUser; courier: ApiCourier }>('/admin/couriers', {
+    method: 'POST',
+    body,
+  });
+}
+
+export function setSellerActiveApi(id: string, isActive: boolean) {
+  return api<ApiSeller>(`/admin/sellers/${id}/active`, {
+    method: 'PATCH',
+    body: { isActive },
+  });
+}
+
+export function deleteSellerApi(id: string) {
+  return api<ApiSeller>(`/admin/sellers/${id}`, { method: 'DELETE' });
+}

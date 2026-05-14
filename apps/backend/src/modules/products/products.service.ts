@@ -68,6 +68,7 @@ export class ProductsService {
         description: dto.description,
         imageUrl: dto.imageUrl,
         price: dto.price,
+        originalPrice: dto.originalPrice,
         stock: dto.stock,
         isActive: dto.isActive ?? true,
       },

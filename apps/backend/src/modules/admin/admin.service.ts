@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DeliveryStatus } from '@prisma/client';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { DeliveryStatus, UserRole, VehicleType } from '@prisma/client';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const bcrypt = require('bcryptjs') as { hash: (s: string, n: number) => Promise<string> };
 import { PrismaService } from 'src/common/prisma.service';
 import { LedgerService } from '../payouts/ledger.service';
 import { RealtimeService } from '../realtime/realtime.service';
@@ -11,6 +13,123 @@ export class AdminService {
     private readonly realtimeService: RealtimeService,
     private readonly ledgerService: LedgerService,
   ) {}
+
+  async createSeller(input: {
+    email: string;
+    password: string;
+    fullName?: string;
+    brandName: string;
+    legalName: string;
+    phone?: string;
+    description?: string;
+    addressText?: string;
+    addressLat?: number;
+    addressLng?: number;
+  }) {
+    const email = input.email.trim().toLowerCase();
+    if (!email || input.password.length < 6) {
+      throw new BadRequestException('Email va parol (6+ belgi) kerak');
+    }
+    if (!input.brandName?.trim() || !input.legalName?.trim()) {
+      throw new BadRequestException('Brend nomi va yuridik nom kerak');
+    }
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new BadRequestException('Bu email allaqachon ro\'yxatdan o\'tgan');
+    }
+    const passwordHash = await bcrypt.hash(input.password, 10);
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          phone: input.phone?.trim() || undefined,
+          passwordHash,
+          fullName: input.fullName?.trim() || input.brandName,
+          role: UserRole.SELLER,
+          isEmailVerified: true,
+        },
+      });
+      const seller = await tx.seller.create({
+        data: {
+          userId: user.id,
+          legalName: input.legalName.trim(),
+          brandName: input.brandName.trim(),
+          description: input.description?.trim(),
+          addressText: input.addressText?.trim(),
+          addressLat: input.addressLat,
+          addressLng: input.addressLng,
+        },
+      });
+      return { user, seller };
+    });
+  }
+
+  async createCourier(input: {
+    email: string;
+    password: string;
+    fullName?: string;
+    phone?: string;
+    vehicleType?: VehicleType;
+    vehicleModel?: string;
+    vehiclePlate?: string;
+    maxLoadKg?: number;
+  }) {
+    const email = input.email.trim().toLowerCase();
+    if (!email || input.password.length < 6) {
+      throw new BadRequestException('Email va parol (6+ belgi) kerak');
+    }
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      throw new BadRequestException('Bu email allaqachon ro\'yxatdan o\'tgan');
+    }
+    const passwordHash = await bcrypt.hash(input.password, 10);
+    return this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          phone: input.phone?.trim() || undefined,
+          passwordHash,
+          fullName: input.fullName?.trim(),
+          role: UserRole.COURIER,
+          isEmailVerified: true,
+        },
+      });
+      const courier = await tx.courier.create({
+        data: {
+          userId: user.id,
+          vehicleType: input.vehicleType ?? VehicleType.BIKE,
+          vehicleModel: input.vehicleModel?.trim(),
+          vehiclePlate: input.vehiclePlate?.trim(),
+          ...(input.maxLoadKg !== undefined ? { maxLoadKg: input.maxLoadKg } : {}),
+        },
+      });
+      return { user, courier };
+    });
+  }
+
+  async updateSellerActive(sellerId: string, isActive: boolean) {
+    const seller = await this.prisma.seller.findUnique({ where: { id: sellerId } });
+    if (!seller) throw new NotFoundException('Sotuvchi topilmadi');
+    return this.prisma.seller.update({
+      where: { id: sellerId },
+      data: { isActive },
+    });
+  }
+
+  async deleteSeller(sellerId: string) {
+    const seller = await this.prisma.seller.findUnique({ where: { id: sellerId } });
+    if (!seller) throw new NotFoundException('Sotuvchi topilmadi');
+    // Soft archive: deactivate seller + all their products. Hard delete would
+    // cascade-break historical orders, so we keep the rows for accounting.
+    await this.prisma.product.updateMany({
+      where: { sellerId },
+      data: { isActive: false },
+    });
+    return this.prisma.seller.update({
+      where: { id: sellerId },
+      data: { isActive: false },
+    });
+  }
 
   users() {
     return this.prisma.user.findMany({

@@ -13,6 +13,7 @@ type Product = {
   title: string;
   description?: string;
   price: number;
+  originalPrice?: number | null;
   stock: number;
   imageUrl?: string;
   categoryId?: string;
@@ -236,7 +237,9 @@ export default function HomePage() {
 
       type RawProduct = {
         id: string; title: string; description?: string;
-        price: number | string; stock: number;
+        price: number | string;
+        originalPrice?: number | string | null;
+        stock: number;
         imageUrl?: string; categoryId?: string;
         sellerId?: string;
         seller?: { id?: string; name?: string; brandName?: string };
@@ -260,6 +263,7 @@ export default function HomePage() {
         title: p.title,
         description: p.description,
         price: typeof p.price === 'string' ? Number(p.price) : p.price,
+        originalPrice: p.originalPrice == null ? null : Number(p.originalPrice),
         stock: p.stock,
         imageUrl: p.imageUrl,
         categoryId: p.categoryId,
@@ -613,7 +617,22 @@ export default function HomePage() {
                       </div>
                     )}
                     <div style={{ marginTop: 'auto', paddingTop: 4 }}>
-                      <div className="product-card-price">{money(product.price)} so&apos;m</div>
+                      <div className="hstack" style={{ gap: 6, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                        <div className="product-card-price">{money(product.price)} so&apos;m</div>
+                        {product.originalPrice && Number(product.originalPrice) > product.price && (
+                          <>
+                            <span style={{ fontSize: 12, color: 'var(--text-muted)', textDecoration: 'line-through' }}>
+                              {money(Number(product.originalPrice))}
+                            </span>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, color: '#10b981',
+                              background: '#dcfce7', padding: '2px 6px', borderRadius: 6,
+                            }}>
+                              −{Math.round((1 - product.price / Number(product.originalPrice)) * 100)}%
+                            </span>
+                          </>
+                        )}
+                      </div>
                       {outOfStock && (
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Tugagan</div>
                       )}
