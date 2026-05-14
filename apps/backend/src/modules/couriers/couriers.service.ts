@@ -57,10 +57,7 @@ export class CouriersService {
     userId: string,
     body: { isOnline: boolean; isAvailable: boolean },
   ) {
-    const courier = await this.prisma.courier.findFirst({ where: { userId } });
-    if (!courier) {
-      throw new NotFoundException("Courier profile not found");
-    }
+    const courier = await this.ensureProfile(userId);
 
     return this.prisma.courier.update({
       where: { id: courier.id },
@@ -73,11 +70,21 @@ export class CouriersService {
   }
 
   async myProfile(userId: string) {
-    const courier = await this.prisma.courier.findFirst({ where: { userId } });
-    if (!courier) {
-      throw new NotFoundException("Courier profile not found");
-    }
-    return courier;
+    return this.ensureProfile(userId);
+  }
+
+  // Lazily provisions a courier row for users who registered before
+  // auto-provisioning was added, so /courier/profile and presence updates
+  // work on first call without an explicit setup step.
+  private async ensureProfile(userId: string) {
+    const existing = await this.prisma.courier.findFirst({ where: { userId } });
+    if (existing) return existing;
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException("User not found");
+    return this.prisma.courier.create({
+      data: { userId },
+    });
   }
 }
 

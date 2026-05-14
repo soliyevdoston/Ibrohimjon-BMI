@@ -28,11 +28,25 @@ export class SellersService {
     });
   }
 
+  // Returns the seller profile, lazily creating one for sellers who registered
+  // before auto-provisioning landed. Keeps /products and /orders endpoints
+  // working on first call without requiring the user to visit /settings first.
   async myProfile(userId: string) {
-    const seller = await this.prisma.seller.findFirst({ where: { userId } });
-    if (!seller) {
-      throw new NotFoundException('Seller profile not found');
-    }
-    return seller;
+    const existing = await this.prisma.seller.findFirst({ where: { userId } });
+    if (existing) return existing;
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    const defaultName = user.fullName?.trim()
+      || user.email?.split('@')[0]
+      || user.phone
+      || 'Sotuvchi';
+    return this.prisma.seller.create({
+      data: {
+        userId,
+        legalName: defaultName,
+        brandName: defaultName,
+      },
+    });
   }
 }

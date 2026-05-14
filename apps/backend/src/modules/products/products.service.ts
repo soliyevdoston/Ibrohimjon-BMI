@@ -58,10 +58,7 @@ export class ProductsService {
   }
 
   async createBySeller(sellerUserId: string, dto: CreateProductDto) {
-    const seller = await this.prisma.seller.findFirst({ where: { userId: sellerUserId } });
-    if (!seller) {
-      throw new NotFoundException('Seller profile not found');
-    }
+    const seller = await this.ensureSellerProfile(sellerUserId);
 
     return this.prisma.product.create({
       data: {
@@ -73,6 +70,28 @@ export class ProductsService {
         price: dto.price,
         stock: dto.stock,
         isActive: dto.isActive ?? true,
+      },
+    });
+  }
+
+  // Returns the seller profile for this user, lazily creating one with sensible
+  // defaults if missing. Lets users who registered before auto-provisioning was
+  // added still start using the platform without manually filling /settings.
+  private async ensureSellerProfile(sellerUserId: string) {
+    const existing = await this.prisma.seller.findFirst({ where: { userId: sellerUserId } });
+    if (existing) return existing;
+
+    const user = await this.prisma.user.findUnique({ where: { id: sellerUserId } });
+    if (!user) throw new NotFoundException('User not found');
+    const defaultName = user.fullName?.trim()
+      || user.email?.split('@')[0]
+      || user.phone
+      || 'Sotuvchi';
+    return this.prisma.seller.create({
+      data: {
+        userId: sellerUserId,
+        legalName: defaultName,
+        brandName: defaultName,
       },
     });
   }
@@ -114,8 +133,7 @@ export class ProductsService {
   }
 
   async listForSeller(sellerUserId: string, query: ListProductsDto) {
-    const seller = await this.prisma.seller.findUnique({ where: { userId: sellerUserId } });
-    if (!seller) throw new NotFoundException('Sotuvchi profili topilmadi');
+    const seller = await this.ensureSellerProfile(sellerUserId);
 
     const where: Prisma.ProductWhereInput = {
       sellerId: seller.id,

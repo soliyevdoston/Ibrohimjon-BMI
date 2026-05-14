@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api, money } from '@/lib/api';
 
 type Product = {
@@ -13,24 +13,11 @@ type Product = {
   isActive: boolean;
 };
 
-const CATEGORIES = [
-  { id: 'mebel', name: 'Mebel' },
-  { id: 'appliances', name: 'Maishiy texnika' },
-  { id: 'construction', name: 'Qurilish' },
-  { id: 'sport', name: 'Sport va dam' },
-  { id: 'garden', name: "Bog' va dacha" },
-  { id: 'electronics', name: 'Elektronika' },
-  { id: 'home', name: "Uy-ro'zg'or" },
-  { id: 'drinks', name: 'Ichimliklar' },
-  { id: 'sweets', name: 'Shirinliklar' },
-  { id: 'pharmacy', name: 'Dorixona' },
-  { id: 'beauty', name: "Go'zallik" },
-  { id: 'other', name: 'Boshqa' },
-];
+type Category = { id: string; name: string; slug: string };
 
 const EMPTY: Product = {
   title: '', description: '', price: '', stock: '',
-  categoryId: 'electronics', imageUrl: '', isActive: true,
+  categoryId: '', imageUrl: '', isActive: true,
 };
 
 const MAX_DIMENSION = 1000;
@@ -70,6 +57,7 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
   const [form, setForm] = useState<Product>(
     product ? { ...product, price: String(product.price), stock: String(product.stock) } : EMPTY
   );
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -77,6 +65,23 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
+
+  // Load real categories from backend — categoryId must be a UUID matching
+  // a Category row, not a slug, otherwise backend validation rejects it.
+  useEffect(() => {
+    let cancelled = false;
+    api<Category[]>('/products/categories')
+      .then((cats) => {
+        if (cancelled) return;
+        setCategories(cats);
+        // If creating new product and no categoryId yet, default to first
+        if (!product && cats.length > 0) {
+          setForm((prev) => prev.categoryId ? prev : { ...prev, categoryId: cats[0].id });
+        }
+      })
+      .catch(() => {/* surfaced via error state if submit fails */});
+    return () => { cancelled = true; };
+  }, [product]);
 
   const set = (field: keyof Product) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -101,6 +106,7 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
 
   const handleSubmit = async () => {
     if (!form.title.trim()) { setError('Mahsulot nomi kerak'); return; }
+    if (!form.categoryId) { setError('Kategoriya tanlang'); return; }
     if (!form.price || Number(form.price) <= 0) { setError("Narxni to'g'ri kiriting"); return; }
     if (!form.stock || Number(form.stock) < 0) { setError("Zaxira sonini to'g'ri kiriting"); return; }
     setLoading(true); setError('');
@@ -161,9 +167,10 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
             </div>
           </div>
           <div>
-            <label className="label">Kategoriya</label>
+            <label className="label">Kategoriya *</label>
             <select className="select" value={form.categoryId} onChange={set('categoryId')} style={{ marginTop: 4 }}>
-              {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <option value="" disabled>— Kategoriya tanlang —</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
 

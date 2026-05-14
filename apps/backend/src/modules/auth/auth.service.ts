@@ -135,6 +135,26 @@ export class AuthService {
         isEmailVerified: true,
       },
     });
+
+    // Auto-create role-specific profile so the user can immediately use the
+    // app (add products, accept deliveries, …) without an extra setup step.
+    // Required NOT NULL fields fall back to email/fullName; the user can
+    // refine them in /settings later.
+    if (role === UserRole.SELLER) {
+      const defaultName = fullName?.trim() || normalized.split('@')[0] || 'Sotuvchi';
+      await this.prisma.seller.create({
+        data: {
+          userId: user.id,
+          legalName: defaultName,
+          brandName: defaultName,
+        },
+      });
+    } else if (role === UserRole.COURIER) {
+      await this.prisma.courier.create({
+        data: { userId: user.id },
+      });
+    }
+
     return this.issueTokens(user.id, user.email ?? '', user.role);
   }
 
