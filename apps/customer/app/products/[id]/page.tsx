@@ -12,8 +12,10 @@ type Product = {
   title: string;
   description?: string;
   price: number | string;
+  originalPrice?: number | string | null;
   stock: number;
   imageUrl?: string;
+  imageUrls?: string[];
   categoryId?: string;
   sellerId?: string;
   seller?: { id?: string; name?: string; brandName?: string };
@@ -23,6 +25,8 @@ type Product = {
   requiresVehicle?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
   isFragile?: boolean;
   isOversized?: boolean;
+  avgRating?: number;
+  reviewsCount?: number;
 };
 
 type RawProductsRes = Product[] | { items?: Product[]; data?: Product[] };
@@ -41,11 +45,125 @@ const CATEGORY_GALLERY: Record<string, string[]> = {
 };
 
 function buildGallery(product: Product): string[] {
-  const slug = product.category?.slug ?? '';
   const main = product.imageUrl;
+  // Prefer real seller-uploaded gallery; fall back to category placeholders.
+  if (product.imageUrls && product.imageUrls.length > 0) {
+    return [main, ...product.imageUrls].filter((x): x is string => !!x).slice(0, 5);
+  }
+  const slug = product.category?.slug ?? '';
   const extras = (CATEGORY_GALLERY[slug] ?? []).map(UNS);
   const all = [main, ...extras].filter((x): x is string => !!x);
   return all.slice(0, 4);
+}
+
+type Review = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  user: { fullName: string | null; email: string | null };
+};
+
+function ReviewsSection({ productId }: { productId: string }) {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [myRating, setMyRating] = useState(0);
+  const [myComment, setMyComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      setReviews(await api<Review[]>(`/products/${productId}/reviews`));
+    } catch { setReviews([]); } finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [productId]);
+
+  const submit = async () => {
+    if (myRating < 1) { setError('Reyting tanlang'); return; }
+    setSubmitting(true); setError('');
+    try {
+      await api(`/products/${productId}/reviews`, {
+        method: 'POST',
+        body: { rating: myRating, comment: myComment.trim() || undefined },
+      });
+      setMyComment(''); setMyRating(0);
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally { setSubmitting(false); }
+  };
+
+  const isLoggedIn = typeof window !== 'undefined' && !!localStorage.getItem('access_token');
+  const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
+
+  return (
+    <div style={{ marginTop: 24, padding: '0 16px' }}>
+      <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>
+        Sharhlar {reviews.length > 0 && <span style={{ color: '#f59e0b' }}>★ {avg.toFixed(1)}</span>} ({reviews.length})
+      </h3>
+
+      {isLoggedIn && (
+        <div style={{ background: 'var(--surface)', borderRadius: 12, padding: 14, border: '1px solid var(--border)', marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Sharh qoldiring</div>
+          <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onClick={() => setMyRating(n)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 24, padding: 0, color: n <= myRating ? '#f59e0b' : '#d1d5db' }}
+              >★</button>
+            ))}
+          </div>
+          <textarea
+            value={myComment}
+            onChange={(e) => setMyComment(e.target.value)}
+            placeholder="Mahsulot haqida fikr (ixtiyoriy)"
+            rows={2}
+            style={{
+              width: '100%', padding: 10, borderRadius: 10,
+              border: '1px solid var(--border)', background: 'var(--surface-2)',
+              fontSize: 13, fontFamily: 'inherit', resize: 'vertical',
+            }}
+          />
+          {error && <div style={{ color: '#991b1b', fontSize: 12, marginTop: 6 }}>{error}</div>}
+          <button onClick={submit} disabled={submitting} className="btn" style={{ marginTop: 10, padding: '8px 18px' }}>
+            {submitting ? 'Yuborilmoqda…' : 'Yuborish'}
+          </button>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+            Sharh qoldirish uchun shu mahsulotni avval sotib olishingiz kerak.
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Yuklanmoqda…</div>
+      ) : reviews.length === 0 ? (
+        <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Hozircha sharhlar yo&apos;q</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {reviews.map((r) => (
+            <div key={r.id} style={{ background: 'var(--surface)', borderRadius: 12, padding: 12, border: '1px solid var(--border)' }}>
+              <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <strong style={{ fontSize: 13 }}>{r.user.fullName ?? r.user.email ?? 'Foydalanuvchi'}</strong>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  {new Date(r.createdAt).toLocaleDateString('uz-UZ')}
+                </span>
+              </div>
+              <div style={{ color: '#f59e0b', fontSize: 14, marginTop: 2 }}>
+                {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+              </div>
+              {r.comment && (
+                <div style={{ fontSize: 13, marginTop: 6, color: 'var(--text-secondary)' }}>{r.comment}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -75,7 +193,17 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     let cancelled = false;
     setLoading(true);
     api<Product>(`/products/${id}`)
-      .then((p) => { if (!cancelled) setProduct(p); })
+      .then((p) => {
+        if (cancelled) return;
+        setProduct(p);
+        // Track in localStorage for the "Recently viewed" rail on /home
+        try {
+          const KEY = 'lochin.recently-viewed.v1';
+          const prev = JSON.parse(localStorage.getItem(KEY) ?? '[]') as string[];
+          const next = [id, ...prev.filter((x) => x !== id)].slice(0, 12);
+          localStorage.setItem(KEY, JSON.stringify(next));
+        } catch {/* ignore */}
+      })
       .catch(() => { if (!cancelled) setProduct(null); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -364,6 +492,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             </button>
           </div>
         </div>
+
+        {/* Reviews */}
+        <ReviewsSection productId={id} />
 
         {/* Similar products */}
         {similar.length > 0 && (

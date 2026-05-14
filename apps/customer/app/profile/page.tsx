@@ -160,8 +160,9 @@ export default function ProfilePage() {
           {/* Quick links */}
           {[
             { label: "Barcha buyurtmalar", sub: 'Faol va o\'tgan buyurtmalar', icon: '📦', href: '/orders' },
+            { label: "Sevimli mahsulotlar", sub: 'Saqlanganlar ro\'yxati', icon: '❤️', href: '/favorites' },
             { label: "Mening kartalarim", sub: "To'lov kartalari", icon: '💳', href: '/profile/cards' },
-            { label: "Saqlangan manzillar", sub: 'Yetkazib berish manzillari', icon: '📍', href: '/orders' },
+            { label: "Saqlangan manzillar", sub: 'Yetkazib berish manzillari', icon: '📍', href: '/profile/addresses' },
           ].map((item) => (
             <button
               key={item.label}

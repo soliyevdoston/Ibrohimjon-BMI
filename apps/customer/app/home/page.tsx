@@ -172,11 +172,34 @@ export default function HomePage() {
   const [addingId, setAddingId] = useState<string | null>(null);
   const [showAuthGate, setShowAuthGate] = useState(false);
   const [bannerIdx, setBannerIdx] = useState(0);
+  const [adminBanners, setAdminBanners] = useState<{ id: string; title: string; imageUrl: string; linkUrl: string | null }[]>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>([]);
 
   const initFavs = useFavoritesStore((s) => s.init);
   const favIds = useFavoritesStore((s) => s.ids);
   const toggleFav = useFavoritesStore((s) => s.toggle);
   useEffect(() => { initFavs(); }, [initFavs]);
+
+  // Pull admin-managed banners (promo slides). If none exist, the hero
+  // section below stays on the static category-themed fallback.
+  useEffect(() => {
+    api<{ id: string; title: string; imageUrl: string; linkUrl: string | null }[]>('/banners')
+      .then(setAdminBanners)
+      .catch(() => setAdminBanners([]));
+  }, []);
+
+  // Recently viewed — populated from localStorage written by the product
+  // detail page. We resolve the IDs against the freshly-loaded products list.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const ids = JSON.parse(localStorage.getItem('lochin.recently-viewed.v1') ?? '[]') as string[];
+      if (!ids.length) return;
+      const map = new Map(products.map((p) => [p.id, p]));
+      const list = ids.map((id) => map.get(id)).filter((p): p is Product => !!p).slice(0, 8);
+      setRecentlyViewed(list);
+    } catch {/* ignore */}
+  }, [products]);
 
   const activeSlug = categories.find((c) => c.id === activeCategory)?.slug ?? '';
   const slides = BANNER_BY_SLUG[activeSlug] ?? BANNER_BY_SLUG[''];
@@ -454,6 +477,46 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Admin-managed promotional banners */}
+        {adminBanners.length > 0 && !debouncedSearch && (
+          <div
+            style={{
+              display: 'flex',
+              gap: 12,
+              overflowX: 'auto',
+              padding: '12px 0',
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {adminBanners.map((b) => (
+              <div
+                key={b.id}
+                onClick={() => b.linkUrl && (window.location.href = b.linkUrl)}
+                style={{
+                  flex: '0 0 80%',
+                  scrollSnapAlign: 'start',
+                  cursor: b.linkUrl ? 'pointer' : 'default',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  aspectRatio: '21 / 9',
+                  background: `url(${b.imageUrl}) center/cover no-repeat, #f1f5f9`,
+                }}
+              >
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0,
+                  background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                  padding: '20px 14px 12px',
+                  color: '#fff', fontWeight: 700, fontSize: 14,
+                }}>
+                  {b.title}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Free delivery progress bar */}
         {hydrated && freeDeliveryAbove > 0 && cartCount > 0 && (() => {
           const sub = subtotal();
@@ -705,6 +768,49 @@ export default function HomePage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Recently viewed rail */}
+        {recentlyViewed.length > 0 && !debouncedSearch && (
+          <div style={{ marginTop: 32, marginBottom: 24 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 12, padding: '0 4px' }}>
+              Yaqinda ko&apos;rilganlar
+            </h3>
+            <div style={{
+              display: 'flex', gap: 10, overflowX: 'auto',
+              padding: '4px 4px 12px', scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+            }}>
+              {recentlyViewed.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => router.push(`/products/${p.id}`)}
+                  style={{
+                    flex: '0 0 140px', scrollSnapAlign: 'start',
+                    cursor: 'pointer', background: 'var(--surface)',
+                    border: '1px solid var(--border)', borderRadius: 12,
+                    overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                  }}
+                >
+                  <div style={{ aspectRatio: '1', background: '#f1f5f9', position: 'relative' }}>
+                    {p.imageUrl && (
+                      <img src={p.imageUrl} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    )}
+                  </div>
+                  <div style={{ padding: 8 }}>
+                    <div style={{
+                      fontSize: 12, fontWeight: 600, lineHeight: 1.3,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden', minHeight: 32,
+                    }}>{p.title}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, marginTop: 4 }}>
+                      {money(p.price)} so&apos;m
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
