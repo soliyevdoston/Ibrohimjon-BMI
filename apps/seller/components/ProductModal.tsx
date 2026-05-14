@@ -11,6 +11,7 @@ type Product = {
   stock: string;
   categoryId: string;
   imageUrl: string;
+  imageUrls: string[];
   isActive: boolean;
 };
 
@@ -18,8 +19,10 @@ type Category = { id: string; name: string; slug: string };
 
 const EMPTY: Product = {
   title: '', description: '', price: '', originalPrice: '', stock: '',
-  categoryId: '', imageUrl: '', isActive: true,
+  categoryId: '', imageUrl: '', imageUrls: [], isActive: true,
 };
+
+const MAX_GALLERY = 4;
 
 const MAX_DIMENSION = 1000;
 const JPEG_QUALITY = 0.82;
@@ -62,6 +65,9 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
           price: String(product.price),
           originalPrice: product.originalPrice ? String(product.originalPrice) : '',
           stock: String(product.stock),
+          imageUrls: Array.isArray((product as Product & { imageUrls?: string[] }).imageUrls)
+            ? ((product as Product & { imageUrls?: string[] }).imageUrls ?? [])
+            : [],
         }
       : EMPTY
   );
@@ -132,6 +138,7 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
         stock: Number(form.stock),
         categoryId: form.categoryId,
         imageUrl: form.imageUrl.trim() || undefined,
+        imageUrls: form.imageUrls.filter((u) => u.trim()),
         isActive: form.isActive,
       };
       if (product?.id) {
@@ -320,6 +327,66 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
                 style={{ marginTop: 6 }}
               />
             </details>
+
+            {/* Additional gallery images (up to 4 extra shots) */}
+            <div style={{ marginTop: 14 }}>
+              <label className="label">
+                Qo&apos;shimcha rasmlar ({form.imageUrls.length}/{MAX_GALLERY})
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 6 }}>
+                {form.imageUrls.map((url, i) => (
+                  <div key={i} style={{
+                    position: 'relative', aspectRatio: '1',
+                    borderRadius: 10, overflow: 'hidden',
+                    border: '1px solid var(--border)',
+                  }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt={`Galereya ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, imageUrls: p.imageUrls.filter((_, idx) => idx !== i) }))}
+                      style={{
+                        position: 'absolute', top: 4, right: 4,
+                        width: 24, height: 24, borderRadius: 6,
+                        background: 'rgba(239,68,68,0.95)', border: 'none',
+                        color: '#fff', fontSize: 12, fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >×</button>
+                  </div>
+                ))}
+                {form.imageUrls.length < MAX_GALLERY && (
+                  <label style={{
+                    aspectRatio: '1', borderRadius: 10,
+                    border: '2px dashed var(--border)',
+                    background: 'var(--surface-2)',
+                    display: 'grid', placeItems: 'center',
+                    cursor: 'pointer', fontSize: 22, color: 'var(--text-muted)',
+                  }}>
+                    +
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      style={{ display: 'none' }}
+                      onChange={async (e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        try {
+                          const dataUrl = await compressToDataUrl(f);
+                          setForm((p) => ({ ...p, imageUrls: [...p.imageUrls, dataUrl] }));
+                        } catch (err) {
+                          setError((err as Error).message);
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                Asosiy rasmga qo&apos;shimcha — mahsulot detail sahifasida galereya bo&apos;lib ko&apos;rinadi.
+              </div>
+            </div>
           </div>
 
           {form.price && Number(form.price) > 0 && (

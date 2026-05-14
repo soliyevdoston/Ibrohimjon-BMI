@@ -15,6 +15,7 @@ type Product = {
   stock: number;
   categoryId: string;
   imageUrl?: string;
+  imageUrls?: string[];
   isActive: boolean;
 };
 
@@ -183,6 +184,7 @@ export default function ProductsPage() {
                 stock: String(modal.product.stock),
                 id: modal.product.id,
                 imageUrl: modal.product.imageUrl ?? '',
+                imageUrls: modal.product.imageUrls ?? [],
               }
             : undefined}
           onClose={() => setModal(null)}

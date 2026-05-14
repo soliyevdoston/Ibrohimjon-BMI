@@ -56,6 +56,7 @@ const groups: Group[] = [
     items: [
       { href: '/products',   label: 'Mahsulotlar',  icon: IconBox },
       { href: '/categories', label: 'Kategoriyalar', icon: IconTag },
+      { href: '/banners',    label: 'Bannerlar',    icon: IconChart },
     ],
   },
   {
