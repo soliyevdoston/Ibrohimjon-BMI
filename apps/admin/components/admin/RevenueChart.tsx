@@ -9,7 +9,28 @@ export function RevenueChart({ points }: { points: Point[] }) {
   const h = 200;
   const padX = 32;
   const padY = 28;
-  const maxV = Math.max(...points.map((p) => p.v));
+
+  const [hover, setHover] = useState<number | null>(null);
+
+  // Empty / single-point safety. With 0 points there's nothing to plot;
+  // with 1 point the step calculation divides by zero, so the points.map
+  // emits NaN coordinates and downstream coords[0] is undefined → build
+  // prerender crashes with "Cannot read properties of undefined (reading 'x')".
+  if (points.length < 2) {
+    return (
+      <div style={{
+        height: 200,
+        display: 'grid',
+        placeItems: 'center',
+        color: 'var(--text-muted)',
+        fontSize: 13,
+      }}>
+        Ma&apos;lumot yetarli emas
+      </div>
+    );
+  }
+
+  const maxV = Math.max(1, ...points.map((p) => p.v));
   const step = (w - padX * 2) / (points.length - 1);
 
   const coords = points.map((p, i) => ({
@@ -23,8 +44,6 @@ export function RevenueChart({ points }: { points: Point[] }) {
     `M ${coords[0].x} ${h - padY} ` +
     coords.map((c) => `L ${c.x} ${c.y}`).join(' ') +
     ` L ${coords[coords.length - 1].x} ${h - padY} Z`;
-
-  const [hover, setHover] = useState<number | null>(null);
 
   return (
     <div style={{ position: 'relative' }}>
