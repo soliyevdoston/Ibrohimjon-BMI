@@ -47,8 +47,29 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
+    // Decorate each item with rating aggregates so the card list can show
+    // ★ rating + review count without one extra request per card.
+    const productIds = items.map((p) => p.id);
+    const stats = productIds.length
+      ? await this.prisma.review.groupBy({
+          by: ['productId'],
+          where: { productId: { in: productIds } },
+          _avg: { rating: true },
+          _count: { _all: true },
+        })
+      : [];
+    const statsMap = new Map(stats.map((s) => [s.productId, s]));
+    const decorated = items.map((p) => {
+      const s = statsMap.get(p.id);
+      return {
+        ...p,
+        avgRating: Number(s?._avg.rating ?? 0),
+        reviewsCount: s?._count._all ?? 0,
+      };
+    });
+
     return {
-      items,
+      items: decorated,
       meta: {
         page: query.page,
         limit: query.limit,
@@ -67,6 +88,7 @@ export class ProductsService {
         title: dto.title,
         description: dto.description,
         imageUrl: dto.imageUrl,
+        imageUrls: dto.imageUrls ?? [],
         price: dto.price,
         originalPrice: dto.originalPrice,
         stock: dto.stock,
@@ -171,6 +193,15 @@ export class ProductsService {
     if (!product) {
       throw new NotFoundException('Mahsulot topilmadi');
     }
-    return product;
+    const agg = await this.prisma.review.aggregate({
+      where: { productId: id },
+      _avg: { rating: true },
+      _count: { _all: true },
+    });
+    return {
+      ...product,
+      avgRating: Number(agg._avg.rating ?? 0),
+      reviewsCount: agg._count._all,
+    };
   }
 }

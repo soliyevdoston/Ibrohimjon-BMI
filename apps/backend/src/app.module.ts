@@ -18,6 +18,10 @@ import { CouriersModule } from './modules/couriers/couriers.module';
 import { PricingModule } from './modules/pricing/pricing.module';
 import { PayoutsModule } from './modules/payouts/payouts.module';
 import { CustomerCardsModule } from './modules/customer-cards/customer-cards.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { FavoritesModule } from './modules/favorites/favorites.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
+import { BannersModule } from './modules/banners/banners.module';
 
 @Module({
   imports: [
@@ -43,6 +47,10 @@ import { CustomerCardsModule } from './modules/customer-cards/customer-cards.mod
     SellersModule,
     CouriersModule,
     CustomerCardsModule,
+    ReviewsModule,
+    FavoritesModule,
+    AddressesModule,
+    BannersModule,
   ],
   providers: [
     {
