@@ -38,15 +38,23 @@ export class AdminService {
       throw new BadRequestException('Bu email allaqachon ro\'yxatdan o\'tgan');
     }
     const passwordHash = await bcrypt.hash(input.password, 10);
+    const phone = input.phone ? normalizeAdminPhone(input.phone) : undefined;
+    if (phone) {
+      const existingPhone = await this.prisma.user.findUnique({ where: { phone } });
+      if (existingPhone) {
+        throw new BadRequestException('Bu telefon raqami allaqachon ro\'yxatdan o\'tgan');
+      }
+    }
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email,
-          phone: input.phone?.trim() || undefined,
+          phone,
           passwordHash,
           fullName: input.fullName?.trim() || input.brandName,
           role: UserRole.SELLER,
           isEmailVerified: true,
+          isPhoneVerified: !!phone,
         },
       });
       const seller = await tx.seller.create({
@@ -83,15 +91,23 @@ export class AdminService {
       throw new BadRequestException('Bu email allaqachon ro\'yxatdan o\'tgan');
     }
     const passwordHash = await bcrypt.hash(input.password, 10);
+    const phone = input.phone ? normalizeAdminPhone(input.phone) : undefined;
+    if (phone) {
+      const existingPhone = await this.prisma.user.findUnique({ where: { phone } });
+      if (existingPhone) {
+        throw new BadRequestException('Bu telefon raqami allaqachon ro\'yxatdan o\'tgan');
+      }
+    }
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email,
-          phone: input.phone?.trim() || undefined,
+          phone,
           passwordHash,
           fullName: input.fullName?.trim(),
           role: UserRole.COURIER,
           isEmailVerified: true,
+          isPhoneVerified: !!phone,
         },
       });
       const courier = await tx.courier.create({
@@ -418,4 +434,11 @@ export class AdminService {
       generatedAt: now.toISOString(),
     };
   }
+}
+
+function normalizeAdminPhone(raw: string): string {
+  let s = String(raw ?? '').trim().replace(/[^\d+]/g, '');
+  if (s.startsWith('00')) s = '+' + s.slice(2);
+  if (!s.startsWith('+')) s = '+' + s;
+  return s;
 }

@@ -7,27 +7,29 @@ import { useAuthStore } from '@/stores/auth';
 export default function SellerLoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!email.trim() || password.length < 6) {
-      setError('Email va parol (6+ belgi) kiriting');
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone || password.length < 6) {
+      setError('Telefon raqam va parol (6+ belgi) kiriting');
       return;
     }
     setLoading(true); setError('');
     try {
-      const path = mode === 'login' ? '/auth/email/login' : '/auth/email/register';
-      const body = mode === 'login'
-        ? { email: email.trim(), password }
-        : { email: email.trim(), password, fullName: fullName || undefined, role: 'SELLER' };
-      const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(path, { method: 'POST', body });
-      setAuth(res.accessToken, res.user.role ?? 'SELLER', res.user.fullName ?? fullName);
+      const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(
+        '/auth/phone/login',
+        { method: 'POST', body: { phone: trimmedPhone, password } },
+      );
+      if (res.user.role !== 'SELLER') {
+        setError("Bu akkaunt sotuvchi emas. Sotuvchi paroli bilan kiring.");
+        return;
+      }
+      setAuth(res.accessToken, res.user.role, res.user.fullName ?? '');
       router.replace('/dashboard');
     } catch (err) {
       setError((err as Error).message);
@@ -35,9 +37,8 @@ export default function SellerLoginPage() {
   };
 
   const fillDemo = () => {
-    setEmail('seller@lochin.uz');
+    setPhone('+998901234567');
     setPassword('seller123');
-    setMode('login');
   };
 
   return (
@@ -61,59 +62,17 @@ export default function SellerLoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="card" style={{ padding: 32, boxShadow: '0 8px 32px rgba(16,24,40,0.08)' }}>
-          <div style={{
-            display: 'flex', gap: 4, padding: 4,
-            background: '#f3f4f6', borderRadius: 12, marginBottom: 22,
-          }}>
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              style={{
-                flex: 1, padding: '8px 12px', border: 'none', borderRadius: 8,
-                cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                background: mode === 'login' ? '#fff' : 'transparent',
-                color: mode === 'login' ? '#111' : '#6b7280',
-                boxShadow: mode === 'login' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              }}
-            >Kirish</button>
-            <button
-              type="button"
-              onClick={() => setMode('register')}
-              style={{
-                flex: 1, padding: '8px 12px', border: 'none', borderRadius: 8,
-                cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                background: mode === 'register' ? '#fff' : 'transparent',
-                color: mode === 'register' ? '#111' : '#6b7280',
-                boxShadow: mode === 'register' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-              }}
-            >Ro&apos;yxatdan o&apos;tish</button>
-          </div>
-
           <div className="stack-sm">
-            <label className="label">Email</label>
+            <label className="label">Telefon raqami</label>
             <input
               className="input"
-              type="email"
-              placeholder="siz@brand.uz"
-              value={email}
-              onChange={(e) => { setError(''); setEmail(e.target.value); }}
+              type="tel"
+              placeholder="+998 90 123 45 67"
+              value={phone}
+              onChange={(e) => { setError(''); setPhone(e.target.value); }}
               autoFocus
-              autoComplete="email"
+              autoComplete="tel"
             />
-
-            {mode === 'register' && (
-              <>
-                <label className="label" style={{ marginTop: 6 }}>Brend / Egasi</label>
-                <input
-                  className="input"
-                  type="text"
-                  placeholder="Bro Coffee"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  autoComplete="organization"
-                />
-              </>
-            )}
 
             <label className="label" style={{ marginTop: 6 }}>Parol</label>
             <input
@@ -122,7 +81,7 @@ export default function SellerLoginPage() {
               placeholder="Kamida 6 ta belgi"
               value={password}
               onChange={(e) => { setError(''); setPassword(e.target.value); }}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              autoComplete="current-password"
             />
 
             {error && <p style={{ color: 'var(--danger, #ef4444)', fontSize: 13, marginTop: 4 }}>{error}</p>}
@@ -133,7 +92,7 @@ export default function SellerLoginPage() {
               style={{ marginTop: 8 }}
               disabled={loading}
             >
-              {loading ? 'Yuborilmoqda…' : (mode === 'login' ? 'Kirish' : 'Ro\'yxatdan o\'tish')}
+              {loading ? 'Yuborilmoqda…' : 'Kirish'}
             </button>
           </div>
 
@@ -142,9 +101,10 @@ export default function SellerLoginPage() {
             background: '#f9fafb', border: '1px dashed #e5e7eb',
             borderRadius: 12, fontSize: 12, color: '#374151',
           }}>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>Demo akkaunt:</div>
-            <div style={{ fontFamily: 'monospace', fontSize: 11, lineHeight: 1.6 }}>
-              seller@lochin.uz<br />seller123
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Hisob admin orqali yaratiladi</div>
+            <div style={{ fontSize: 11, lineHeight: 1.5, color: '#6b7280' }}>
+              Admin sizga telefon raqam va boshlang&apos;ich parolni beradi.
+              Tizimga kirgach, sozlamalarda parolni o&apos;zgartiring.
             </div>
             <button
               type="button"
@@ -155,7 +115,7 @@ export default function SellerLoginPage() {
                 padding: '6px 12px', borderRadius: 8,
                 fontSize: 11, fontWeight: 600, cursor: 'pointer',
               }}
-            >Demo bilan to&apos;ldirish</button>
+            >Demo to&apos;ldirish</button>
           </div>
         </form>
       </div>

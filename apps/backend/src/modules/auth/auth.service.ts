@@ -119,6 +119,44 @@ export class AuthService {
     return this.issueTokens(user.id, user.phone ?? user.email ?? '', user.role);
   }
 
+  async loginWithPhone(phone: string, password: string) {
+    const normalized = normalizePhone(phone);
+    const user = await this.prisma.user.findUnique({ where: { phone: normalized } });
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Telefon yoki parol noto\'g\'ri');
+    }
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) {
+      throw new UnauthorizedException('Telefon yoki parol noto\'g\'ri');
+    }
+    return this.issueTokens(user.id, normalized, user.role);
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    if (newPassword.length < 6) {
+      throw new BadRequestException('Yangi parol kamida 6 belgi bo\'lishi kerak');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Foydalanuvchi topilmadi');
+    }
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) {
+      throw new UnauthorizedException('Joriy parol noto\'g\'ri');
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+    // Invalidate refresh tokens so other sessions get logged out
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    return { ok: true };
+  }
+
   async registerWithEmail(email: string, password: string, fullName: string | undefined, role: UserRole) {
     const normalized = email.trim().toLowerCase();
     const existing = await this.prisma.user.findUnique({ where: { email: normalized } });
@@ -263,15 +301,24 @@ export class AuthService {
       },
     });
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, phone: true, email: true, fullName: true, role: true },
+    });
+
     return {
       accessToken,
       refreshToken,
       tokenType: 'Bearer',
-      user: {
-        id: userId,
-        phone: identity,
-        role,
-      },
+      user: user ?? { id: userId, phone: identity, email: null, fullName: null, role },
     };
   }
+}
+
+function normalizePhone(raw: string): string {
+  // Strip everything but digits and a leading +; ensure Uzbek-style +998 prefix
+  let s = String(raw ?? '').trim().replace(/[^\d+]/g, '');
+  if (s.startsWith('00')) s = '+' + s.slice(2);
+  if (!s.startsWith('+')) s = '+' + s;
+  return s;
 }

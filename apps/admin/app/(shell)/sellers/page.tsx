@@ -239,6 +239,10 @@ function CreateSellerModal({ onClose, onCreated }: { onClose: () => void; onCrea
     setForm((p) => ({ ...p, [k]: e.target.value }));
 
   const submit = async () => {
+    if (!form.phone.trim()) {
+      setError('Telefon raqami kerak (sotuvchining login uchun)');
+      return;
+    }
     if (!form.email.trim() || form.password.length < 6) {
       setError('Email va parol (6+ belgi) kerak');
       return;
@@ -288,12 +292,20 @@ function CreateSellerModal({ onClose, onCreated }: { onClose: () => void; onCrea
         </div>
 
         <div className="stack" style={{ gap: 12 }}>
-          <Field label="Email *" placeholder="brand@lochin.uz" value={form.email} onChange={set('email')} type="email" />
+          <div style={{
+            background: '#eff6ff', border: '1px solid #bfdbfe',
+            color: '#1e40af', padding: '10px 12px', borderRadius: 10,
+            fontSize: 12,
+          }}>
+            <strong>Eslatma:</strong> sotuvchi <strong>telefon raqami + parol</strong> bilan
+            tizimga kiradi. Email zaxira/qayta tiklash uchun.
+          </div>
+          <Field label="Telefon raqami * (login)" placeholder="+998 90 123 45 67" value={form.phone} onChange={set('phone')} type="tel" />
           <Field label="Parol *" placeholder="kamida 6 belgi" value={form.password} onChange={set('password')} type="password" />
+          <Field label="Email *" placeholder="brand@lochin.uz" value={form.email} onChange={set('email')} type="email" />
           <Field label="Brend nomi *" placeholder="masalan, Lochin Market" value={form.brandName} onChange={set('brandName')} />
           <Field label="Yuridik nomi *" placeholder="masalan, Lochin Market MChJ" value={form.legalName} onChange={set('legalName')} />
           <Field label="Egasi (FIO)" placeholder="ixtiyoriy" value={form.fullName} onChange={set('fullName')} />
-          <Field label="Telefon" placeholder="+998 90 …" value={form.phone} onChange={set('phone')} />
           <Field label="Manzil" placeholder="ixtiyoriy" value={form.addressText} onChange={set('addressText')} />
           <div>
             <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Tavsif</label>

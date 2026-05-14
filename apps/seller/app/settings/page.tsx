@@ -26,7 +26,6 @@ const DEMO: Profile = {
 export default function SettingsPage() {
   const router = useRouter();
   const [form, setForm] = useState<Profile>(DEMO);
-  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [notify, setNotify] = useState({ newOrder: true, orderReady: true, lowStock: true, promotions: false });
@@ -168,27 +167,8 @@ export default function SettingsPage() {
             </div>
 
             {/* Change password */}
-            <div className="card">
-              <div className="card-h">
-                <div>
-                  <h3>Xavfsizlik</h3>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>OTP — telefon orqali, parol shart emas</div>
-                </div>
-              </div>
-              <div style={{
-                background: 'var(--surface-2)', borderRadius: 12, padding: '14px 16px',
-                display: 'flex', alignItems: 'center', gap: 12,
-              }}>
-                <span style={{ fontSize: 24 }}>🔐</span>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>OTP orqali autentifikatsiya</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                    Hisobingiz bir martalik SMS kodlar orqali himoyalangan.
-                  </div>
-                </div>
-                <span className="chip green" style={{ marginLeft: 'auto', flexShrink: 0 }}>Xavfsiz</span>
-              </div>
-            </div>
+            <PasswordCard />
+
 
             {/* Danger zone */}
             <div className="card" style={{ border: '1px solid rgba(239,68,68,.3)' }}>
@@ -219,6 +199,95 @@ export default function SettingsPage() {
 
           </div>
         </main>
+      </div>
+    </div>
+  );
+}
+
+function PasswordCard() {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  const submit = async () => {
+    setMsg(null);
+    if (current.length < 6 || next.length < 6) {
+      setMsg({ kind: 'err', text: 'Parollar kamida 6 belgi bo\'lishi kerak' });
+      return;
+    }
+    if (next !== confirm) {
+      setMsg({ kind: 'err', text: 'Yangi parollar mos kelmadi' });
+      return;
+    }
+    setSaving(true);
+    try {
+      await api('/auth/password', {
+        method: 'PATCH',
+        body: { currentPassword: current, newPassword: next },
+      });
+      setMsg({ kind: 'ok', text: 'Parol yangilandi' });
+      setCurrent(''); setNext(''); setConfirm('');
+    } catch (e) {
+      setMsg({ kind: 'err', text: (e as Error).message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="card">
+      <div className="card-h">
+        <div>
+          <h3>Parolni o&apos;zgartirish</h3>
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Admin bergan boshlang&apos;ich parolni xavfsizroq parol bilan almashtiring
+          </div>
+        </div>
+      </div>
+      <div className="stack-sm">
+        <label className="label">Joriy parol</label>
+        <input
+          className="input"
+          type="password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+          autoComplete="current-password"
+        />
+        <label className="label" style={{ marginTop: 6 }}>Yangi parol</label>
+        <input
+          className="input"
+          type="password"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          placeholder="Kamida 6 belgi"
+          autoComplete="new-password"
+        />
+        <label className="label" style={{ marginTop: 6 }}>Yangi parolni tasdiqlang</label>
+        <input
+          className="input"
+          type="password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          autoComplete="new-password"
+        />
+        {msg && (
+          <div style={{
+            fontSize: 13, marginTop: 6,
+            color: msg.kind === 'ok' ? '#065f46' : '#991b1b',
+          }}>
+            {msg.text}
+          </div>
+        )}
+        <button
+          className="btn"
+          onClick={submit}
+          disabled={saving}
+          style={{ marginTop: 8, alignSelf: 'flex-start' }}
+        >
+          {saving ? 'Yangilanmoqda…' : 'Parolni o\'zgartirish'}
+        </button>
       </div>
     </div>
   );
