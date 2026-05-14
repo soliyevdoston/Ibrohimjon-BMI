@@ -13,14 +13,22 @@ const VEHICLES: { id: string; label: string; Icon: React.ComponentType<{ size?: 
   { id: 'Piyoda', label: 'Piyoda', Icon: IconWalk },
 ];
 
+type CourierApiProfile = {
+  id?: string;
+  user?: { fullName?: string | null; phone?: string | null; email?: string | null };
+  vehicleType?: string;
+  vehicleModel?: string | null;
+  vehiclePlate?: string | null;
+};
+
 export default function CourierProfilePage() {
   const router = useRouter();
-  const [name, setName] = useState('Jasur Toshmatov');
-  const [phone, setPhone] = useState('+998 90 123 45 67');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [vehicle, setVehicle] = useState('Skuter');
-  const [zone, setZone] = useState('Yunusobod');
-  const [rating, setRating] = useState(4.9);
-  const [deliveriesToday, setDeliveriesToday] = useState(7);
+  const [zone, setZone] = useState('');
+  const [rating] = useState(0);
+  const [deliveriesToday, setDeliveriesToday] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -30,16 +38,26 @@ export default function CourierProfilePage() {
     if (!localStorage.getItem('access_token')) { router.replace('/login'); return; }
     const load = async () => {
       try {
-        const data = await api<{ name: string; phone: string; vehicle?: string; zone?: string; rating?: number; deliveriesToday?: number }>(
-          '/courier/profile', { token }
+        const data = await api<CourierApiProfile>('/courier/profile', { token });
+        if (data.user?.fullName) setName(data.user.fullName);
+        if (data.user?.phone) setPhone(data.user.phone);
+        if (data.vehicleType) {
+          const map: Record<string, string> = { BIKE: 'Velosiped', CAR: 'Mashina', VAN: 'Mashina', TRUCK: 'Mashina' };
+          setVehicle(map[data.vehicleType] ?? 'Skuter');
+        }
+      } catch { /* keep empty defaults */ }
+
+      // Today's delivery count from ledger summary
+      try {
+        type Summary = { recentEntries: { type: string; createdAt: string }[] };
+        const s = await api<Summary>('/payouts/courier/summary', { token });
+        const today = new Date().toDateString();
+        setDeliveriesToday(
+          s.recentEntries.filter(
+            (e) => e.type === 'COURIER_FEE' && new Date(e.createdAt).toDateString() === today,
+          ).length,
         );
-        if (data.name) setName(data.name);
-        if (data.phone) setPhone(data.phone);
-        if (data.vehicle) setVehicle(data.vehicle);
-        if (data.zone) setZone(data.zone);
-        if (data.rating) setRating(data.rating);
-        if (data.deliveriesToday) setDeliveriesToday(data.deliveriesToday);
-      } catch { /* use demo */ }
+      } catch { /* keep zero */ }
     };
     load();
   }, [router, token]);

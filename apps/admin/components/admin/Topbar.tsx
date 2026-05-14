@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { IconBell, IconMenu, IconSearch } from './Icon';
+import { IconMenu } from './Icon';
 import { useNav } from './NavContext';
 
 function initials(name: string): string {
@@ -55,17 +55,7 @@ export function AdminTopbar() {
         <span className="topbar-h1">{meta.title}</span>
       </div>
 
-      <div className="topbar-search">
-        <IconSearch size={16} />
-        <input placeholder="Search orders, customers, couriers..." />
-        <span className="kbd">⌘K</span>
-      </div>
-
-      <div className="topbar-actions">
-        <button className="icon-btn" aria-label="Notifications">
-          <IconBell size={16} />
-          <span className="dot" />
-        </button>
+      <div className="topbar-actions" style={{ marginLeft: 'auto' }}>
         <div className="avatar only-desktop" title={user.name || 'Admin'}>
           {initials(user.name || user.email || 'Admin')}
         </div>

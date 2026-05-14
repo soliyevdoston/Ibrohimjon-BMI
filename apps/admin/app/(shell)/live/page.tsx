@@ -94,7 +94,7 @@ export default function AdminLivePage() {
               {couriersLoading ? 'yuklanmoqda…' : `${onlineCouriers.length} ta onlayn`}
             </div>
           </div>
-          <button className="btn ghost sm"><IconTruck size={14} /> Yuborish</button>
+          <span className="chip green"><IconTruck size={12} /> {onlineCouriers.length}</span>
         </div>
 
         <div className="grid-3">

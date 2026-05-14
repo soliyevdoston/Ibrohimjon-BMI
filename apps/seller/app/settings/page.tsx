@@ -28,7 +28,6 @@ export default function SettingsPage() {
   const [form, setForm] = useState<Profile>(DEMO);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [notify, setNotify] = useState({ newOrder: true, orderReady: true, lowStock: true, promotions: false });
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
 
@@ -125,73 +124,11 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Notifications */}
-            <div className="card">
-              <div className="card-h">
-                <div>
-                  <h3>Bildirishnomalar</h3>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Qanday bildirishnomalar olishni tanlang</div>
-                </div>
-              </div>
-              <div className="stack" style={{ gap: 14 }}>
-                {([
-                  { key: 'newOrder',    label: 'Yangi buyurtma keldi',          hint: 'Mijoz buyurtma berganda xabar beradi' },
-                  { key: 'orderReady', label: 'Kuryer buyurtmani oldi',         hint: 'Kuryer buyurtmangizni olganda xabar beradi' },
-                  { key: 'lowStock',   label: 'Zaxira kam qoldi',               hint: 'Mahsulot zaxirasi 10 tadan kam bo\'lganda' },
-                  { key: 'promotions', label: 'Platforma aksiyalari',            hint: 'Lochin kampaniyalari va chegirmalari' },
-                ] as const).map((n) => (
-                  <label key={n.key} style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}>
-                    <div style={{
-                      width: 44, height: 26, borderRadius: 999,
-                      background: notify[n.key] ? 'var(--primary)' : 'var(--surface-2)',
-                      position: 'relative', transition: 'background 200ms', flexShrink: 0,
-                      border: '1px solid var(--border)',
-                    }}
-                      onClick={() => setNotify((p) => ({ ...p, [n.key]: !p[n.key] }))}
-                    >
-                      <div style={{
-                        position: 'absolute', top: 3,
-                        left: notify[n.key] ? 20 : 3,
-                        width: 18, height: 18, borderRadius: 999,
-                        background: '#fff', transition: 'left 200ms',
-                        boxShadow: '0 1px 4px rgba(0,0,0,.2)',
-                      }} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600 }}>{n.label}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{n.hint}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
             {/* Change password */}
             <PasswordCard />
 
-
-            {/* Danger zone */}
-            <div className="card" style={{ border: '1px solid rgba(239,68,68,.3)' }}>
-              <div className="card-h">
-                <div>
-                  <h3 style={{ color: 'var(--danger)' }}>Xavfli zona</h3>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Qaytarib bo'lmaydigan amallar</div>
-                </div>
-              </div>
-              <div className="hstack" style={{ justifyContent: 'space-between', padding: '10px 0' }}>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>Do'konni o'chirish</div>
-                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>O'chirilgan paytda mijozlar buyurtma bera olmaydi</div>
-                </div>
-                <button className="btn danger sm" onClick={() => alert("Do'konni o'chirish uchun qo'llab-quvvatlash xizmatiga murojaat qiling.")}>
-                  O'chirish
-                </button>
-              </div>
-            </div>
-
             {/* Save bar */}
             <div className="hstack" style={{ justifyContent: 'flex-end', gap: 10, paddingBottom: 32 }}>
-              <button className="btn ghost" onClick={() => setForm(DEMO)}>Bekor qilish</button>
               <button className="btn" onClick={handleSave} disabled={saving}>
                 {saving ? 'Saqlanmoqda…' : saved ? '✓ Saqlandi' : "O'zgarishlarni saqlash"}
               </button>

@@ -3,15 +3,15 @@ import { useCartStore } from '@/stores/cart';
 import { money } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
-const DELIVERY_FEE = 8000;
-
 export function CartDrawer() {
   const { items, isOpen, toggleCart, updateQty, remove, subtotal } = useCartStore();
   const router = useRouter();
 
   if (!isOpen) return null;
 
-  const total = subtotal() + DELIVERY_FEE;
+  // Delivery fee depends on pickup address + vehicle tier — computed on the
+  // checkout page once the user picks a location. The drawer just shows the
+  // item subtotal so we don't display a misleading total.
 
   const handleCheckout = () => {
     toggleCart();
@@ -144,11 +144,13 @@ export function CartDrawer() {
               </div>
               <div className="price-row">
                 <span className="price-row-label">Yetkazib berish</span>
-                <span className="price-row-value">{money(DELIVERY_FEE)} so&apos;m</span>
+                <span className="price-row-value" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  to&apos;lovda hisoblanadi
+                </span>
               </div>
               <div className="price-row total">
                 <span className="price-row-label" style={{ fontWeight: 700, color: 'var(--text)' }}>Jami</span>
-                <span className="price-row-value">{money(total)} so&apos;m</span>
+                <span className="price-row-value">{money(subtotal())} so&apos;m +</span>
               </div>
             </div>
 

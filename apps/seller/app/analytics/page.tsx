@@ -27,7 +27,6 @@ const DOW = ['Ya', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh'];
 
 export default function AnalyticsPage() {
   const router = useRouter();
-  const [period, setPeriod] = useState<'week' | 'month'>('week');
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -104,22 +103,8 @@ export default function AnalyticsPage() {
             <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Biznesingiz ko&apos;rsatkichlari</p>
           </div>
 
-          <div style={{
-            display: 'inline-flex', background: 'var(--surface-2)',
-            borderRadius: 12, padding: 4, marginBottom: 24,
-          }}>
-            {(['week', 'month'] as const).map(p => (
-              <button key={p} onClick={() => setPeriod(p)} style={{
-                padding: '7px 20px', borderRadius: 9, border: 'none',
-                background: period === p ? '#fff' : 'transparent',
-                color: period === p ? 'var(--primary)' : 'var(--text-muted)',
-                fontWeight: period === p ? 700 : 500, fontSize: 14,
-                cursor: 'pointer', boxShadow: period === p ? '0 1px 4px rgba(0,0,0,.1)' : 'none',
-                transition: 'all 200ms',
-              }}>
-                {p === 'week' ? 'Bu hafta' : 'Bu oy'}
-              </button>
-            ))}
+          <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
+            Oxirgi 7 kun bo&apos;yicha
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>

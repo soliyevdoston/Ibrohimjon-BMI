@@ -167,19 +167,33 @@ export default function CourierDashboard() {
     };
   }, [router, token, loadAvailable]);
 
-  // Auto online/offline detection via browser network status
+  // Auto online/offline detection via browser network status — also pushed
+  // to the backend so admin/customers see the courier's real availability.
   useEffect(() => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
     setIsOnline(navigator.onLine);
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+
+    const syncPresence = (online: boolean) => {
+      api('/courier/presence', {
+        method: 'PATCH',
+        body: { isOnline: online, isAvailable: online && !activeDelivery },
+        token,
+      }).catch(() => {/* network — already offline; retry on next change */});
+    };
+
+    // Initial sync so the courier shows as online the moment the dashboard opens
+    syncPresence(navigator.onLine);
+
+    const handleOnline = () => { setIsOnline(true); syncPresence(true); };
+    const handleOffline = () => { setIsOnline(false); syncPresence(false); };
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const startGPS = useCallback((delivery: AvailableOrder) => {
     const from = delivery.sellerPos;

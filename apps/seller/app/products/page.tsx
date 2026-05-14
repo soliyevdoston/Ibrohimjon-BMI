@@ -49,8 +49,11 @@ export default function ProductsPage() {
 
   useEffect(() => {
     if (!localStorage.getItem('access_token')) { router.replace('/login'); return; }
-    loadProducts();
-  }, [router]);
+    // Debounce so we don't fire a request on every keystroke
+    const t = setTimeout(loadProducts, 300);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, search]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Bu mahsulotni o'chirasizmi? Bu amalni qaytarib bo'lmaydi.")) return;
