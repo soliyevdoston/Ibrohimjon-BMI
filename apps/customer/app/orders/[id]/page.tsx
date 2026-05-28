@@ -161,7 +161,12 @@ export default function OrderTrackingPage() {
       // Real-time courier location from backend
       socket.on('delivery:location', (data: { deliveryId: string; lat: number; lng: number }) => {
         if (!data.lat || !data.lng) return;
-        setCourierPos([data.lat, data.lng]);
+        const pos: [number, number] = [data.lat, data.lng];
+        setCourierPos(pos);
+        // Calculate ETA from real distance: 30 km/h speed
+        const dest = getDestination();
+        const remainKm = haversineKm(pos, dest);
+        setEta(Math.round(remainKm / (30 / 3600)));
         if (simulationRef.current) {
           clearInterval(simulationRef.current);
           simulationRef.current = null;
@@ -197,15 +202,17 @@ export default function OrderTrackingPage() {
   const startSimulation = useCallback(() => {
     if (simulationRef.current) return; // already running
     progressRef.current = 0;
+    const totalDistKm = haversineKm(SELLER_POS, CUSTOMER_POS);
+    const speedKmPerSec = 30 / 3600; // 30 km/h in km/s
 
     simulationRef.current = setInterval(() => {
       progressRef.current = Math.min(progressRef.current + 0.003, 1);
       const pos = lerp(SELLER_POS, CUSTOMER_POS, progressRef.current);
       setCourierPos(pos);
 
-      // ETA (seconds remaining)
-      const remaining = Math.round((1 - progressRef.current) * 18 * 60);
-      setEta(remaining);
+      const remainingKm = totalDistKm * (1 - progressRef.current);
+      const remainingSec = Math.round(remainingKm / speedKmPerSec);
+      setEta(remainingSec);
 
       if (progressRef.current >= 1) {
         clearInterval(simulationRef.current!);
@@ -220,7 +227,12 @@ export default function OrderTrackingPage() {
     if (seconds <= 0) return 'Yetib keldi!';
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    return m > 0 ? `~${m} daq ${s > 0 ? s + ' son' : ''}` : `~${s} son`;
+    if (m >= 60) {
+      const h = Math.floor(m / 60);
+      const rem = m % 60;
+      return `~${h} soat ${rem > 0 ? rem + ' daq' : ''}`;
+    }
+    return m > 0 ? `~${m} daqiqa` : `~${s} soniya`;
   };
 
   const getDestination = (): [number, number] => {

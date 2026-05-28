@@ -52,7 +52,7 @@ const UNS = (id: string) => `https://images.unsplash.com/${id}?w=1400&q=80&auto=
 
 const BANNER_BY_SLUG: Record<string, Slide[]> = {
   '': [
-    { image: UNS('photo-1604329760661-e71dc83f8f26'), emoji: '🛵', title: 'Tez va qulay yetkazib berish', sub: 'Minglab tovarlar — bir joyda.\n30 daqiqada eshigingizgacha.' },
+    { image: UNS('photo-1604329760661-e71dc83f8f26'), emoji: '🛵', title: 'Tez va qulay yetkazib berish', sub: 'Minglab tovarlar — bir joyda.\n20–40 daqiqada eshigingizgacha.' },
     { image: UNS('photo-1555041469-a586c61ea9bc'), emoji: '🛋️', title: 'Mebel va uy interyeri', sub: 'Divan, krovat, shkaflar — uyingizga qulaylik.' },
     { image: UNS('photo-1592750475338-74b7b21085ab'), emoji: '📱', title: 'Eng so\'nggi texnika', sub: 'iPhone, MacBook, AirPods — yangi avlod gadjetlari.' },
     { image: UNS('photo-1606312619070-d48b4c652a52'), emoji: '🍫', title: 'Shokolad va shirinliklar', sub: 'Eng yaxshi brendlar — uzoq saqlanadigan ta\'mlar.' },

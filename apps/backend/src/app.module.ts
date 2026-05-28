@@ -22,6 +22,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { AddressesModule } from './modules/addresses/addresses.module';
 import { BannersModule } from './modules/banners/banners.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { BannersModule } from './modules/banners/banners.module';
     FavoritesModule,
     AddressesModule,
     BannersModule,
+    UploadsModule,
   ],
   providers: [
     {

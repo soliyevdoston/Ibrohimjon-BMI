@@ -401,7 +401,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 <span>Zaxirada {product.stock} ta</span>
               </span>
               <span>•</span>
-              <span>30 daqiqada yetkaziladi</span>
+              <span>20–40 daqiqada yetkaziladi</span>
               {product.category?.name && <><span>•</span><span>{product.category.name}</span></>}
             </div>
 

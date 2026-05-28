@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { api, money } from '@/lib/api';
+import { api, money, API_BASE_URL, WS_BASE_URL } from '@/lib/api';
 
 type Product = {
   id?: string;
@@ -8,6 +8,7 @@ type Product = {
   description: string;
   price: string;
   originalPrice: string;
+  costPrice: string;
   stock: string;
   categoryId: string;
   imageUrl: string;
@@ -18,37 +19,28 @@ type Product = {
 type Category = { id: string; name: string; slug: string };
 
 const EMPTY: Product = {
-  title: '', description: '', price: '', originalPrice: '', stock: '',
+  title: '', description: '', price: '', originalPrice: '', costPrice: '', stock: '',
   categoryId: '', imageUrl: '', imageUrls: [], isActive: true,
 };
 
 const MAX_GALLERY = 4;
 
-const MAX_DIMENSION = 1000;
-const JPEG_QUALITY = 0.82;
-
-async function compressToDataUrl(file: File): Promise<string> {
-  if (file.size > 8 * 1024 * 1024) throw new Error('Rasm hajmi 8MB dan katta bo\'lmasligi kerak');
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(MAX_DIMENSION / img.width, MAX_DIMENSION / img.height, 1);
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { reject(new Error('Canvas yaratilmadi')); return; }
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
-      };
-      img.onerror = () => reject(new Error('Rasmni o\'qib bo\'lmadi'));
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = () => reject(new Error('Faylni o\'qib bo\'lmadi'));
-    reader.readAsDataURL(file);
+async function uploadFile(file: File, token: string): Promise<string> {
+  if (file.size > 8 * 1024 * 1024) throw new Error("Rasm hajmi 8MB dan katta bo'lmasligi kerak");
+  if (!file.type.startsWith('image/')) throw new Error('Faqat rasm fayllari qabul qilinadi');
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${API_BASE_URL}/uploads`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}` },
+    body: fd,
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Yuklash muvaffaqiyatsiz');
+  }
+  const { url } = await res.json() as { url: string };
+  return `${WS_BASE_URL}${url}`;
 }
 
 type Props = {
@@ -64,6 +56,9 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
           ...product,
           price: String(product.price),
           originalPrice: product.originalPrice ? String(product.originalPrice) : '',
+          costPrice: (product as Product & { costPrice?: string | number | null }).costPrice
+            ? String((product as Product & { costPrice?: string | number | null }).costPrice)
+            : '',
           stock: String(product.stock),
           imageUrls: Array.isArray((product as Product & { imageUrls?: string[] }).imageUrls)
             ? ((product as Product & { imageUrls?: string[] }).imageUrls ?? [])
@@ -80,20 +75,17 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
 
-  // Load real categories from backend — categoryId must be a UUID matching
-  // a Category row, not a slug, otherwise backend validation rejects it.
   useEffect(() => {
     let cancelled = false;
     api<Category[]>('/products/categories')
       .then((cats) => {
         if (cancelled) return;
         setCategories(cats);
-        // If creating new product and no categoryId yet, default to first
         if (!product && cats.length > 0) {
           setForm((prev) => prev.categoryId ? prev : { ...prev, categoryId: cats[0].id });
         }
       })
-      .catch(() => {/* surfaced via error state if submit fails */});
+      .catch(() => {});
     return () => { cancelled = true; };
   }, [product]);
 
@@ -102,19 +94,25 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
   };
 
   const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      setError("Faqat rasm fayllari qabul qilinadi (JPG, PNG, WebP)");
-      return;
-    }
     setError('');
     setUploading(true);
     try {
-      const dataUrl = await compressToDataUrl(file);
-      setForm((prev) => ({ ...prev, imageUrl: dataUrl }));
+      const url = await uploadFile(file, token);
+      setForm((prev) => ({ ...prev, imageUrl: url }));
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleGalleryFile = async (file: File) => {
+    setError('');
+    try {
+      const url = await uploadFile(file, token);
+      setForm((p) => ({ ...p, imageUrls: [...p.imageUrls, url] }));
+    } catch (err) {
+      setError((err as Error).message);
     }
   };
 
@@ -125,16 +123,18 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
     if (!form.stock || Number(form.stock) < 0) { setError("Zaxira sonini to'g'ri kiriting"); return; }
     const origNum = form.originalPrice ? Number(form.originalPrice) : 0;
     if (origNum && origNum <= Number(form.price)) {
-      setError('Asl narx joriy narxdan katta bo\'lishi kerak (chegirma uchun)');
+      setError("Asl narx joriy narxdan katta bo'lishi kerak (chegirma uchun)");
       return;
     }
     setLoading(true); setError('');
     try {
+      const costNum = form.costPrice ? Number(form.costPrice) : 0;
       const body = {
         title: form.title.trim(),
         description: form.description.trim(),
         price: Number(form.price),
         originalPrice: origNum > 0 ? origNum : undefined,
+        costPrice: costNum > 0 ? costNum : undefined,
         stock: Number(form.stock),
         categoryId: form.categoryId,
         imageUrl: form.imageUrl.trim() || undefined,
@@ -189,9 +189,26 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
           </div>
 
           <div>
-            <label className="label">
-              Asl narx (chegirma uchun, ixtiyoriy)
-            </label>
+            <label className="label">Tannarx — kelish narxi (ixtiyoriy)</label>
+            <input
+              className="input"
+              type="number"
+              placeholder="masalan, 18000 — foyda hisoblash uchun"
+              value={form.costPrice}
+              onChange={set('costPrice')}
+              min={0}
+              style={{ marginTop: 4 }}
+            />
+            {form.costPrice && Number(form.costPrice) > 0 && Number(form.price) > 0 && (
+              <div style={{ fontSize: 12, marginTop: 4, fontWeight: 600, color: Number(form.price) > Number(form.costPrice) ? '#10b981' : '#ef4444' }}>
+                Foyda: {money(Number(form.price) - Number(form.costPrice))} so&apos;m
+                {' '}({Math.round((Number(form.price) - Number(form.costPrice)) / Number(form.costPrice) * 100)}%)
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="label">Asl narx (chegirma uchun, ixtiyoriy)</label>
             <input
               className="input"
               type="number"
@@ -244,45 +261,32 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
                   src={form.imageUrl}
                   alt="Mahsulot rasmi"
                   style={{ width: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }}
-                  onError={() => setError('Rasm URL ochilmadi — fayl yuklang yoki boshqa URL kiriting')}
+                  onError={() => setError("Rasm yuklanmadi — qayta urinib ko'ring")}
                 />
-                <div style={{
-                  position: 'absolute', top: 8, right: 8,
-                  display: 'flex', gap: 6,
-                }}>
+                <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6 }}>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     style={{
-                      padding: '6px 10px',
-                      borderRadius: 8,
-                      border: 'none',
-                      background: 'rgba(15,23,42,0.85)',
-                      color: '#fff',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer',
+                      padding: '6px 10px', borderRadius: 8, border: 'none',
+                      background: 'rgba(15,23,42,0.85)', color: '#fff',
+                      fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}
                   >🔄 O&apos;zgartirish</button>
                   <button
                     type="button"
                     onClick={() => setForm((p) => ({ ...p, imageUrl: '' }))}
                     style={{
-                      padding: '6px 10px',
-                      borderRadius: 8,
-                      border: 'none',
-                      background: 'rgba(239,68,68,0.95)',
-                      color: '#fff',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer',
+                      padding: '6px 10px', borderRadius: 8, border: 'none',
+                      background: 'rgba(239,68,68,0.95)', color: '#fff',
+                      fontSize: 11, fontWeight: 600, cursor: 'pointer',
                     }}
                   >✕ O&apos;chirish</button>
                 </div>
               </div>
             ) : (
               <div
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => !uploading && fileInputRef.current?.click()}
                 onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
@@ -293,12 +297,10 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
                   if (f) handleFile(f);
                 }}
                 style={{
-                  marginTop: 6,
-                  borderRadius: 12,
+                  marginTop: 6, borderRadius: 12,
                   border: `2px dashed ${dragOver ? '#4f46e5' : 'var(--border)'}`,
                   background: dragOver ? '#eef2ff' : 'var(--surface-2)',
-                  padding: '24px 16px',
-                  textAlign: 'center',
+                  padding: '24px 16px', textAlign: 'center',
                   cursor: uploading ? 'wait' : 'pointer',
                   transition: 'all 150ms ease',
                   opacity: uploading ? 0.6 : 1,
@@ -306,27 +308,13 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
               >
                 <div style={{ fontSize: 32, marginBottom: 6 }}>{uploading ? '⏳' : '📷'}</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                  {uploading ? 'Yuklanmoqda…' : 'Rasm yuklash'}
+                  {uploading ? 'Serverga yuklanmoqda…' : 'Rasm yuklash'}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Bosing yoki shu yerga tashlang · JPG, PNG, WebP · max 8MB
                 </div>
               </div>
             )}
-
-            {/* Optional URL alternative */}
-            <details style={{ marginTop: 8 }}>
-              <summary style={{ fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
-                Yoki rasm URL&apos;ini kiriting
-              </summary>
-              <input
-                className="input"
-                placeholder="https://images.unsplash.com/…"
-                value={form.imageUrl.startsWith('data:') ? '' : form.imageUrl}
-                onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))}
-                style={{ marginTop: 6 }}
-              />
-            </details>
 
             {/* Additional gallery images (up to 4 extra shots) */}
             <div style={{ marginTop: 14 }}>
@@ -371,12 +359,7 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
                       onChange={async (e) => {
                         const f = e.target.files?.[0];
                         if (!f) return;
-                        try {
-                          const dataUrl = await compressToDataUrl(f);
-                          setForm((p) => ({ ...p, imageUrls: [...p.imageUrls, dataUrl] }));
-                        } catch (err) {
-                          setError((err as Error).message);
-                        }
+                        await handleGalleryFile(f);
                         e.target.value = '';
                       }}
                     />
@@ -401,7 +384,7 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
             <button className="btn ghost" style={{ flex: 1 }} onClick={onClose}>Bekor</button>
             <button className="btn" style={{ flex: 2 }} onClick={handleSubmit} disabled={loading || uploading}>
-              {loading ? 'Saqlanmoqda…' : product ? 'Saqlash' : 'Mahsulot qo\'shish'}
+              {loading ? 'Saqlanmoqda…' : product ? 'Saqlash' : "Mahsulot qo'shish"}
             </button>
           </div>
         </div>

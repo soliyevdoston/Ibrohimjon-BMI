@@ -12,6 +12,7 @@ type Product = {
   description: string;
   price: number;
   originalPrice?: number | string | null;
+  costPrice?: number | string | null;
   stock: number;
   categoryId: string;
   imageUrl?: string;
@@ -99,6 +100,8 @@ export default function ProductsPage() {
                       <th>Mahsulot</th>
                       <th>Kategoriya</th>
                       <th>Narx</th>
+                      <th>Tannarx</th>
+                      <th>Foyda</th>
                       <th>Zaxira</th>
                       <th>Holat</th>
                       <th style={{ width: 120 }}>Amallar</th>
@@ -140,6 +143,16 @@ export default function ProductsPage() {
                         </td>
                         <td>{CATEGORY_LABEL[p.categoryId] ?? p.categoryId}</td>
                         <td><strong>{money(p.price)} so'm</strong></td>
+                        <td style={{ color: 'var(--text-muted)' }}>
+                          {p.costPrice ? `${money(Number(p.costPrice))} so'm` : '—'}
+                        </td>
+                        <td>
+                          {p.costPrice && Number(p.costPrice) > 0 ? (
+                            <span style={{ fontWeight: 600, color: p.price > Number(p.costPrice) ? '#10b981' : '#ef4444' }}>
+                              {money(p.price - Number(p.costPrice))} so'm
+                            </span>
+                          ) : '—'}
+                        </td>
                         <td>
                           <span style={{ color: p.stock < 10 ? 'var(--danger)' : p.stock < 30 ? 'var(--warning)' : 'inherit', fontWeight: 600 }}>
                             {p.stock}
@@ -181,6 +194,7 @@ export default function ProductsPage() {
                 ...modal.product,
                 price: String(modal.product.price),
                 originalPrice: modal.product.originalPrice ? String(modal.product.originalPrice) : '',
+                costPrice: modal.product.costPrice ? String(modal.product.costPrice) : '',
                 stock: String(modal.product.stock),
                 id: modal.product.id,
                 imageUrl: modal.product.imageUrl ?? '',

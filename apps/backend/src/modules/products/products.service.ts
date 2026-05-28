@@ -91,6 +91,7 @@ export class ProductsService {
         imageUrls: dto.imageUrls ?? [],
         price: dto.price,
         originalPrice: dto.originalPrice,
+        costPrice: dto.costPrice,
         stock: dto.stock,
         isActive: dto.isActive ?? true,
       },
