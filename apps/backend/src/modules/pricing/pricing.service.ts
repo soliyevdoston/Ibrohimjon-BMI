@@ -89,20 +89,18 @@ export class PricingService {
         ? input.sellerCommissionRate
         : platformCommissionRate;
 
-    const rawDeliveryFee = round(tier.deliveryBase + distanceKm * tier.deliveryPerKm);
+    // Courier fee = what customer pays for delivery = what courier earns.
+    // No platform markup on delivery — platform revenue comes only from seller commission.
+    const courierFee = round(tier.courierBase + distanceKm * tier.courierPerKm);
     const freeDeliveryAbove = num(cfg.freeDeliveryAbove);
     const isFreeDelivery = freeDeliveryAbove > 0 && subtotal >= freeDeliveryAbove;
-    const deliveryFee = isFreeDelivery ? 0 : rawDeliveryFee;
-    const courierFee = round(tier.courierBase + distanceKm * tier.courierPerKm);
-    // Mijoz faqat mahsulot + yetkazib berishni to'laydi. Platforma daromadi
-    // sotuvchi komissiyasi + yetkazib berish marjasidan iborat.
+    const deliveryFee = isFreeDelivery ? 0 : courierFee;
     const serviceFee = 0;
     const total = subtotal + deliveryFee;
 
     const platformCommission = round(subtotal * commissionRate);
     const sellerPayout = subtotal - platformCommission;
-    const deliveryMargin = deliveryFee - courierFee;
-    const platformRevenue = platformCommission + deliveryMargin;
+    const platformRevenue = platformCommission; // delivery margin is 0 by design
 
     return {
       subtotalAmount: subtotal,

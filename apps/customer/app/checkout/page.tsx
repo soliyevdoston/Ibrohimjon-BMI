@@ -74,11 +74,12 @@ const STEP_TITLES: Record<Step, string> = { 1: 'Manzil', 2: "To'lov", 3: 'Tasdiq
 // weight: BIKE → CAR → VAN → TRUCK (mebel/qurilish).
 type Vehicle = 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
 
+// Rates mirror backend courierBase/courierPerKm — customer pays courier directly, no markup
 const TIER_RATES: Record<Vehicle, { base: number; perKm: number; maxKg: number; label: string }> = {
-  BIKE:  { base: 6000,  perKm: 1400, maxKg: 10,       label: 'Velosipid'     },
-  CAR:   { base: 15000, perKm: 2000, maxKg: 50,       label: 'Avto'          },
-  VAN:   { base: 35000, perKm: 3500, maxKg: 300,      label: 'Furgon'        },
-  TRUCK: { base: 70000, perKm: 5500, maxKg: Infinity, label: 'Yuk mashinasi' },
+  BIKE:  { base: 5000,  perKm: 1200, maxKg: 10,       label: 'Velosipid'     },
+  CAR:   { base: 12000, perKm: 1700, maxKg: 50,       label: 'Avto'          },
+  VAN:   { base: 28000, perKm: 2900, maxKg: 300,      label: 'Furgon'        },
+  TRUCK: { base: 55000, perKm: 4500, maxKg: Infinity, label: 'Yuk mashinasi' },
 };
 
 const VEHICLE_RANK: Record<Vehicle, number> = { BIKE: 0, CAR: 1, VAN: 2, TRUCK: 3 };
