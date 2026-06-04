@@ -1,7 +1,7 @@
 'use client';
 import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, money } from '@/lib/api';
+import { api, money, imgUrl } from '@/lib/api';
 import { useCartStore } from '@/stores/cart';
 import { useAuthStore } from '@/stores/auth';
 import { useFavoritesStore } from '@/stores/favorites';
@@ -45,10 +45,10 @@ const CATEGORY_GALLERY: Record<string, string[]> = {
 };
 
 function buildGallery(product: Product): string[] {
-  const main = product.imageUrl;
+  const main = imgUrl(product.imageUrl);
   // Prefer real seller-uploaded gallery; fall back to category placeholders.
   if (product.imageUrls && product.imageUrls.length > 0) {
-    return [main, ...product.imageUrls].filter((x): x is string => !!x).slice(0, 5);
+    return [main, ...product.imageUrls.map((u) => imgUrl(u))].filter((x): x is string => !!x).slice(0, 5);
   }
   const slug = product.category?.slug ?? '';
   const extras = (CATEGORY_GALLERY[slug] ?? []).map(UNS);
@@ -531,7 +531,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <div className="product-card-image">
                       {p.imageUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.imageUrl} alt={p.title} loading="lazy" />
+                        <img src={imgUrl(p.imageUrl)} alt={p.title} loading="lazy" />
                       )}
                     </div>
                     <div className="product-card-body">

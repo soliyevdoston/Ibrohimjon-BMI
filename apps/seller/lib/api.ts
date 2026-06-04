@@ -1,10 +1,16 @@
 // Production deploy first — falls back to localhost only when explicitly set.
-const PROD_API = 'https://ibrohimjon-bmi.onrender.com/api/v1';
+const PROD_API = 'https://ibrohimjon-bmi-production.up.railway.app/api/v1';
 const BASE = process.env.NEXT_PUBLIC_API_URL || PROD_API;
 
 export const API_BASE_URL = BASE;
 export const WS_BASE_URL =
-  process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com';
+  process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi-production.up.railway.app';
+
+export function imgUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('/')) return `${WS_BASE_URL}${url}`;
+  return url;
+}
 
 export async function api<T>(
   path: string,

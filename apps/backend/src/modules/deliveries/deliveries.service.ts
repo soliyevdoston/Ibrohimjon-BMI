@@ -106,7 +106,7 @@ export class DeliveriesService {
       return fresh;
     });
 
-    await this.ordersService.markDeliveryStatus(updated.orderId, OrderStatus.COURIER_ACCEPTED, courierUserId);
+    await this.ordersService.markDeliveryStatus(updated.orderId, OrderStatus.COURIER_ACCEPTED, courierUserId, deliveryId);
 
     this.realtimeService.publishDeliveryStatus(deliveryId, DeliveryStatus.ACCEPTED, {
       orderId: updated.orderId,
@@ -222,7 +222,7 @@ export class DeliveriesService {
       ON_THE_WAY: OrderStatus.ON_THE_WAY,
       DELIVERED: OrderStatus.DELIVERED,
     };
-    await this.ordersService.markDeliveryStatus(updated.orderId, orderStatusMap[dto.status], courierUserId);
+    await this.ordersService.markDeliveryStatus(updated.orderId, orderStatusMap[dto.status], courierUserId, deliveryId);
 
     this.realtimeService.publishDeliveryStatus(deliveryId, updated.status, {
       orderId: updated.orderId,

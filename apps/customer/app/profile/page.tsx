@@ -133,8 +133,8 @@ export default function ProfilePage() {
         {/* Stats */}
         <div style={{ display: 'flex', gap: 10, marginTop: 8, width: '100%', maxWidth: 360 }}>
           {[
-            { label: "Buyurtmalar", value: profile.ordersCount ?? 0, icon: '📦' },
-            { label: "Xarajatlar", value: `${money(profile.totalSpent ?? 0)} so'm`, icon: '💎' },
+            { label: "Buyurtmalar", value: profile.ordersCount ?? 0 },
+            { label: "Xarajatlar", value: `${money(profile.totalSpent ?? 0)} so'm` },
           ].map((s) => (
             <div key={s.label} style={{
               flex: 1,
@@ -146,7 +146,6 @@ export default function ProfilePage() {
               textAlign: 'center',
               boxShadow: '0 4px 16px rgba(124,58,237,0.08)',
             }}>
-              <div style={{ fontSize: 18, marginBottom: 2 }}>{s.icon}</div>
               <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{s.value}</div>
               <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2, fontWeight: 600 }}>{s.label}</div>
             </div>
@@ -159,10 +158,9 @@ export default function ProfilePage() {
 
           {/* Quick links */}
           {[
-            { label: "Barcha buyurtmalar", sub: 'Faol va o\'tgan buyurtmalar', icon: '📦', href: '/orders' },
-            { label: "Sevimli mahsulotlar", sub: 'Saqlanganlar ro\'yxati', icon: '❤️', href: '/favorites' },
-            { label: "Mening kartalarim", sub: "To'lov kartalari", icon: '💳', href: '/profile/cards' },
-            { label: "Saqlangan manzillar", sub: 'Yetkazib berish manzillari', icon: '📍', href: '/profile/addresses' },
+            { label: "Barcha buyurtmalar", sub: 'Faol va o\'tgan buyurtmalar', href: '/orders' },
+            { label: "Sevimli mahsulotlar", sub: 'Saqlanganlar ro\'yxati', href: '/favorites' },
+            { label: "Saqlangan manzillar", sub: 'Yetkazib berish manzillari', href: '/profile/addresses' },
           ].map((item) => (
             <button
               key={item.label}
@@ -170,9 +168,6 @@ export default function ProfilePage() {
               style={{ width: '100%', textAlign: 'left' }}
               onClick={() => router.push(item.href)}
             >
-              <div className="menu-row-icon">
-                <span style={{ fontSize: 20 }}>{item.icon}</span>
-              </div>
               <div style={{ flex: 1 }}>
                 <div className="menu-row-label">{item.label}</div>
                 <div className="menu-row-sub">{item.sub}</div>
@@ -192,8 +187,13 @@ export default function ProfilePage() {
             <div style={{
               width: 40, height: 40, borderRadius: 10,
               background: '#fff', display: 'grid', placeItems: 'center',
-              fontSize: 20, flexShrink: 0,
-            }}>🔒</div>
+              flexShrink: 0,
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--primary-dark)' }}>Akkaunt himoyalangan</div>
               <div style={{ fontSize: 12, color: 'var(--primary)' }}>SMS kod va xavfsizlik tekshiruvlari yoqilgan</div>

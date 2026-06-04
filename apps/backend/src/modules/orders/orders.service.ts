@@ -352,7 +352,7 @@ export class OrdersService {
     return order;
   }
 
-  async markDeliveryStatus(orderId: string, status: OrderStatus, actorUserId: string) {
+  async markDeliveryStatus(orderId: string, status: OrderStatus, actorUserId: string, deliveryId?: string) {
     const order = await this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -367,7 +367,11 @@ export class OrdersService {
       },
     });
 
-    this.realtimeService.publishOrderStatus(orderId, status);
+    this.realtimeService.publishOrderStatus(
+      orderId,
+      status,
+      deliveryId ? { deliveryId } : {},
+    );
     return order;
   }
 

@@ -3,7 +3,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { CourierMap } from '@/components/map/CourierMap';
 import { CourierBottomNav } from '@/components/BottomNav';
-import { IconStore, IconHome, IconMapPin, IconCheck, IconScooter } from '@/components/Icons';
+import { IconStore, IconHome, IconCheck, IconScooter } from '@/components/Icons';
 import { api, money } from '@/lib/api';
 import { startSimulatedTracking, sendLocationToBackend } from '@/lib/gps';
 import { io, Socket } from 'socket.io-client';
@@ -16,6 +16,36 @@ type AvailableOrder = {
   sellerPos: [number, number]; customerPos: [number, number];
 };
 type DeliveryStatus = 'accepted' | 'picked_up' | 'on_the_way' | 'delivered';
+type NotifPayload = {
+  deliveryId: string; orderId: string;
+  requiredVehicle?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
+  courierFeeAmount?: number;
+  pickupAddress?: string;
+  deliveryAddress?: string;
+};
+
+const VEHICLE_LABELS: Record<string, string> = {
+  BIKE: 'Velosiped / Skuter', CAR: 'Avtomobil',
+  VAN: 'Mikroavtobus', TRUCK: 'Yuk mashinasi',
+};
+
+function playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const tones = [880, 1046, 1318];
+    tones.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.4, t + 0.04);
+      gain.gain.linearRampToValueAtTime(0, t + 0.16);
+      osc.start(t); osc.stop(t + 0.18);
+    });
+  } catch { /* audio blocked — silent fallback */ }
+}
 
 
 const STATUS_STEPS: { status: DeliveryStatus; label: string; nextLabel: string; nextStatus: DeliveryStatus | null }[] = [
@@ -70,6 +100,8 @@ export default function CourierDashboard() {
   const [todayDeliveries, setTodayDeliveries] = useState(0);
   const [rating] = useState(0);
   const [acceptRate] = useState(0);
+  const [pendingNotif, setPendingNotif] = useState<NotifPayload | null>(null);
+  const [countdown, setCountdown] = useState(30);
   const gpsCleanupRef = useRef<(() => void) | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
@@ -139,7 +171,7 @@ export default function CourierDashboard() {
     api<CourierProfile>('/courier/profile', { token })
       .then((profile) => {
         if (cancelled || !profile?.id) return;
-        const socket = io(`${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com'}/realtime`, {
+        const socket = io(`${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi-production.up.railway.app'}/realtime`, {
           auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
         });
         socketRef.current = socket;
@@ -149,9 +181,12 @@ export default function CourierDashboard() {
             vehicleType: profile.vehicleType,
           });
         });
-        // A new delivery within my tier became available — refresh the list.
-        socket.on('delivery:available', () => {
+        // A new delivery within my tier became available — show notification popup.
+        socket.on('delivery:available', (payload: NotifPayload) => {
           loadAvailable();
+          setPendingNotif(payload);
+          setCountdown(30);
+          playNotifSound();
         });
         // Another courier grabbed it — drop it from my list immediately.
         socket.on('delivery:claimed', (p: { deliveryId: string }) => {
@@ -194,6 +229,30 @@ export default function CourierDashboard() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  // Countdown timer for the notification popup — dismisses at 0
+  useEffect(() => {
+    if (!pendingNotif) return;
+    if (countdown <= 0) { setPendingNotif(null); return; }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [pendingNotif, countdown]);
+
+  const dismissNotif = () => setPendingNotif(null);
+
+  const acceptFromNotif = async (notif: NotifPayload) => {
+    const match = orders.find((o) => o.id === notif.deliveryId);
+    setPendingNotif(null);
+    if (match) {
+      await handleAccept(match);
+    } else {
+      // Delivery not yet in local list (race) — accept directly then reload
+      try {
+        await api(`/deliveries/${notif.deliveryId}/accept`, { method: 'POST', token });
+        await loadAvailable();
+      } catch { await loadAvailable(); }
+    }
+  };
 
   const startGPS = useCallback((delivery: AvailableOrder) => {
     const from = delivery.sellerPos;
@@ -514,6 +573,165 @@ export default function CourierDashboard() {
           )}
         </div>
         <CourierBottomNav />
+
+        {/* ── Yandex Taxi-style incoming delivery notification ── */}
+        {pendingNotif && (
+          <>
+            {/* Dimmed backdrop */}
+            <div
+              onClick={dismissNotif}
+              style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+                zIndex: 90, backdropFilter: 'blur(3px)',
+              }}
+            />
+            {/* Bottom sheet */}
+            <div style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 91,
+              background: 'var(--surface)',
+              borderRadius: '24px 24px 0 0',
+              padding: '0 20px 40px',
+              boxShadow: '0 -8px 40px rgba(0,0,0,0.25)',
+              animation: 'slideUp 260ms cubic-bezier(.32,1.1,.65,1)',
+            }}>
+              {/* Drag handle */}
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0 8px' }}>
+                <div style={{ width: 40, height: 4, borderRadius: 999, background: 'var(--border)' }} />
+              </div>
+
+              {/* Header row: pulsing ring + title + countdown circle */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+                {/* Pulsing ring icon */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div style={{
+                    width: 52, height: 52, borderRadius: 16,
+                    background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                    display: 'grid', placeItems: 'center',
+                    color: '#fff',
+                  }}>
+                    <IconScooter size={24} stroke={1.8} />
+                  </div>
+                  <div style={{
+                    position: 'absolute', inset: -5, borderRadius: 20,
+                    border: '2px solid #7C3AED',
+                    animation: 'pulse 1.4s ease-in-out infinite',
+                    opacity: 0.5,
+                  }} />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 2 }}>
+                    Yangi buyurtma!
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
+                    {VEHICLE_LABELS[pendingNotif.requiredVehicle ?? 'BIKE']}
+                  </div>
+                </div>
+
+                {/* Countdown circle */}
+                <div style={{ position: 'relative', width: 48, height: 48, flexShrink: 0 }}>
+                  <svg width="48" height="48" style={{ transform: 'rotate(-90deg)' }}>
+                    <circle cx="24" cy="24" r="20" fill="none" stroke="var(--border)" strokeWidth="3" />
+                    <circle
+                      cx="24" cy="24" r="20" fill="none"
+                      stroke="#7C3AED" strokeWidth="3"
+                      strokeDasharray={`${2 * Math.PI * 20}`}
+                      strokeDashoffset={`${2 * Math.PI * 20 * (1 - countdown / 30)}`}
+                      strokeLinecap="round"
+                      style={{ transition: 'stroke-dashoffset 900ms linear' }}
+                    />
+                  </svg>
+                  <div style={{
+                    position: 'absolute', inset: 0, display: 'grid', placeItems: 'center',
+                    fontWeight: 800, fontSize: 15, color: 'var(--text)',
+                  }}>{countdown}</div>
+                </div>
+              </div>
+
+              {/* Address strip */}
+              <div style={{
+                background: 'var(--surface-2)', borderRadius: 14,
+                padding: '14px 16px', marginBottom: 16,
+                border: '1px solid var(--border)',
+                display: 'flex', flexDirection: 'column', gap: 10,
+              }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                    background: '#ede9fe', display: 'grid', placeItems: 'center',
+                    color: '#7C3AED',
+                  }}>
+                    <IconStore size={15} stroke={1.8} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>OLIB KETISH</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>
+                      {pendingNotif.pickupAddress ?? "Do'kon manzili"}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ borderLeft: '2px dashed var(--border)', marginLeft: 12, paddingLeft: 26, height: 8 }} />
+
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                    background: '#dcfce7', display: 'grid', placeItems: 'center',
+                    color: '#16a34a',
+                  }}>
+                    <IconHome size={15} stroke={1.8} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>YETKAZISH</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>
+                      {pendingNotif.deliveryAddress ?? 'Mijoz manzili'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Earnings badge */}
+              {pendingNotif.courierFeeAmount && pendingNotif.courierFeeAmount > 0 && (
+                <div style={{
+                  background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                  border: '1px solid #bbf7d0', borderRadius: 12,
+                  padding: '10px 16px', marginBottom: 20,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <span style={{ fontSize: 13, color: '#15803d', fontWeight: 600 }}>Daromad</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: '#15803d' }}>
+                    +{money(pendingNotif.courierFeeAmount)} so&apos;m
+                  </span>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={dismissNotif}
+                  style={{
+                    flex: 1, height: 52, borderRadius: 14, border: '1.5px solid var(--border)',
+                    background: 'var(--surface-2)', color: 'var(--text-muted)',
+                    fontWeight: 700, fontSize: 15, cursor: 'pointer',
+                  }}
+                >
+                  O&apos;tkazib yuborish
+                </button>
+                <button
+                  onClick={() => acceptFromNotif(pendingNotif)}
+                  style={{
+                    flex: 2, height: 52, borderRadius: 14, border: 'none',
+                    background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                    color: '#fff', fontWeight: 800, fontSize: 16, cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(109,40,217,0.4)',
+                  }}
+                >
+                  Qabul qilish
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   }

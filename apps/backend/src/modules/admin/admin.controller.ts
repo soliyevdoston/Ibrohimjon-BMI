@@ -20,7 +20,7 @@ export class AdminController {
    * be safely exposed without role auth (used to bootstrap a fresh DB).
    * Idempotent: re-running upserts existing rows.
    *   curl -X POST -H "x-seed-secret: <SECRET>" \
-   *     https://ibrohimjon-bmi.onrender.com/api/v1/admin/seed
+   *     https://ibrohimjon-bmi-production.up.railway.app/api/v1/admin/seed
    */
   @Post('seed')
   async seed(@Headers('x-seed-secret') secret: string) {

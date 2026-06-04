@@ -3,7 +3,10 @@
 export type TimelineStatus =
   | 'pending'
   | 'confirmed'
+  | 'accepted'
   | 'preparing'
+  | 'ready_for_pickup'
+  | 'courier_accepted'
   | 'picked_up'
   | 'on_the_way'
   | 'delivered'
@@ -19,17 +22,20 @@ type Step = {
 };
 
 const STEPS: Step[] = [
-  { id: 'confirmed', label: 'Buyurtma qabul qilindi', icon: '✓' },
-  { id: 'preparing', label: 'Sotuvchi tayyorlamoqda', icon: '🍳' },
-  { id: 'picked_up', label: 'Kuryer oldi', icon: '📦' },
-  { id: 'on_the_way', label: 'Yo\'lda', icon: '🛵' },
-  { id: 'delivered', label: 'Yetkazildi', icon: '🎉' },
+  { id: 'confirmed', label: 'Buyurtma qabul qilindi', icon: '1' },
+  { id: 'preparing', label: 'Ishlab chiqaruvchi tayyorlamoqda', icon: '2' },
+  { id: 'picked_up', label: 'Kuryer oldi', icon: '3' },
+  { id: 'on_the_way', label: "Yo'lda", icon: '4' },
+  { id: 'delivered', label: 'Yetkazildi', icon: '5' },
 ];
 
 const STATUS_ORDER: TimelineStatus[] = [
   'pending',
   'confirmed',
+  'accepted',
   'preparing',
+  'ready_for_pickup',
+  'courier_accepted',
   'picked_up',
   'on_the_way',
   'delivered',
@@ -65,10 +71,8 @@ export function Timeline({
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
-              ) : state === 'active' ? (
-                <span style={{ fontSize: 14 }}>{step.icon}</span>
               ) : (
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: state === 'active' ? 'var(--primary)' : 'var(--text-muted)' }}>
                   {idx + 1}
                 </span>
               )}

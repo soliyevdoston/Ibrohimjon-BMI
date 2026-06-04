@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { SellerSidebar } from '@/components/Sidebar';
 import { SellerTopbar } from '@/components/Topbar';
 import { ProductModal } from '@/components/ProductModal';
-import { api, money } from '@/lib/api';
+import { api, money, imgUrl } from '@/lib/api';
 
 type Product = {
   id: string;
@@ -128,7 +128,7 @@ export default function ProductsPage() {
                           <div className="tcell-primary">
                             <div style={{
                               width: 40, height: 40, borderRadius: 10, flex: 'none',
-                              background: p.imageUrl ? `url(${p.imageUrl}) center/cover` : COLORS[idx % COLORS.length],
+                              background: p.imageUrl ? `url(${imgUrl(p.imageUrl)}) center/cover` : COLORS[idx % COLORS.length],
                               display: 'grid', placeItems: 'center', fontSize: 18,
                             }}>
                               {!p.imageUrl && '📦'}

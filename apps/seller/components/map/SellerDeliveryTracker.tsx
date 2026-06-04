@@ -53,7 +53,7 @@ export function SellerDeliveryTracker({
 
     // Try real WebSocket first
     try {
-      const socket = io(`${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com'}/realtime`, {
+      const socket = io(`${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi-production.up.railway.app'}/realtime`, {
         auth: { token },
         transports: ['websocket'],
         reconnectionDelay: 2000,

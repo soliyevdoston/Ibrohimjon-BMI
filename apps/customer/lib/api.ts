@@ -1,13 +1,19 @@
 // Production deploy first — falls back to localhost only when explicitly set.
 // This way the frontend works on any host without env-var configuration.
-const PROD_API = 'https://ibrohimjon-bmi.onrender.com/api/v1';
+const PROD_API = 'https://ibrohimjon-bmi-production.up.railway.app/api/v1';
 const BASE = process.env.NEXT_PUBLIC_API_URL || PROD_API;
 const DEFAULT_MAPTILER_KEY = 'OuhRqlcIjPk0S9JgN6Dy';
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || DEFAULT_MAPTILER_KEY;
 
 export const API_BASE_URL = BASE;
 export const WS_BASE_URL =
-  process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com';
+  process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi-production.up.railway.app';
+
+export function imgUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('/')) return `${WS_BASE_URL}${url}`;
+  return url;
+}
 
 export async function api<T>(
   path: string,

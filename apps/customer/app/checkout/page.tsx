@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { LocationPicker } from '@/components/map/LocationPicker';
 import { useCartStore } from '@/stores/cart';
@@ -9,9 +9,23 @@ import type { PickupPoint } from '@/lib/locations';
 type Step = 1 | 2 | 3;
 type PaymentMethod = 'cash' | 'card';
 
-const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; desc: string; icon: string }[] = [
-  { id: 'cash', label: 'Naqd pul', desc: "Yetkazib berishda to'lang", icon: '💵' },
-  { id: 'card', label: 'Karta',    desc: 'Bank kartasi orqali',        icon: '💳' },
+const CASH_ICON = (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <circle cx="12" cy="12" r="2" />
+    <path d="M6 12h.01M18 12h.01" />
+  </svg>
+);
+const CARD_ICON = (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <line x1="2" y1="10" x2="22" y2="10" />
+  </svg>
+);
+
+const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; desc: string; icon: React.ReactNode; disabled?: boolean; badge?: string }[] = [
+  { id: 'cash', label: 'Naqd pul', desc: "Yetkazib berishda to'lang", icon: CASH_ICON },
+  { id: 'card', label: 'Karta',    desc: 'Tez kunda faollashadi',      icon: CARD_ICON, disabled: true, badge: 'Tez kunda' },
 ];
 
 function PinIcon() {
@@ -60,11 +74,11 @@ const STEP_TITLES: Record<Step, string> = { 1: 'Manzil', 2: "To'lov", 3: 'Tasdiq
 // weight: BIKE → CAR → VAN → TRUCK (mebel/qurilish).
 type Vehicle = 'BIKE' | 'CAR' | 'VAN' | 'TRUCK';
 
-const TIER_RATES: Record<Vehicle, { base: number; perKm: number; maxKg: number; label: string; icon: string }> = {
-  BIKE:  { base: 6000,  perKm: 1400, maxKg: 10,        label: 'Velosipid',     icon: '🚲' },
-  CAR:   { base: 15000, perKm: 2000, maxKg: 50,        label: 'Avto',          icon: '🚗' },
-  VAN:   { base: 35000, perKm: 3500, maxKg: 300,       label: 'Furgon',        icon: '🚐' },
-  TRUCK: { base: 70000, perKm: 5500, maxKg: Infinity,  label: 'Yuk mashinasi', icon: '🚛' },
+const TIER_RATES: Record<Vehicle, { base: number; perKm: number; maxKg: number; label: string }> = {
+  BIKE:  { base: 6000,  perKm: 1400, maxKg: 10,       label: 'Velosipid'     },
+  CAR:   { base: 15000, perKm: 2000, maxKg: 50,       label: 'Avto'          },
+  VAN:   { base: 35000, perKm: 3500, maxKg: 300,      label: 'Furgon'        },
+  TRUCK: { base: 70000, perKm: 5500, maxKg: Infinity, label: 'Yuk mashinasi' },
 };
 
 const VEHICLE_RANK: Record<Vehicle, number> = { BIKE: 0, CAR: 1, VAN: 2, TRUCK: 3 };
@@ -280,7 +294,6 @@ export default function CheckoutPage() {
               }}>
                 {isFreeDelivery ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 22 }}>🎉</span>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary-dark)' }}>
                         Bepul yetkazib berish!
@@ -340,9 +353,8 @@ export default function CheckoutPage() {
                     <span style={{
                       flexShrink: 0,
                       marginTop: 1,
-                      fontSize: 16,
                       color: pickup ? '#06b6d4' : 'var(--text)',
-                    }}>{pickup ? '📦' : <PinIcon />}</span>
+                    }}><PinIcon /></span>
                     <div style={{ flex: 1 }}>
                       <div style={{
                         fontSize: 13,
@@ -372,8 +384,8 @@ export default function CheckoutPage() {
                       <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.5 }}>{address}</div>
                       {pickup && (
                         <div style={{ fontSize: 11, color: '#0891b2', marginTop: 4, display: 'flex', gap: 10 }}>
-                          <span>🕒 {pickup.hours}</span>
-                          <span>📍 {pickup.district}</span>
+                          <span>{pickup.hours}</span>
+                          <span>{pickup.district}</span>
                         </div>
                       )}
                     </div>
@@ -424,7 +436,6 @@ export default function CheckoutPage() {
                   background: 'var(--surface-alt)',
                   borderRadius: 12, border: '1px solid var(--border-dark)',
                 }}>
-                  <span style={{ fontSize: 22 }}>{tier.icon}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
                       {tier.label} kerak
@@ -444,10 +455,10 @@ export default function CheckoutPage() {
                 <span className="price-row-label">
                   Yetkazib berish
                   {pickup && <span style={{ color: '#10b981', fontSize: 11, marginLeft: 6 }}>(olib ketish)</span>}
-                  {isFreeDelivery && <span style={{ color: '#10b981', fontSize: 11, marginLeft: 6 }}>🎉 chegara oshdi</span>}
+                  {isFreeDelivery && <span style={{ color: '#10b981', fontSize: 11, marginLeft: 6 }}>chegara oshdi</span>}
                   {!pickup && !isFreeDelivery && requiredVehicle !== 'BIKE' && (
                     <span style={{ color: 'var(--text-muted)', fontSize: 11, marginLeft: 6 }}>
-                      ({tier.icon} {tier.label})
+                      ({tier.label})
                     </span>
                   )}
                 </span>
@@ -488,23 +499,37 @@ export default function CheckoutPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {PAYMENT_OPTIONS.map((opt) => {
                   const sel = paymentMethod === opt.id;
+                  const isDisabled = opt.disabled;
                   return (
                     <button
                       key={opt.id}
-                      onClick={() => setPaymentMethod(opt.id)}
+                      onClick={() => !isDisabled && setPaymentMethod(opt.id)}
+                      disabled={isDisabled}
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                         gap: 6, padding: '16px 12px', borderRadius: 14,
                         border: `2px solid ${sel ? 'var(--primary)' : 'var(--border)'}`,
-                        background: sel ? 'var(--primary-light)' : 'var(--surface)',
-                        cursor: 'pointer', transition: 'all 0.15s ease',
+                        background: isDisabled ? 'var(--surface-alt)' : sel ? 'var(--primary-light)' : 'var(--surface)',
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.15s ease',
+                        opacity: isDisabled ? 0.6 : 1,
+                        position: 'relative',
                       }}
                     >
+                      {opt.badge && (
+                        <span style={{
+                          position: 'absolute', top: 8, right: 8,
+                          fontSize: 9, fontWeight: 700,
+                          background: 'var(--border-dark)', color: 'var(--text-muted)',
+                          padding: '2px 6px', borderRadius: 999,
+                          letterSpacing: 0.3,
+                        }}>{opt.badge}</span>
+                      )}
                       <span style={{ fontSize: 26 }}>{opt.icon}</span>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: sel ? 'var(--primary-dark)' : 'var(--text)' }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: isDisabled ? 'var(--text-muted)' : sel ? 'var(--primary-dark)' : 'var(--text)' }}>
                         {opt.label}
                       </div>
-                      <div style={{ fontSize: 11, color: sel ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 400, textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: isDisabled ? 'var(--text-muted)' : sel ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 400, textAlign: 'center' }}>
                         {opt.desc}
                       </div>
                     </button>
@@ -631,9 +656,9 @@ export default function CheckoutPage() {
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 20px', width: '100%' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  'Buyurtma tayyorlanmoqda',
-                  'Kuryer 15–30 daqiqada yetkazib beradi',
-                  'SMS orqali xabar beramiz',
+                  'Buyurtma ishlab chiqaruvchiga yuborildi',
+                  'Sotuvchi buyurtmani tasdiqlaganidan so\'ng logistika jarayoni boshlanadi',
+                  'Buyurtma holati sahifasidan kuzatib boring',
                 ].map((text, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--text-secondary)' }}>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--border-dark)', flexShrink: 0 }} />

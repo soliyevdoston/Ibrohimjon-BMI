@@ -1,6 +1,6 @@
 'use client';
 import { useCartStore } from '@/stores/cart';
-import { money } from '@/lib/api';
+import { money, imgUrl } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
 export function CartDrawer() {
@@ -78,7 +78,7 @@ export function CartDrawer() {
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={item.imageUrl}
+                      src={imgUrl(item.imageUrl)}
                       alt={item.title}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }}
                     />

@@ -4,11 +4,15 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api, money } from '@/lib/api';
 import { BottomNav } from '@/components/BottomNav';
+import { io } from 'socket.io-client';
 
 type OrderStatus =
   | 'pending'
+  | 'accepted'
   | 'confirmed'
   | 'preparing'
+  | 'ready_for_pickup'
+  | 'courier_accepted'
   | 'picked_up'
   | 'on_the_way'
   | 'delivered'
@@ -27,23 +31,29 @@ type Order = {
 };
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: 'Kutilmoqda',
-  confirmed: 'Tasdiqlandi',
-  preparing: 'Tayyorlanmoqda',
-  picked_up: 'Kuryer oldi',
-  on_the_way: 'Yo\'lda',
-  delivered: 'Yetkazildi',
-  cancelled: 'Bekor qilindi',
+  pending:          'Kutilmoqda',
+  accepted:         'Qabul qilindi',
+  confirmed:        'Tasdiqlandi',
+  preparing:        'Tayyorlanmoqda',
+  ready_for_pickup: 'Tayyor — kuryer kutilmoqda',
+  courier_accepted: 'Kuryer kelmoqda',
+  picked_up:        'Kuryer oldi',
+  on_the_way:       "Yo'lda",
+  delivered:        'Yetkazildi',
+  cancelled:        'Bekor qilindi',
 };
 
 const STATUS_CHIP: Record<OrderStatus, string> = {
-  pending: 'chip chip-gray',
-  confirmed: 'chip chip-gray',
-  preparing: 'chip chip-gray',
-  picked_up: 'chip chip-gray',
-  on_the_way: 'chip chip-gray',
-  delivered: 'chip chip-gray',
-  cancelled: 'chip chip-gray',
+  pending:          'chip chip-gray',
+  accepted:         'chip chip-gray',
+  confirmed:        'chip chip-gray',
+  preparing:        'chip chip-gray',
+  ready_for_pickup: 'chip chip-gray',
+  courier_accepted: 'chip chip-gray',
+  picked_up:        'chip chip-gray',
+  on_the_way:       'chip chip-gray',
+  delivered:        'chip chip-gray',
+  cancelled:        'chip chip-gray',
 };
 
 function formatDate(iso: string) {
@@ -113,10 +123,32 @@ export default function OrdersPage() {
       }
     };
     load();
+
+    // Real-time status updates so the list reflects seller/courier actions immediately
+    const socket = io(
+      `${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi-production.up.railway.app'}/realtime`,
+      { auth: { token }, transports: ['websocket'], reconnectionDelay: 2000 },
+    );
+    socket.on('order:status', (d: { orderId: string; status: string }) => {
+      setOrders((prev) =>
+        prev.map((o) => o.id === d.orderId
+          ? { ...o, status: d.status.toLowerCase() as OrderStatus }
+          : o),
+      );
+    });
+    socket.on('order:update', (d: { orderId: string; status: string }) => {
+      setOrders((prev) =>
+        prev.map((o) => o.id === d.orderId
+          ? { ...o, status: d.status.toLowerCase() as OrderStatus }
+          : o),
+      );
+    });
+
+    return () => { socket.disconnect(); };
   }, [router]);
 
   const isActive = (status: OrderStatus) =>
-    ['pending', 'confirmed', 'preparing', 'picked_up', 'on_the_way'].includes(status);
+    ['pending', 'accepted', 'confirmed', 'preparing', 'ready_for_pickup', 'courier_accepted', 'picked_up', 'on_the_way'].includes(status);
 
   return (
     <div className="page">
@@ -225,12 +257,10 @@ function OrderCard({ order }: { order: Order }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span>🕐</span>
           {formatDate(order.createdAt)}
         </div>
         {order.deliveryAddress && (
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-            <span style={{ flexShrink: 0 }}>📍</span>
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {order.deliveryAddress}
             </span>
@@ -261,8 +291,7 @@ function OrderCard({ order }: { order: Order }) {
           color: 'var(--primary-dark)',
           fontWeight: 700,
         }}>
-          <span style={{ fontSize: 18, animation: 'pulse 1.6s ease-in-out infinite' }}>🛵</span>
-          Kuryer yo&apos;lda — bosib kuzating
+            Kuryer yo&apos;lda — bosib kuzating
           <span style={{ marginLeft: 'auto', fontSize: 18 }}>→</span>
         </div>
       )}

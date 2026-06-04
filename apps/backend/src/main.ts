@@ -33,7 +33,7 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log'],
   });
 
-  app.use(helmet());
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(compression());
   app.setGlobalPrefix('api/v1');
 

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, money } from '@/lib/api';
+import { api, money, imgUrl } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 import { useCartStore } from '@/stores/cart';
 import { useFavoritesStore } from '@/stores/favorites';
@@ -29,68 +29,56 @@ type Product = {
 type Category = { id: string; slug: string; name: string; icon: string };
 
 const CATEGORY_LABELS: Record<string, { name: string; icon: string }> = {
-  // Logistics-first
-  mebel:        { name: 'Mebel',            icon: '🛋️' },
-  appliances:   { name: 'Texnika',          icon: '🔌' },
-  construction: { name: 'Qurilish',         icon: '🧱' },
-  sport:        { name: 'Sport',            icon: '🚴' },
-  garden:       { name: "Bog' va dacha",    icon: '🌳' },
-  // Market goods
-  electronics:  { name: 'Smart',            icon: '📱' },
-  home:         { name: "Uy-ro'zg'or",      icon: '🏠' },
-  drinks:       { name: 'Ichimliklar',      icon: '🥤' },
-  sweets:       { name: 'Shirinliklar',     icon: '🍫' },
-  pharmacy:     { name: 'Dorixona',         icon: '💊' },
-  beauty:       { name: "Go'zallik",        icon: '💄' },
+  mebel:        { name: 'Mebel',              icon: '' },
+  yogoch:       { name: "Yog'och mahsulotlar", icon: '' },
+  appliances:   { name: 'Texnika',            icon: '' },
+  construction: { name: 'Qurilish',           icon: '' },
+  sport:        { name: 'Sport',              icon: '' },
+  garden:       { name: "Bog' va dacha",      icon: '' },
+  electronics:  { name: 'Elektronika',        icon: '' },
+  home:         { name: "Uy-ro'zg'or",        icon: '' },
+  textile:      { name: 'Matolar',            icon: '' },
+  metal:        { name: 'Metall buyumlar',    icon: '' },
+  handmade:     { name: 'Qo\'lda ishlangan',  icon: '' },
+  other:        { name: 'Boshqalar',          icon: '' },
 };
 
 const ALL_CATEGORY: Category = { id: '', slug: '', name: 'Barchasi', icon: '◻' };
 
-type Slide = { image: string; title: string; sub: string; emoji: string };
+type Slide = { image: string; title: string; sub: string };
 
 const UNS = (id: string) => `https://images.unsplash.com/${id}?w=1400&q=80&auto=format&fit=crop`;
 
 const BANNER_BY_SLUG: Record<string, Slide[]> = {
   '': [
-    { image: UNS('photo-1604329760661-e71dc83f8f26'), emoji: '🛵', title: 'Tez va qulay yetkazib berish', sub: 'Minglab tovarlar — bir joyda.\n20–40 daqiqada eshigingizgacha.' },
-    { image: UNS('photo-1555041469-a586c61ea9bc'), emoji: '🛋️', title: 'Mebel va uy interyeri', sub: 'Divan, krovat, shkaflar — uyingizga qulaylik.' },
-    { image: UNS('photo-1592750475338-74b7b21085ab'), emoji: '📱', title: 'Eng so\'nggi texnika', sub: 'iPhone, MacBook, AirPods — yangi avlod gadjetlari.' },
-    { image: UNS('photo-1606312619070-d48b4c652a52'), emoji: '🍫', title: 'Shokolad va shirinliklar', sub: 'Eng yaxshi brendlar — uzoq saqlanadigan ta\'mlar.' },
-    { image: UNS('photo-1622597467836-f3e6b3c5f6e0'), emoji: '🎁', title: 'Birinchi buyurtmaga 15% chegirma', sub: 'Yangi mijozlar uchun maxsus taklif.' },
+    { image: UNS('photo-1555041469-a586c61ea9bc'), title: 'Mahalliy ishlab chiqaruvchilardan', sub: 'Mebel, yog\'och buyumlar, qurilish materiallari — to\'g\'ridan-to\'g\'ri ishlab chiqaruvchidan.' },
+    { image: UNS('photo-1586023492125-27b2c045efd7'), title: 'Sifatli mebel, qulay narx', sub: 'Mahalliy ustalar qo\'lida yaratilgan zamonaviy mebel va uy jihozlari.' },
+    { image: UNS('photo-1540558170815-6ee1c6e9afdc'), title: 'Qurilish materiallari', sub: 'Ishonchli va sertifikatlangan mahalliy ishlab chiqaruvchilardan bevosita.' },
+    { image: UNS('photo-1618221195710-dd6b41faaea6'), title: 'Buyurtma — To\'lov — Yetkazib berish', sub: 'Uch bosqichli oddiy jarayon: buyurtma bering, naqd to\'lang, qabul qiling.' },
   ],
-  drinks: [
-    { image: UNS('photo-1554866585-cd94860890b7'), emoji: '🥤', title: 'Idishlangan ichimliklar', sub: 'Coca-Cola, mineral suv, sharbatlar — uzoq saqlanadi.' },
-    { image: UNS('photo-1556679343-c7306c1976bc'), emoji: '🍵', title: 'Quruq choy paketi', sub: 'Yashil va qora choy — uy zaxirangiz uchun.' },
-    { image: UNS('photo-1622597467836-f3e6b3c5f6e0'), emoji: '🧃', title: 'Tabiiy sharbatlar', sub: 'Idishlangan, qo\'shimchasiz, sevimli ta\'mlar.' },
-    { image: UNS('photo-1564419320461-6870880221ad'), emoji: '💧', title: 'Mineral suv zaxirasi', sub: '1.5L idishlarda — kuniga 8 stakan.' },
+  mebel: [
+    { image: UNS('photo-1555041469-a586c61ea9bc'), title: 'Zamonaviy mebel', sub: 'Divan, krovat, shkaflar — mahalliy ustalardan.' },
+    { image: UNS('photo-1586023492125-27b2c045efd7'), title: 'Uy interyeri uchun', sub: 'Har bir xonangizga mos mebel — buyurtma asosida.' },
   ],
-  sweets: [
-    { image: UNS('photo-1606312619070-d48b4c652a52'), emoji: '🍫', title: 'Shokolad olami', sub: 'Milka, Lindt, sutli va qora — eng yaxshi brendlar.' },
-    { image: UNS('photo-1587049352846-4a222e784d38'), emoji: '🍯', title: 'Tabiiy asal', sub: 'Tog\' asali — yillab saqlanadi, har lazzat uchun.' },
-    { image: UNS('photo-1582716401301-b2407dc7563d'), emoji: '🍡', title: 'An\'anaviy halva', sub: 'O\'zbek halvasi va konfetlar.' },
-    { image: UNS('photo-1582058091505-f87a2e55a40f'), emoji: '🍬', title: 'Mevali marmaladlar', sub: 'Bolalar uchun shirin sovg\'a.' },
+  yogoch: [
+    { image: UNS('photo-1540558170815-6ee1c6e9afdc'), title: "Yog'och mahsulotlar", sub: "Tabiiy yog'ochdan yasalgan buyumlar — sifat va chidamlilik." },
+    { image: UNS('photo-1560448205-4d9b3e6bb6db'), title: 'Qo\'lda ishlangan', sub: "Mahalliy ustalar tomonidan yaratilgan noyob yog'och buyumlar." },
   ],
-  pharmacy: [
-    { image: UNS('photo-1471864190281-a93a3070b6de'), emoji: '💊', title: 'Vitamin va biofaol', sub: 'Immunitetni mustahkamlovchi vositalar.' },
-    { image: UNS('photo-1584308666744-24d5c474f2ae'), emoji: '🩺', title: 'Asosiy dorilar uyingizda', sub: 'Paracetamol, antiseptik — har xonadonda kerakli.' },
-    { image: UNS('photo-1626516890025-6b3f24f5bd2b'), emoji: '🌿', title: 'Multivitamin Centrum', sub: 'Bir tabletkada barcha kerakli vitamin.' },
+  construction: [
+    { image: UNS('photo-1504307651254-35680f356dfd'), title: 'Qurilish materiallari', sub: 'G\'isht, tsement, taxta — ishonchli mahalliy yetkazuvchilardan.' },
+    { image: UNS('photo-1581094794329-c8112a89af12'), title: 'Professional qurilish', sub: 'Barcha turdagi qurilish materiallari bir platformada.' },
+  ],
+  appliances: [
+    { image: UNS('photo-1556909114-f6e7ad7d3136'), title: 'Maishiy texnika', sub: 'Oshxona va uy uchun zamonaviy texnika mahsulotlari.' },
+    { image: UNS('photo-1574269909862-7e1d70bb8078'), title: 'Sifatli brendlar', sub: 'Kafolatlangan va sertifikatlangan mahsulotlar.' },
   ],
   electronics: [
-    { image: UNS('photo-1592750475338-74b7b21085ab'), emoji: '📱', title: 'iPhone 15 yangi avlodi', sub: 'Titanium qalpoq, A17 Pro chip — eng so\'nggi texnologiya.' },
-    { image: UNS('photo-1517336714731-489689fd1ca8'), emoji: '💻', title: 'MacBook Air M3', sub: 'Yangi M3 chipi, kuchli ishlash, kichik o\'lcham.' },
-    { image: UNS('photo-1606220945770-b5b6c2c55bf1'), emoji: '🎧', title: 'AirPods Pro 2', sub: 'Active noise cancellation — tovushga botgan dunyo.' },
-    { image: UNS('photo-1610945265064-0e34e5519bbf'), emoji: '📲', title: 'Samsung Galaxy', sub: 'AMOLED ekran, eng yaxshi kamera — Android boshqa darajada.' },
-    { image: UNS('photo-1593359677879-a4bb92f829d1'), emoji: '📺', title: 'Smart TV va aksessuarlar', sub: '4K QLED ekran — uyingizda kinoteatr.' },
+    { image: UNS('photo-1592750475338-74b7b21085ab'), title: 'Elektronika', sub: 'Kompyuter, telefon va boshqa elektronika mahsulotlari.' },
+    { image: UNS('photo-1517336714731-489689fd1ca8'), title: 'Zamonaviy gadjetlar', sub: 'Eng so\'nggi texnologiyalar — raqobatbardosh narxlarda.' },
   ],
   home: [
-    { image: UNS('photo-1631049307264-da0ec9d70304'), emoji: '🛏', title: 'Yumshoq yostiq va adyol', sub: 'Tabiiy paxta, yumshoq tinch uyqu uchun.' },
-    { image: UNS('photo-1565374790459-72c35adb3aab'), emoji: '💡', title: 'Zamonaviy yoritish', sub: 'LED chiroqlar, smart lampalar — uyga energiya.' },
-    { image: UNS('photo-1547074620-f17b3f0bcaa5'), emoji: '🍳', title: 'Oshxona texnikalari', sub: 'Choynak, blender, mikser — kundalik ishlaringizga.' },
-  ],
-  beauty: [
-    { image: UNS('photo-1541643600914-78b084683601'), emoji: '💎', title: 'Hashamatli atirlar', sub: 'Chanel, Dior, Gucci — siz haqiqiy ayol.' },
-    { image: UNS('photo-1586495777744-4413f21062fa'), emoji: '💋', title: 'MAC va boshqa kosmetika', sub: 'Lab pomadasi, tushli boyoqlar — har lukni mukammal qiling.' },
-    { image: UNS('photo-1556228720-195a672e8a03'), emoji: '✨', title: 'Teri parvarishi', sub: 'La Roche-Posay, Vichy — terining sog\'ligi sizniki.' },
+    { image: UNS('photo-1631049307264-da0ec9d70304'), title: "Uy-ro'zg'or buyumlari", sub: "Kundalik hayot uchun sifatli uy-ro'zg'or mahsulotlari." },
+    { image: UNS('photo-1565374790459-72c35adb3aab'), title: 'Yoritish va bezak', sub: "Uyingizni zamonaviy tarzda bezang — LED chiroqlar va ko'proq." },
   ],
 };
 
@@ -139,22 +127,20 @@ function LockIcon() {
 }
 
 function getCategoryLabel(categoryId?: string): string {
-  // Note: this is keyed by category SLUG (passed in from caller).
   const map: Record<string, string> = {
-    mebel: '🛋️', appliances: '🔌', construction: '🧱',
-    sport: '🚴', garden: '🌳', electronics: '📱', home: '🏠',
-    bakery: '🎂', drinks: '🥤', sweets: '🍫',
-    pharmacy: '💊', beauty: '💄',
+    mebel: 'M', yogoch: 'Y', appliances: 'T', construction: 'Q',
+    sport: 'S', garden: 'B', electronics: 'E', home: 'U',
+    textile: 'Mt', metal: 'Me', handmade: 'Q', other: 'B',
   };
-  return map[categoryId ?? ''] ?? '📦';
+  return map[categoryId ?? ''] ?? '';
 }
 
 function vehicleBadge(v?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK') {
   if (!v || v === 'BIKE') return null;
   const m = {
-    CAR:   { icon: '🚗', label: 'Avto' },
-    VAN:   { icon: '🚐', label: 'Furgon' },
-    TRUCK: { icon: '🚛', label: 'Yuk mashinasi' },
+    CAR:   { label: 'Avto' },
+    VAN:   { label: 'Furgon' },
+    TRUCK: { label: 'Yuk mashinasi' },
   } as const;
   return m[v];
 }
@@ -440,9 +426,6 @@ export default function HomePage() {
                 </button>
               )}
             </div>
-            <div className="hero-banner-art" key={`emoji-${activeSlug}-${bannerIdx}`} style={{ animation: 'bannerFadeIn 500ms ease' }}>
-              {slide.emoji}
-            </div>
 
             {/* Pagination dots */}
             {slides.length > 1 && (
@@ -501,7 +484,7 @@ export default function HomePage() {
                   overflow: 'hidden',
                   position: 'relative',
                   aspectRatio: '21 / 9',
-                  background: `url(${b.imageUrl}) center/cover no-repeat, #f1f5f9`,
+                  background: `url(${imgUrl(b.imageUrl)}) center/cover no-repeat, #f1f5f9`,
                 }}
               >
                 <div style={{
@@ -533,7 +516,7 @@ export default function HomePage() {
             }}>
               {isFree ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: 'var(--primary-dark)' }}>
-                  <span>🎉</span> Bepul yetkazib berish qo&apos;llanadi!
+                  Bepul yetkazib berish qo&apos;llanadi!
                   <button onClick={() => router.push('/checkout')}
                     style={{ marginLeft: 'auto', fontSize: 12, padding: '4px 12px', borderRadius: 999, background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
                     To&apos;lovga o&apos;tish
@@ -611,10 +594,8 @@ export default function HomePage() {
                           background: 'rgba(17, 24, 39, 0.92)', color: '#fff',
                           fontSize: 10, fontWeight: 700,
                           padding: '4px 8px', borderRadius: 8,
-                          display: 'inline-flex', alignItems: 'center', gap: 4,
                           letterSpacing: '0.3px',
                         }}>
-                          <span style={{ fontSize: 12 }}>{v.icon}</span>
                           {v.label}
                         </span>
                       );
@@ -630,8 +611,8 @@ export default function HomePage() {
                         borderRadius: '50%',
                         border: 'none',
                         background: isFav ? '#ef4444' : 'rgba(255,255,255,0.92)',
-                        color: isFav ? '#fff' : '#ef4444',
-                        fontSize: 16,
+                        color: isFav ? '#fff' : '#6b7280',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
                         zIndex: 1,
@@ -639,12 +620,16 @@ export default function HomePage() {
                       }}
                       onMouseEnter={(e) => (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.1)'}
                       onMouseLeave={(e) => (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'}
-                    >{isFav ? '♥' : '♡'}</button>
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill={isFav ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+                      </svg>
+                    </button>
 
                     {product.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={product.imageUrl}
+                        src={imgUrl(product.imageUrl)}
                         alt={product.title}
                         loading="lazy"
                         onError={(e) => {
@@ -795,7 +780,7 @@ export default function HomePage() {
                 >
                   <div style={{ aspectRatio: '1', background: '#f1f5f9', position: 'relative' }}>
                     {p.imageUrl && (
-                      <img src={p.imageUrl} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={imgUrl(p.imageUrl)} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     )}
                   </div>
                   <div style={{ padding: 8 }}>

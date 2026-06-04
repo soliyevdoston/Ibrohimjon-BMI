@@ -7,26 +7,26 @@ import { useAuthStore } from '@/stores/auth';
 export default function SellerLoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const trimmedPhone = phone.trim();
-    if (!trimmedPhone || password.length < 6) {
-      setError('Telefon raqam va parol (6+ belgi) kiriting');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || password.length < 6) {
+      setError('Email va parol (6+ belgi) kiriting');
       return;
     }
     setLoading(true); setError('');
     try {
       const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(
-        '/auth/phone/login',
-        { method: 'POST', body: { phone: trimmedPhone, password } },
+        '/auth/email/login',
+        { method: 'POST', body: { email: trimmedEmail, password } },
       );
       if (res.user.role !== 'SELLER') {
-        setError("Bu akkaunt sotuvchi emas. Sotuvchi paroli bilan kiring.");
+        setError("Bu akkaunt sotuvchi emas. Sotuvchi email bilan kiring.");
         return;
       }
       setAuth(res.accessToken, res.user.role, res.user.fullName ?? '');
@@ -37,7 +37,7 @@ export default function SellerLoginPage() {
   };
 
   const fillDemo = () => {
-    setPhone('+998901234567');
+    setEmail('seller@lochin.uz');
     setPassword('seller123');
   };
 
@@ -63,15 +63,15 @@ export default function SellerLoginPage() {
 
         <form onSubmit={handleSubmit} className="card" style={{ padding: 32, boxShadow: '0 8px 32px rgba(16,24,40,0.08)' }}>
           <div className="stack-sm">
-            <label className="label">Telefon raqami</label>
+            <label className="label">Email</label>
             <input
               className="input"
-              type="tel"
-              placeholder="+998 90 123 45 67"
-              value={phone}
-              onChange={(e) => { setError(''); setPhone(e.target.value); }}
+              type="email"
+              placeholder="seller@lochin.uz"
+              value={email}
+              onChange={(e) => { setError(''); setEmail(e.target.value); }}
               autoFocus
-              autoComplete="tel"
+              autoComplete="email"
             />
 
             <label className="label" style={{ marginTop: 6 }}>Parol</label>
@@ -101,10 +101,9 @@ export default function SellerLoginPage() {
             background: '#f9fafb', border: '1px dashed #e5e7eb',
             borderRadius: 12, fontSize: 12, color: '#374151',
           }}>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>Hisob admin orqali yaratiladi</div>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Demo kirish</div>
             <div style={{ fontSize: 11, lineHeight: 1.5, color: '#6b7280' }}>
-              Admin sizga telefon raqam va boshlang&apos;ich parolni beradi.
-              Tizimga kirgach, sozlamalarda parolni o&apos;zgartiring.
+              seller@lochin.uz / seller123
             </div>
             <button
               type="button"

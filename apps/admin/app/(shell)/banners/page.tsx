@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { IconClose, IconPlus } from '@/components/admin/Icon';
-import { api } from '@/lib/api';
+import { api, imgUrl } from '@/lib/api';
 
 type Banner = {
   id: string;
@@ -80,7 +80,7 @@ export default function AdminBannersPage() {
               >
                 <div style={{ aspectRatio: '21 / 9', background: '#f1f5f9', position: 'relative' }}>
                   {b.imageUrl && (
-                    <Image src={b.imageUrl} alt={b.title} fill style={{ objectFit: 'cover' }} unoptimized />
+                    <Image src={imgUrl(b.imageUrl) ?? ''} alt={b.title} fill style={{ objectFit: 'cover' }} unoptimized />
                   )}
                 </div>
                 <div style={{ padding: 12 }}>

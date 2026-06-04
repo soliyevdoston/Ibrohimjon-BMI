@@ -2,10 +2,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { io } from 'socket.io-client';
 import { DeliveryTracker } from '@/components/map/DeliveryTracker';
 import { Timeline, type TimelineStatus } from '@/components/Timeline';
 import { api, money } from '@/lib/api';
-import { connectSocket, disconnectSocket } from '@/lib/socket';
 
 const SELLER_POS: [number, number] = [40.3834, 71.7833]; // Farg'ona shahar markazi
 const CUSTOMER_POS: [number, number] = [40.3960, 71.8100]; // Farg'ona, Do'stlik ko'chasi
@@ -45,13 +45,16 @@ type Order = {
 };
 
 const STATUS_LABELS: Record<TimelineStatus, string> = {
-  pending: 'Kutilmoqda',
-  confirmed: 'Tasdiqlandi',
-  preparing: 'Tayyorlanmoqda',
-  picked_up: 'Kuryer oldi',
-  on_the_way: 'Yo\'lda',
-  delivered: 'Yetkazildi',
-  cancelled: 'Bekor qilindi',
+  pending:          'Kutilmoqda',
+  accepted:         'Qabul qilindi',
+  confirmed:        'Tasdiqlandi',
+  preparing:        'Tayyorlanmoqda',
+  ready_for_pickup: 'Tayyor — kuryer kutilmoqda',
+  courier_accepted: 'Kuryer kelmoqda',
+  picked_up:        'Kuryer oldi',
+  on_the_way:       "Yo'lda",
+  delivered:        'Yetkazildi',
+  cancelled:        'Bekor qilindi',
 };
 
 // Interpolate position from A to B by factor t [0..1]
@@ -139,63 +142,63 @@ export default function OrderTrackingPage() {
     const token = localStorage.getItem('access_token');
     if (!token) return;
 
+    const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi-production.up.railway.app';
+    const socket = io(`${WS_URL}/realtime`, {
+      auth: { token }, transports: ['websocket'], reconnectionDelay: 2000,
+    });
+
     let wsConnected = false;
-    try {
-      const socket = connectSocket(token);
 
-      socket.on('connect', () => {
-        wsConnected = true;
-        // Join order room for status updates
-        socket.emit('order:join', { orderId: id });
-        // Join delivery room for location updates (if deliveryId available)
-        const dId = deliveryIdRef.current;
-        if (dId) socket.emit('delivery:join', { deliveryId: dId });
-      });
+    const joinDelivery = (dId: string) => {
+      socket.emit('delivery:join', { deliveryId: dId });
+    };
 
-      socket.on('order:status', (data: { orderId: string; status: TimelineStatus }) => {
-        if (data.orderId === id) {
-          setOrder((prev) => prev ? { ...prev, status: data.status } : prev);
-        }
-      });
+    socket.on('connect', () => {
+      wsConnected = true;
+      socket.emit('order:join', { orderId: id });
+      if (deliveryIdRef.current) joinDelivery(deliveryIdRef.current);
+    });
 
-      // Real-time courier location from backend
-      socket.on('delivery:location', (data: { deliveryId: string; lat: number; lng: number }) => {
-        if (!data.lat || !data.lng) return;
-        const pos: [number, number] = [data.lat, data.lng];
-        setCourierPos(pos);
-        // Calculate ETA from real distance: 30 km/h speed
-        const dest = getDestination();
-        const remainKm = haversineKm(pos, dest);
-        setEta(Math.round(remainKm / (30 / 3600)));
-        if (simulationRef.current) {
-          clearInterval(simulationRef.current);
-          simulationRef.current = null;
-        }
-      });
+    // Backend sends UPPERCASE status — normalize to lowercase for the UI
+    socket.on('order:status', (data: { orderId: string; status: string; deliveryId?: string }) => {
+      if (data.orderId !== id) return;
+      const status = data.status.toLowerCase() as TimelineStatus;
+      setOrder((prev) => prev ? { ...prev, status } : prev);
+      // Join delivery room as soon as we get a deliveryId (e.g. COURIER_ACCEPTED)
+      if (data.deliveryId && data.deliveryId !== deliveryIdRef.current) {
+        deliveryIdRef.current = data.deliveryId;
+        if (wsConnected) joinDelivery(data.deliveryId);
+      }
+    });
 
-      // Start simulation after 2s if WS doesn't connect
-      const wsCheck = setTimeout(() => {
-        if (!wsConnected) startSimulation();
-      }, 2000);
+    // Real-time courier location — stop simulation, show live ETA
+    socket.on('delivery:location', (data: { deliveryId: string; lat: number; lng: number }) => {
+      if (!data.lat || !data.lng) return;
+      const pos: [number, number] = [data.lat, data.lng];
+      setCourierPos(pos);
+      const dest: [number, number] = [
+        (order?.deliveryLat as number | undefined) ?? CUSTOMER_POS[0],
+        (order?.deliveryLng as number | undefined) ?? CUSTOMER_POS[1],
+      ];
+      const remainKm = haversineKm(pos, dest);
+      setEta(Math.round(remainKm / (30 / 3600)));
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+        simulationRef.current = null;
+      }
+    });
 
-      socket.on('connect_error', () => {
-        if (!wsConnected) startSimulation();
-      });
+    // Start demo simulation if WS doesn't connect within 2s
+    const wsCheck = setTimeout(() => {
+      if (!wsConnected) startSimulation();
+    }, 2000);
+    socket.on('connect_error', () => { if (!wsConnected) startSimulation(); });
 
-      return () => {
-        clearTimeout(wsCheck);
-        socket.off('connect');
-        socket.off('order:status');
-        socket.off('delivery:location');
-        disconnectSocket();
-        if (simulationRef.current) clearInterval(simulationRef.current);
-      };
-    } catch {
-      startSimulation();
-      return () => {
-        if (simulationRef.current) clearInterval(simulationRef.current);
-      };
-    }
+    return () => {
+      clearTimeout(wsCheck);
+      socket.disconnect();
+      if (simulationRef.current) clearInterval(simulationRef.current);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -266,7 +269,7 @@ export default function OrderTrackingPage() {
   }
 
 
-  const isActiveOrder = order && ['confirmed', 'preparing', 'picked_up', 'on_the_way'].includes(order.status);
+  const isActiveOrder = order && ['accepted', 'confirmed', 'preparing', 'ready_for_pickup', 'courier_accepted', 'picked_up', 'on_the_way'].includes(order.status);
   const isDelivered = order?.status === 'delivered';
 
   return (

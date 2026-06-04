@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { money } from '@/lib/api';
+import { money, imgUrl } from '@/lib/api';
 import { useFavoritesStore } from '@/stores/favorites';
 
 export type ModalProduct = {
@@ -93,7 +93,7 @@ export function ProductDetailModal({
             {product.imageUrl && !imgError ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={product.imageUrl}
+                src={imgUrl(product.imageUrl)}
                 alt={product.title}
                 onError={() => setImgError(true)}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}

@@ -132,7 +132,7 @@ export default function LiveMapImpl({ height = 320 }: { height?: number }) {
     if (!token) return;
 
     try {
-      const socket = io(`${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com'}/realtime`, {
+      const socket = io(`${process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi-production.up.railway.app'}/realtime`, {
         auth: { token },
         transports: ['websocket'],
         reconnectionDelay: 3000,
@@ -144,7 +144,7 @@ export default function LiveMapImpl({ height = 320 }: { height?: number }) {
         setWsConnected(true);
         try {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || 'https://ibrohimjon-bmi.onrender.com/api/v1'}/deliveries?status=active&limit=50`,
+            `${process.env.NEXT_PUBLIC_API_URL || 'https://ibrohimjon-bmi-production.up.railway.app/api/v1'}/deliveries?status=active&limit=50`,
             { headers: { authorization: `Bearer ${token}` } }
           );
           if (res.ok) {

@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { IconSearch } from '@/components/admin/Icon';
 import { useApiProducts, useApiCategories, numFromStr } from '@/lib/admin-api';
+import { imgUrl } from '@/lib/api';
 
 function uzs(value: number) {
   return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' soʼm';
@@ -126,7 +127,7 @@ export default function AdminProductsPage() {
                   <td style={{ width: 50 }}>
                     {p.imageUrl ? (
                       <Image
-                        src={p.imageUrl}
+                        src={imgUrl(p.imageUrl) ?? ''}
                         alt={p.title}
                         width={40}
                         height={40}

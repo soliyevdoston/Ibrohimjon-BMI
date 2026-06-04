@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { api, money, API_BASE_URL, WS_BASE_URL } from '@/lib/api';
+import { api, money, API_BASE_URL, WS_BASE_URL, imgUrl } from '@/lib/api';
 
 type Product = {
   id?: string;
@@ -258,7 +258,7 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
               }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={form.imageUrl}
+                  src={imgUrl(form.imageUrl)}
                   alt="Mahsulot rasmi"
                   style={{ width: '100%', maxHeight: 220, objectFit: 'contain', display: 'block' }}
                   onError={() => setError("Rasm yuklanmadi — qayta urinib ko'ring")}
@@ -329,7 +329,7 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
                     border: '1px solid var(--border)',
                   }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt={`Galereya ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={imgUrl(url)} alt={`Galereya ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     <button
                       type="button"
                       onClick={() => setForm((p) => ({ ...p, imageUrls: p.imageUrls.filter((_, idx) => idx !== i) }))}

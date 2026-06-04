@@ -1,9 +1,9 @@
-const PROD_API = 'https://ibrohimjon-bmi.onrender.com/api/v1';
+const PROD_API = 'https://ibrohimjon-bmi-production.up.railway.app/api/v1';
 const BASE = process.env.NEXT_PUBLIC_API_URL || PROD_API;
 
 export const API_BASE_URL = BASE;
 export const WS_BASE_URL =
-  process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi.onrender.com';
+  process.env.NEXT_PUBLIC_WS_URL || 'https://ibrohimjon-bmi-production.up.railway.app';
 
 export async function api<T>(
   path: string,
