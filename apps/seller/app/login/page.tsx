@@ -7,26 +7,26 @@ import { useAuthStore } from '@/stores/auth';
 export default function SellerLoginPage() {
   const router = useRouter();
   const { setAuth } = useAuthStore();
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || password.length < 6) {
-      setError('Email va parol (6+ belgi) kiriting');
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone || password.length < 6) {
+      setError('Telefon raqam va parol (6+ belgi) kiriting');
       return;
     }
     setLoading(true); setError('');
     try {
       const res = await api<{ accessToken: string; user: { role: string; fullName?: string } }>(
-        '/auth/email/login',
-        { method: 'POST', body: { email: trimmedEmail, password } },
+        '/auth/phone/login',
+        { method: 'POST', body: { phone: trimmedPhone, password } },
       );
       if (res.user.role !== 'SELLER') {
-        setError("Bu akkaunt sotuvchi emas. Sotuvchi email bilan kiring.");
+        setError("Bu akkaunt sotuvchi emas. Sotuvchi raqami bilan kiring.");
         return;
       }
       setAuth(res.accessToken, res.user.role, res.user.fullName ?? '');
@@ -37,7 +37,7 @@ export default function SellerLoginPage() {
   };
 
   const fillDemo = () => {
-    setEmail('seller@lochin.uz');
+    setPhone('+998901234567');
     setPassword('seller123');
   };
 
@@ -63,15 +63,15 @@ export default function SellerLoginPage() {
 
         <form onSubmit={handleSubmit} className="card" style={{ padding: 32, boxShadow: '0 8px 32px rgba(16,24,40,0.08)' }}>
           <div className="stack-sm">
-            <label className="label">Email</label>
+            <label className="label">Telefon raqam</label>
             <input
               className="input"
-              type="email"
-              placeholder="seller@lochin.uz"
-              value={email}
-              onChange={(e) => { setError(''); setEmail(e.target.value); }}
+              type="tel"
+              placeholder="+998901234567"
+              value={phone}
+              onChange={(e) => { setError(''); setPhone(e.target.value); }}
               autoFocus
-              autoComplete="email"
+              autoComplete="tel"
             />
 
             <label className="label" style={{ marginTop: 6 }}>Parol</label>
@@ -103,7 +103,7 @@ export default function SellerLoginPage() {
           }}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>Demo kirish</div>
             <div style={{ fontSize: 11, lineHeight: 1.5, color: '#6b7280' }}>
-              seller@lochin.uz / seller123
+              +998901234567 / seller123
             </div>
             <button
               type="button"

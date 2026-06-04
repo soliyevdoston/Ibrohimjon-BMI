@@ -123,9 +123,10 @@ async function main() {
   // ── Seller ─────────────────────────────────────────────────────────────────
   const sellerUser = await prisma.user.upsert({
     where: { email: 'seller@lochin.uz' },
-    update: { fullName: 'Bobur Toshmatov' },
+    update: { fullName: 'Bobur Toshmatov', phone: '+998901234567' },
     create: {
       email: 'seller@lochin.uz',
+      phone: '+998901234567',
       passwordHash: await bcrypt.hash('seller123', 10),
       role: UserRole.SELLER,
       fullName: 'Bobur Toshmatov',
