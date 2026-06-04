@@ -111,6 +111,7 @@ export type ApiSeller = {
   addressText: string | null;
   addressLat: string | null;
   addressLng: string | null;
+  balance: string | number;
   createdAt: string;
   user: ApiUser;
 };
@@ -262,4 +263,11 @@ export function setSellerActiveApi(id: string, isActive: boolean) {
 
 export function deleteSellerApi(id: string) {
   return api<ApiSeller>(`/admin/sellers/${id}`, { method: 'DELETE' });
+}
+
+export function topupSellerApi(id: string, amount: number, reason?: string) {
+  return api<{ id: string; brandName: string; balance: string | number }>(
+    `/admin/sellers/${id}/topup`,
+    { method: 'POST', body: { amount, reason } },
+  );
 }

@@ -32,7 +32,12 @@ export class SellersService {
   // before auto-provisioning landed. Keeps /products and /orders endpoints
   // working on first call without requiring the user to visit /settings first.
   async myProfile(userId: string) {
-    const existing = await this.prisma.seller.findFirst({ where: { userId } });
+    const existing = await this.prisma.seller.findFirst({
+      where: { userId },
+      include: {
+        transactions: { orderBy: { createdAt: 'desc' }, take: 20 },
+      },
+    });
     if (existing) return existing;
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -41,12 +46,18 @@ export class SellersService {
       || user.email?.split('@')[0]
       || user.phone
       || 'Sotuvchi';
-    return this.prisma.seller.create({
-      data: {
-        userId,
-        legalName: defaultName,
-        brandName: defaultName,
-      },
+    const created = await this.prisma.seller.create({
+      data: { userId, legalName: defaultName, brandName: defaultName },
     });
+    return { ...created, transactions: [] };
+  }
+
+  async myBalance(userId: string) {
+    const seller = await this.prisma.seller.findFirst({
+      where: { userId },
+      select: { balance: true },
+    });
+    if (!seller) throw new NotFoundException('Seller not found');
+    return { balance: Number(seller.balance) };
   }
 }

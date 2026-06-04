@@ -37,6 +37,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<{ type: 'create' | 'edit'; product?: Product } | null>(null);
   const [page, setPage] = useState(1);
+  const [balance, setBalance] = useState<number | null>(null);
   const PER_PAGE = 10;
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
@@ -51,6 +52,9 @@ export default function ProductsPage() {
 
   useEffect(() => {
     if (!localStorage.getItem('access_token')) { router.replace('/login'); return; }
+    api<{ balance?: number | string }>('/seller/profile', { token })
+      .then((d) => setBalance(Number(d.balance ?? 0)))
+      .catch(() => {});
     // Debounce so we don't fire a request on every keystroke
     const t = setTimeout(loadProducts, 300);
     return () => clearTimeout(t);
@@ -88,6 +92,17 @@ export default function ProductsPage() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
               <div className="spacer" />
+              {balance !== null && (
+                <div style={{
+                  fontSize: 13, fontWeight: 600,
+                  padding: '6px 12px', borderRadius: 8,
+                  background: balance < 5000 ? '#fef2f2' : 'var(--surface-2)',
+                  color: balance < 5000 ? '#991b1b' : 'var(--text-muted)',
+                  border: `1px solid ${balance < 5000 ? '#fecaca' : 'var(--border)'}`,
+                }}>
+                  Balans: {balance.toLocaleString()} so&apos;m
+                </div>
+              )}
               <button className="btn" onClick={() => setModal({ type: 'create' })}>+ Yangi mahsulot</button>
             </div>
 
@@ -202,7 +217,12 @@ export default function ProductsPage() {
               }
             : undefined}
           onClose={() => setModal(null)}
-          onSaved={loadProducts}
+          onSaved={() => {
+            loadProducts();
+            api<{ balance?: number | string }>('/seller/profile', { token })
+              .then((d) => setBalance(Number(d.balance ?? 0)))
+              .catch(() => {});
+          }}
         />
       )}
     </div>

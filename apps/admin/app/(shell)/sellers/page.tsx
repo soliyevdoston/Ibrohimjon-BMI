@@ -8,6 +8,7 @@ import {
   createSellerApi,
   setSellerActiveApi,
   deleteSellerApi,
+  topupSellerApi,
   type ApiSeller,
 } from '@/lib/admin-api';
 
@@ -21,6 +22,7 @@ export default function AdminSellersPage() {
   const [onlyActive, setOnlyActive] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [topupTarget, setTopupTarget] = useState<ApiSeller | null>(null);
 
   const rows = useMemo(() => {
     return sellers.filter((s) => {
@@ -129,6 +131,7 @@ export default function AdminSellersPage() {
                 <th>Manzil</th>
                 <th>Holat</th>
                 <th>Reyting</th>
+                <th>Balans</th>
                 <th />
               </tr>
             </thead>
@@ -170,7 +173,23 @@ export default function AdminSellersPage() {
                     </span>
                   </td>
                   <td>
+                    <span style={{
+                      fontWeight: 700, fontSize: 13,
+                      color: Number(s.balance ?? 0) < 5000 ? '#ef4444' : '#065f46',
+                    }}>
+                      {uzs(Number(s.balance ?? 0))}
+                    </span>
+                  </td>
+                  <td>
                     <div className="hstack" style={{ gap: 4, justifyContent: 'flex-end' }}>
+                      <button
+                        className="btn soft sm"
+                        onClick={() => setTopupTarget(s)}
+                        disabled={busyId === s.id}
+                        title="Balans to'ldirish"
+                      >
+                        + To&apos;ldirish
+                      </button>
                       <button
                         className={`btn ${s.isActive ? 'ghost' : 'soft'} sm`}
                         onClick={() => toggleActive(s)}
@@ -193,7 +212,7 @@ export default function AdminSellersPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <div className="empty">
                       <div className="empty-ico">∅</div>
                       <strong>{loading ? 'Yuklanmoqda…' : 'Sotuvchilar topilmadi'}</strong>
@@ -216,7 +235,119 @@ export default function AdminSellersPage() {
         />
       )}
 
-      {uzs(0) ? null : null /* keep uzs imported for future totals row */}
+      {topupTarget && (
+        <TopupModal
+          seller={topupTarget}
+          onClose={() => setTopupTarget(null)}
+          onDone={async () => {
+            setTopupTarget(null);
+            await refetch();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function TopupModal({
+  seller,
+  onClose,
+  onDone,
+}: {
+  seller: ApiSeller;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async () => {
+    const num = Number(amount);
+    if (!num || num <= 0) { setError("Miqdor musbat bo'lishi kerak"); return; }
+    setSaving(true);
+    setError('');
+    try {
+      await topupSellerApi(seller.id, num, reason.trim() || undefined);
+      onDone();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+        display: 'grid', placeItems: 'center', zIndex: 1000, padding: 16,
+      }}
+    >
+      <div style={{
+        background: 'var(--surface)', borderRadius: 16, padding: 24,
+        maxWidth: 420, width: '100%',
+      }}>
+        <div className="hstack" style={{ justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ fontSize: 17, fontWeight: 700 }}>Balans to&apos;ldirish</h3>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+              {seller.brandName} — joriy: {uzs(Number(seller.balance ?? 0))}
+            </div>
+          </div>
+          <button className="icon-btn" onClick={onClose} style={{ width: 28, height: 28 }}>
+            <IconClose size={14} />
+          </button>
+        </div>
+
+        <div className="stack" style={{ gap: 12 }}>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+              Miqdor (so&apos;m) *
+            </label>
+            <input
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="50000"
+              type="number"
+              min={1}
+              style={{
+                width: '100%', marginTop: 4, padding: '10px 12px', borderRadius: 10,
+                border: '1px solid var(--border)', background: 'var(--surface-2)', fontSize: 14,
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
+              Sabab (ixtiyoriy)
+            </label>
+            <input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Oylik to'lov, shartnoma, ..."
+              style={{
+                width: '100%', marginTop: 4, padding: '10px 12px', borderRadius: 10,
+                border: '1px solid var(--border)', background: 'var(--surface-2)', fontSize: 13,
+              }}
+            />
+          </div>
+
+          {error && (
+            <div style={{ background: '#fee2e2', color: '#991b1b', padding: 10, borderRadius: 10, fontSize: 13 }}>
+              {error}
+            </div>
+          )}
+
+          <div className="hstack" style={{ gap: 8, marginTop: 4 }}>
+            <button className="btn ghost" style={{ flex: 1 }} onClick={onClose} disabled={saving}>Bekor</button>
+            <button className="btn" style={{ flex: 2 }} onClick={submit} disabled={saving}>
+              {saving ? 'Yuklanmoqda…' : "Balansni to'ldirish"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

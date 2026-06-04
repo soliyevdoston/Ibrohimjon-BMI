@@ -1,13 +1,17 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/common/prisma.service';
+import { PricingService } from '../pricing/pricing.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ListProductsDto } from './dto/list-products.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pricingService: PricingService,
+  ) {}
 
   async list(query: ListProductsDto) {
     const where: Prisma.ProductWhereInput = {
@@ -80,21 +84,45 @@ export class ProductsService {
 
   async createBySeller(sellerUserId: string, dto: CreateProductDto) {
     const seller = await this.ensureSellerProfile(sellerUserId);
+    const cfg = await this.pricingService.getConfig();
+    const fee = Number(cfg.productListingFee);
 
-    return this.prisma.product.create({
-      data: {
-        sellerId: seller.id,
-        categoryId: dto.categoryId,
-        title: dto.title,
-        description: dto.description,
-        imageUrl: dto.imageUrl,
-        imageUrls: dto.imageUrls ?? [],
-        price: dto.price,
-        originalPrice: dto.originalPrice,
-        costPrice: dto.costPrice,
-        stock: dto.stock,
-        isActive: dto.isActive ?? true,
-      },
+    if (fee > 0 && Number(seller.balance) < fee) {
+      throw new BadRequestException(
+        `Hisobingizda mablag' yetarli emas. Tovar qo'shish narxi: ${fee.toLocaleString()} so'm. Joriy balans: ${Number(seller.balance).toLocaleString()} so'm`,
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (fee > 0) {
+        await tx.seller.update({
+          where: { id: seller.id },
+          data: { balance: { decrement: fee } },
+        });
+        await tx.sellerTransaction.create({
+          data: {
+            sellerId: seller.id,
+            amount: -fee,
+            reason: `Tovar qo'shish: ${dto.title}`,
+          },
+        });
+      }
+
+      return tx.product.create({
+        data: {
+          sellerId: seller.id,
+          categoryId: dto.categoryId,
+          title: dto.title,
+          description: dto.description,
+          imageUrl: dto.imageUrl,
+          imageUrls: dto.imageUrls ?? [],
+          price: dto.price,
+          originalPrice: dto.originalPrice,
+          costPrice: dto.costPrice,
+          stock: dto.stock,
+          isActive: dto.isActive ?? true,
+        },
+      });
     });
   }
 

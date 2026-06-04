@@ -132,6 +132,27 @@ export class AdminService {
     });
   }
 
+  async topupSellerBalance(sellerId: string, amount: number, reason?: string) {
+    if (!amount || amount <= 0) throw new BadRequestException('Miqdor musbat bo\'lishi kerak');
+    const seller = await this.prisma.seller.findUnique({ where: { id: sellerId } });
+    if (!seller) throw new NotFoundException('Sotuvchi topilmadi');
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.seller.update({
+        where: { id: sellerId },
+        data: { balance: { increment: amount } },
+        select: { id: true, brandName: true, balance: true },
+      });
+      await tx.sellerTransaction.create({
+        data: {
+          sellerId,
+          amount,
+          reason: reason?.trim() || 'Admin tomonidan balans to\'ldirish',
+        },
+      });
+      return updated;
+    });
+  }
+
   async deleteSeller(sellerId: string) {
     const seller = await this.prisma.seller.findUnique({ where: { id: sellerId } });
     if (!seller) throw new NotFoundException('Sotuvchi topilmadi');

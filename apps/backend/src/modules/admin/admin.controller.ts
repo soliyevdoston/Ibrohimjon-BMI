@@ -85,6 +85,16 @@ export class AdminController {
     return this.adminService.updateSellerActive(sellerId, !!body.isActive);
   }
 
+  @Post('sellers/:id/topup')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  topupSeller(
+    @Param('id') sellerId: string,
+    @Body() body: { amount: number; reason?: string },
+  ) {
+    return this.adminService.topupSellerBalance(sellerId, Number(body.amount), body.reason);
+  }
+
   @Delete('sellers/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
@@ -147,7 +157,7 @@ export class AdminController {
       'carBaseFee', 'carPerKmFee', 'carCourierBase', 'carCourierPerKm',
       'vanBaseFee', 'vanPerKmFee', 'vanCourierBase', 'vanCourierPerKm',
       'truckBaseFee', 'truckPerKmFee', 'truckCourierBase', 'truckCourierPerKm',
-      'bikeMaxKg', 'carMaxKg', 'vanMaxKg', 'freeDeliveryAbove',
+      'bikeMaxKg', 'carMaxKg', 'vanMaxKg', 'freeDeliveryAbove', 'productListingFee',
     ];
     for (const key of allowed) {
       if (body[key] !== undefined) data[key] = Number(body[key]);

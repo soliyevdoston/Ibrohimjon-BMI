@@ -32,4 +32,9 @@ export class SellersController {
   ) {
     return this.sellersService.upsertProfile(userId, payload);
   }
+
+  @Get('balance')
+  balance(@CurrentUser('id') userId: string) {
+    return this.sellersService.myBalance(userId);
+  }
 }

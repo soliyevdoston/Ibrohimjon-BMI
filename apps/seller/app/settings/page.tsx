@@ -14,6 +14,13 @@ type Profile = {
   workingHours: string;
 };
 
+type SellerTransaction = {
+  id: string;
+  amount: number | string;
+  reason: string;
+  createdAt: string;
+};
+
 const DEMO: Profile = {
   name: '',
   phone: '',
@@ -28,6 +35,8 @@ export default function SettingsPage() {
   const [form, setForm] = useState<Profile>(DEMO);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [transactions, setTransactions] = useState<SellerTransaction[]>([]);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
 
@@ -38,6 +47,8 @@ export default function SettingsPage() {
         const data = await api<{
           legalName?: string; brandName?: string; description?: string;
           addressText?: string; phone?: string;
+          balance?: number | string;
+          transactions?: SellerTransaction[];
         }>('/seller/profile', { token });
         setForm((prev) => ({
           ...prev,
@@ -47,6 +58,8 @@ export default function SettingsPage() {
           description: data.description ?? prev.description,
           phone: data.phone ?? prev.phone,
         }));
+        setBalance(Number(data.balance ?? 0));
+        setTransactions(data.transactions ?? []);
       } catch { /* use demo */ }
     };
     load();
@@ -81,6 +94,51 @@ export default function SettingsPage() {
         <SellerTopbar title="Sozlamalar" subtitle="Hisob va sozlamalar" />
         <main className="app-content fade-in">
           <div className="stack">
+
+            {/* Balance card */}
+            <div className="card" style={{ background: 'var(--surface)' }}>
+              <div className="card-h">
+                <div>
+                  <h3>Hisob balansi</h3>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Tovar qo&apos;shish uchun ishlatiladi</div>
+                </div>
+                <div style={{
+                  fontSize: 22, fontWeight: 800, color: balance !== null && balance < 5000 ? '#ef4444' : 'var(--text)',
+                  letterSpacing: '-0.5px',
+                }}>
+                  {balance !== null ? `${balance.toLocaleString()} so'm` : '—'}
+                </div>
+              </div>
+              {balance !== null && balance < 5000 && (
+                <div style={{
+                  background: '#fef2f2', border: '1px solid #fecaca',
+                  borderRadius: 10, padding: '10px 14px',
+                  fontSize: 13, color: '#991b1b', marginTop: 4,
+                }}>
+                  Balans yetarli emas. Yangi tovar qo&apos;shish uchun admin orqali hisobni to&apos;ldiring.
+                </div>
+              )}
+              {transactions.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    So&apos;nggi tranzaksiyalar
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {transactions.slice(0, 8).map((t) => (
+                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13 }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{t.reason}</span>
+                        <span style={{
+                          fontWeight: 700,
+                          color: Number(t.amount) > 0 ? '#065f46' : '#991b1b',
+                        }}>
+                          {Number(t.amount) > 0 ? '+' : ''}{Number(t.amount).toLocaleString()} so&apos;m
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Store profile */}
             <div className="card">
