@@ -2,15 +2,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CourierBottomNav } from '@/components/BottomNav';
-import { IconScooter, IconMotorcycle, IconBike, IconCar, IconWalk, IconLock, IconShield, IconLogout, IconCheck } from '@/components/Icons';
+import { IconBike, IconCar, IconVan, IconTruck, IconLock, IconShield, IconLogout, IconCheck } from '@/components/Icons';
 import { api } from '@/lib/api';
 
 const VEHICLES: { id: string; label: string; Icon: React.ComponentType<{ size?: number; stroke?: number }> }[] = [
-  { id: 'Skuter', label: 'Skuter', Icon: IconScooter },
-  { id: 'Motosikl', label: 'Motosikl', Icon: IconMotorcycle },
-  { id: 'Velosiped', label: 'Velosiped', Icon: IconBike },
-  { id: 'Mashina', label: 'Mashina', Icon: IconCar },
-  { id: 'Piyoda', label: 'Piyoda', Icon: IconWalk },
+  { id: 'BIKE',  label: 'Velosiped / Skuter', Icon: IconBike  },
+  { id: 'CAR',   label: 'Avtomobil',           Icon: IconCar   },
+  { id: 'VAN',   label: 'Mikroavtobus',         Icon: IconVan   },
+  { id: 'TRUCK', label: 'Yuk mashinasi',        Icon: IconTruck },
 ];
 
 type CourierApiProfile = {
@@ -25,7 +24,7 @@ export default function CourierProfilePage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [vehicle, setVehicle] = useState('Skuter');
+  const [vehicle, setVehicle] = useState('BIKE');
   const [zone, setZone] = useState('');
   const [rating] = useState(0);
   const [deliveriesToday, setDeliveriesToday] = useState(0);
@@ -42,8 +41,7 @@ export default function CourierProfilePage() {
         if (data.user?.fullName) setName(data.user.fullName);
         if (data.user?.phone) setPhone(data.user.phone);
         if (data.vehicleType) {
-          const map: Record<string, string> = { BIKE: 'Velosiped', CAR: 'Mashina', VAN: 'Mashina', TRUCK: 'Mashina' };
-          setVehicle(map[data.vehicleType] ?? 'Skuter');
+          setVehicle(data.vehicleType);
         }
       } catch { /* keep empty defaults */ }
 
@@ -65,7 +63,7 @@ export default function CourierProfilePage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api('/courier/profile', { method: 'POST', body: { name, vehicle, zone }, token });
+      await api('/courier/profile', { method: 'POST', body: { vehicleType: vehicle }, token });
     } catch { /* ignore */ } finally {
       setSaving(false);
       setSaved(true);

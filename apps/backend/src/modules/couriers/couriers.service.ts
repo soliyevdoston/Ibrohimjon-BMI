@@ -70,7 +70,21 @@ export class CouriersService {
   }
 
   async myProfile(userId: string) {
-    return this.ensureProfile(userId);
+    const courier = await this.ensureProfile(userId);
+    const user = await this.prisma.user.findUnique({ where: { id: courier.userId }, select: { fullName: true, phone: true, email: true } });
+    return { ...courier, user };
+  }
+
+  async searchAvailable(vehicleType?: VehicleType) {
+    const RANK: Record<VehicleType, number> = { BIKE: 0, CAR: 1, VAN: 2, TRUCK: 3 };
+    const all = await this.prisma.courier.findMany({
+      where: { isOnline: true, isAvailable: true },
+      include: { user: { select: { fullName: true, phone: true } } },
+      orderBy: { lastSeenAt: 'desc' },
+    });
+    if (!vehicleType) return all;
+    const minRank = RANK[vehicleType];
+    return all.filter((c) => RANK[c.vehicleType] >= minRank);
   }
 
   // Lazily provisions a courier row for users who registered before

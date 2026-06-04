@@ -8,6 +8,13 @@ import { api, money, timeAgo } from '@/lib/api';
 import { io, Socket } from 'socket.io-client';
 
 type OrderItem = { id: string; titleSnapshot: string; quantity: number; priceSnapshot: number };
+type AvailableCourier = {
+  id: string;
+  vehicleType: string;
+  vehicleModel?: string | null;
+  vehiclePlate?: string | null;
+  user?: { fullName?: string | null; phone?: string | null };
+};
 type Order = {
   id: string; code: string; status: string;
   customerName: string; totalAmount: number; createdAt: string;
@@ -61,6 +68,9 @@ export default function OrdersPage() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [callingId, setCallingId] = useState<string | null>(null);
   const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  const [courierSearchOrder, setCourierSearchOrder] = useState<Order | null>(null);
+  const [availableCouriers, setAvailableCouriers] = useState<AvailableCourier[]>([]);
+  const [searchingCouriers, setSearchingCouriers] = useState(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
 
@@ -125,6 +135,18 @@ export default function OrdersPage() {
       await api(`/orders/${order.id}/call-courier`, { method: 'POST', token });
     } catch (e) { alert((e as Error).message); }
     finally { setCallingId(null); }
+  };
+
+  const openCourierSearch = async (order: Order) => {
+    setCourierSearchOrder(order);
+    setSearchingCouriers(true);
+    setAvailableCouriers([]);
+    try {
+      const vt = order.requiredVehicle ?? 'BIKE';
+      const list = await api<AvailableCourier[]>(`/courier/search?vehicleType=${vt}`, { token });
+      setAvailableCouriers(list);
+    } catch { setAvailableCouriers([]); }
+    finally { setSearchingCouriers(false); }
   };
 
   const filtered = orders.filter((o) => {
@@ -238,20 +260,25 @@ export default function OrdersPage() {
                         </div>
                       )}
 
-                      {/* READY_FOR_PICKUP — call courier button */}
+                      {/* READY_FOR_PICKUP — call courier + search couriers */}
                       {order.status === 'READY_FOR_PICKUP' && (
-                        <button
-                          className="btn primary sm"
-                          style={{ width: '100%', gap: 8 }}
-                          onClick={() => handleCallCourier(order)}
-                          disabled={isCalling}
-                        >
-                          {isCalling ? (
-                            <>⏳ Kuryer qidirilmoqda…</>
-                          ) : (
-                            <>{vehicle.icon} {vehicle.label} kuryer chaqirish</>
-                          )}
-                        </button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <button
+                            className="btn primary sm"
+                            style={{ width: '100%' }}
+                            onClick={() => handleCallCourier(order)}
+                            disabled={isCalling}
+                          >
+                            {isCalling ? 'Kuryer qidirilmoqda…' : `${vehicle.label} kuryer chaqirish`}
+                          </button>
+                          <button
+                            className="btn ghost sm"
+                            style={{ width: '100%' }}
+                            onClick={() => openCourierSearch(order)}
+                          >
+                            Mavjud kuryerlarni ko&apos;rish
+                          </button>
+                        </div>
                       )}
 
                       {/* Courier on the way — track button */}
@@ -289,6 +316,75 @@ export default function OrdersPage() {
           sellerPos={trackingOrder.sellerPos}
           customerPos={trackingOrder.customerPos}
         />
+      )}
+
+      {/* Courier search modal */}
+      {courierSearchOrder && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 900,
+          background: 'rgba(0,0,0,0.45)', display: 'flex',
+          alignItems: 'flex-end', justifyContent: 'center',
+        }} onClick={() => setCourierSearchOrder(null)}>
+          <div style={{
+            background: 'var(--surface)', borderRadius: '20px 20px 0 0',
+            width: '100%', maxWidth: 540, padding: '24px 20px 32px',
+            maxHeight: '80vh', overflowY: 'auto',
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 17 }}>Mavjud kuryerlar</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {VEHICLE_LABELS[courierSearchOrder.requiredVehicle ?? 'BIKE']?.label} va undan yuqori
+                </div>
+              </div>
+              <button
+                onClick={() => setCourierSearchOrder(null)}
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontWeight: 700 }}
+              >✕</button>
+            </div>
+
+            {searchingCouriers ? (
+              <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>Qidirilmoqda…</div>
+            ) : availableCouriers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>Hozirda mos kuryer mavjud emas</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>Kuryer chaqirish tugmasini bosing — ular bildirishnoma oladi</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {availableCouriers.map((c) => (
+                  <div key={c.id} style={{
+                    background: 'var(--surface-2)', borderRadius: 12,
+                    padding: '12px 14px', border: '1px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{c.user?.fullName ?? 'Kuryer'}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {VEHICLE_LABELS[c.vehicleType]?.label ?? c.vehicleType}
+                        {c.vehicleModel ? ` — ${c.vehicleModel}` : ''}
+                        {c.vehiclePlate ? ` (${c.vehiclePlate})` : ''}
+                      </div>
+                    </div>
+                    <div style={{
+                      background: 'var(--surface)', border: '1px solid var(--border)',
+                      borderRadius: 8, padding: '4px 10px',
+                      fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
+                    }}>Online</div>
+                  </div>
+                ))}
+                <button
+                  className="btn primary sm"
+                  style={{ marginTop: 8 }}
+                  onClick={() => { handleCallCourier(courierSearchOrder); setCourierSearchOrder(null); }}
+                  disabled={callingId === courierSearchOrder.id}
+                >
+                  Barchaga bildirishnoma yuborish
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

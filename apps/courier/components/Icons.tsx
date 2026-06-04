@@ -80,6 +80,25 @@ export const IconWalk = make(
   </>,
 );
 
+export const IconVan = make(
+  <>
+    <rect x="1" y="7" width="14" height="9" rx="1" />
+    <path d="M15 10h4l2 4v2h-6" />
+    <circle cx="5" cy="17" r="1.5" />
+    <circle cx="17" cy="17" r="1.5" />
+    <path d="M15 7v3" />
+  </>,
+);
+
+export const IconTruck = make(
+  <>
+    <rect x="1" y="5" width="12" height="11" rx="1" />
+    <path d="M13 9h4l2 5v3h-6V9z" />
+    <circle cx="5" cy="18" r="1.5" />
+    <circle cx="17" cy="18" r="1.5" />
+  </>,
+);
+
 export const IconLogout = make(
   <>
     <path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3" />
