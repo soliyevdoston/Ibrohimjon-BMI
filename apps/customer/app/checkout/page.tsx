@@ -130,6 +130,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState('');
   const [freeDeliveryAbove, setFreeDeliveryAbove] = useState(0);
+  const [quotedFee, setQuotedFee] = useState<number | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -175,6 +176,33 @@ export default function CheckoutPage() {
     setLoadingAddress(false);
   }, []);
 
+  // Fetch the real delivery fee from the backend whenever the address changes
+  useEffect(() => {
+    if (!selected || pickup) { setQuotedFee(null); return; }
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    const sellerId = items[0]?.sellerId;
+    if (!sellerId) return;
+    const sub = items.reduce((acc, i) => acc + i.price * i.quantity, 0);
+    const wKg = items.reduce((acc, i) => acc + (i.weightKg ?? 1) * i.quantity, 0);
+    const vHint = items.reduce<Vehicle>((acc, i) => {
+      const v = (i.requiresVehicle ?? 'BIKE') as Vehicle;
+      return VEHICLE_RANK[v] > VEHICLE_RANK[acc] ? v : acc;
+    }, 'BIKE');
+    const params = new URLSearchParams({
+      subtotal: String(sub),
+      weightKg: String(wKg),
+      vehicleHint: vHint,
+      sellerId,
+      deliveryLat: String(selected[0]),
+      deliveryLng: String(selected[1]),
+    });
+    api<{ deliveryFeeAmount: number }>(`/orders/quote?${params}`, { token })
+      .then((q) => setQuotedFee(Number(q.deliveryFeeAmount)))
+      .catch(() => setQuotedFee(null));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, pickup]);
+
   // Total weight + vehicle hint from cart items
   const totalWeightKg = items.reduce(
     (acc, i) => acc + (i.weightKg ?? 1) * i.quantity,
@@ -190,9 +218,11 @@ export default function CheckoutPage() {
   const sub = subtotal();
   const rawDeliveryFee = pickup
     ? 0
-    : selected
-      ? calcDeliveryFee(selected[0], selected[1], requiredVehicle)
-      : tier.base + Math.round(2 * tier.perKm); // ~2km placeholder
+    : quotedFee !== null
+      ? quotedFee  // real backend price
+      : selected
+        ? calcDeliveryFee(selected[0], selected[1], requiredVehicle)
+        : tier.base + Math.round(2 * tier.perKm); // ~2km placeholder
   const isFreeDelivery = !pickup && freeDeliveryAbove > 0 && sub >= freeDeliveryAbove;
   const deliveryFee = isFreeDelivery ? 0 : rawDeliveryFee;
   const freeDeliveryProgress = freeDeliveryAbove > 0 && !isFreeDelivery && !pickup

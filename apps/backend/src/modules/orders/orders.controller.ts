@@ -22,15 +22,21 @@ export class OrdersController {
   @Roles(UserRole.CUSTOMER)
   async quote(
     @Query('subtotal') subtotal: string,
-    @Query('distanceKm') distanceKm: string,
+    @Query('distanceKm') distanceKm?: string,
     @Query('weightKg') weightKg?: string,
     @Query('vehicleHint') vehicleHint?: 'BIKE' | 'CAR' | 'VAN' | 'TRUCK',
+    @Query('sellerId') sellerId?: string,
+    @Query('deliveryLat') deliveryLat?: string,
+    @Query('deliveryLng') deliveryLng?: string,
   ) {
-    return this.pricingService.computeBreakdown({
+    return this.ordersService.computeQuote({
       subtotal: Number(subtotal) || 0,
-      distanceKm: Number(distanceKm) || 0,
+      distanceKm: distanceKm !== undefined ? Number(distanceKm) : undefined,
       totalWeightKg: weightKg !== undefined ? Number(weightKg) : 0,
       vehicleHint: vehicleHint,
+      sellerId,
+      deliveryLat: deliveryLat !== undefined ? Number(deliveryLat) : undefined,
+      deliveryLng: deliveryLng !== undefined ? Number(deliveryLng) : undefined,
     });
   }
 

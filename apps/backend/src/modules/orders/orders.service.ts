@@ -181,6 +181,33 @@ export class OrdersService {
     });
   }
 
+  async computeQuote(input: {
+    subtotal: number;
+    distanceKm?: number;
+    totalWeightKg?: number;
+    vehicleHint?: VehicleType;
+    sellerId?: string;
+    deliveryLat?: number;
+    deliveryLng?: number;
+  }) {
+    let distKm = input.distanceKm ?? 0;
+    if (distKm === 0 && input.sellerId && input.deliveryLat !== undefined && input.deliveryLng !== undefined) {
+      const seller = await this.prisma.seller.findUnique({ where: { id: input.sellerId } });
+      if (seller?.addressLat && seller?.addressLng) {
+        distKm = haversineKm(
+          Number(seller.addressLat), Number(seller.addressLng),
+          input.deliveryLat, input.deliveryLng,
+        );
+      }
+    }
+    return this.pricingService.computeBreakdown({
+      subtotal: input.subtotal,
+      distanceKm: distKm,
+      totalWeightKg: input.totalWeightKg ?? 0,
+      vehicleHint: input.vehicleHint,
+    });
+  }
+
   async myOrders(customerId: string) {
     return this.prisma.order.findMany({
       where: { customerId },

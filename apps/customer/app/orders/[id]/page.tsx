@@ -13,8 +13,10 @@ const CUSTOMER_POS: [number, number] = [40.3960, 71.8100]; // Farg'ona, Do'stlik
 type OrderItem = {
   id: string;
   productId?: string;
+  titleSnapshot?: string;   // backend field name
   title?: string;
   product?: { title: string; price: number };
+  priceSnapshot?: number | string;  // backend field name (Decimal → string)
   price?: number;
   quantity: number;
   unitPrice?: number;
@@ -247,7 +249,7 @@ export default function OrderTrackingPage() {
 
   const total = Number(order?.total ?? order?.totalAmount ?? 0);
   const itemsSubtotal = order?.items?.reduce((acc, it) => {
-    const price = Number(it.price ?? it.unitPrice ?? it.product?.price ?? 0);
+    const price = Number(it.priceSnapshot ?? it.price ?? it.unitPrice ?? it.product?.price ?? 0);
     return acc + price * it.quantity;
   }, 0) ?? 0;
   const subtotal = Number(order?.subtotalAmount ?? itemsSubtotal);
@@ -391,8 +393,8 @@ export default function OrderTrackingPage() {
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>Buyurtma tarkibi</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {order.items.map((item) => {
-                const name = item.title ?? item.product?.title ?? 'Mahsulot';
-                const price = item.price ?? item.unitPrice ?? item.product?.price ?? 0;
+                const name = item.titleSnapshot ?? item.title ?? item.product?.title ?? 'Mahsulot';
+                const price = Number(item.priceSnapshot ?? item.price ?? item.unitPrice ?? item.product?.price ?? 0);
                 return (
                   <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
