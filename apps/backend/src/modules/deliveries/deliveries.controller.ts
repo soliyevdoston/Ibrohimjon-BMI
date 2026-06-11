@@ -24,6 +24,11 @@ export class DeliveriesController {
     return this.deliveriesService.myActiveDelivery(courierUserId);
   }
 
+  @Get('history')
+  history(@CurrentUser('id') courierUserId: string) {
+    return this.deliveriesService.myHistory(courierUserId);
+  }
+
   @Post(':id/accept')
   accept(@Param('id') deliveryId: string, @CurrentUser('id') courierUserId: string) {
     return this.deliveriesService.acceptDelivery(deliveryId, courierUserId);

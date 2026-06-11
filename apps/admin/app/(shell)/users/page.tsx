@@ -11,7 +11,7 @@ function uzs(value: number) {
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleDateString('uz-UZ');
+  return d.toLocaleString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function AdminUsersPage() {

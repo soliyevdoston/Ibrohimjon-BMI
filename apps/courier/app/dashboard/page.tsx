@@ -89,7 +89,8 @@ export default function CourierDashboard() {
   const [orders, setOrders] = useState<AvailableOrder[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<AvailableOrder | null>(null);
   const [deliveryStatus, setDeliveryStatus] = useState<DeliveryStatus>('accepted');
-  const [courierPos, setCourierPos] = useState<[number, number]>([40.3834, 71.7833]);
+  // Boshlang'ich placeholder (Toshkent markazi) — real GPS ulanishi bilan almashadi
+  const [courierPos, setCourierPos] = useState<[number, number]>([41.2995, 69.2401]);
   const [showPanel, setShowPanel] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('nearest');
@@ -182,11 +183,12 @@ export default function CourierDashboard() {
           });
         });
         // A new delivery within my tier became available — show notification popup.
+        // The ringtone itself is driven by the `pendingNotif` effect below so it
+        // keeps ringing for the whole alert window, not just a single chime.
         socket.on('delivery:available', (payload: NotifPayload) => {
           loadAvailable();
           setPendingNotif(payload);
           setCountdown(30);
-          playNotifSound();
         });
         // Another courier grabbed it — drop it from my list immediately.
         socket.on('delivery:claimed', (p: { deliveryId: string }) => {
@@ -237,6 +239,18 @@ export default function CourierDashboard() {
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [pendingNotif, countdown]);
+
+  // Ringtone for the notification popup — rings repeatedly (like a real
+  // ride-hailing alert) for ~25s, then stops on its own. Also stops early
+  // when the popup is dismissed (accept / reject / countdown reaches 0),
+  // because clearing `pendingNotif` re-runs this effect's cleanup.
+  useEffect(() => {
+    if (!pendingNotif) return;
+    playNotifSound();
+    const interval = setInterval(playNotifSound, 1600);
+    const stop = setTimeout(() => clearInterval(interval), 25000);
+    return () => { clearInterval(interval); clearTimeout(stop); };
+  }, [pendingNotif]);
 
   const dismissNotif = () => setPendingNotif(null);
 

@@ -1,9 +1,20 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { SellerSidebar } from '@/components/Sidebar';
 import { SellerTopbar } from '@/components/Topbar';
-import { api } from '@/lib/api';
+import { api, reverseGeocode } from '@/lib/api';
+
+// Xarita faqat brauzerda yuklanadi (Leaflet SSR'ni qo'llab-quvvatlamaydi)
+const LocationPickerMap = dynamic(() => import('@/components/map/LocationPickerMap'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height: '100%', display: 'grid', placeItems: 'center', background: 'var(--surface-2)' }}>
+      <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>Xarita yuklanmoqda…</span>
+    </div>
+  ),
+});
 
 type Profile = {
   name: string;
@@ -12,6 +23,8 @@ type Profile = {
   address: string;
   description: string;
   workingHours: string;
+  lat: number | null;
+  lng: number | null;
 };
 
 type SellerTransaction = {
@@ -28,6 +41,8 @@ const DEMO: Profile = {
   address: '',
   description: '',
   workingHours: '',
+  lat: null,
+  lng: null,
 };
 
 export default function SettingsPage() {
@@ -47,6 +62,7 @@ export default function SettingsPage() {
         const data = await api<{
           legalName?: string; brandName?: string; description?: string;
           addressText?: string; phone?: string;
+          addressLat?: number | string | null; addressLng?: number | string | null;
           balance?: number | string;
           transactions?: SellerTransaction[];
         }>('/seller/profile', { token });
@@ -57,6 +73,8 @@ export default function SettingsPage() {
           address: data.addressText ?? prev.address,
           description: data.description ?? prev.description,
           phone: data.phone ?? prev.phone,
+          lat: data.addressLat != null ? Number(data.addressLat) : prev.lat,
+          lng: data.addressLng != null ? Number(data.addressLng) : prev.lng,
         }));
         setBalance(Number(data.balance ?? 0));
         setTransactions(data.transactions ?? []);
@@ -75,6 +93,9 @@ export default function SettingsPage() {
           brandName: form.brand,
           description: form.description,
           addressText: form.address,
+          // Koordinata — kuryer va mijoz xaritasi aniq joyni ko'rsatishi uchun
+          addressLat: form.lat ?? undefined,
+          addressLng: form.lng ?? undefined,
         },
         token,
       });
@@ -86,6 +107,28 @@ export default function SettingsPage() {
   };
 
   const set = (k: keyof Profile, v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  // Xaritada nuqta tanlanganda: koordinatani saqlaymiz va manzil matnini
+  // avtomatik to'ldiramiz (agar sotuvchi qo'lda kiritmagan bo'lsa).
+  const handleMapSelect = async (lat: number, lng: number) => {
+    setForm((p) => ({ ...p, lat, lng }));
+    try {
+      const place = await reverseGeocode(lat, lng);
+      setForm((p) => (p.address.trim() ? p : { ...p, address: place }));
+    } catch {/* manzil matni ixtiyoriy */}
+  };
+
+  const useMyLocation = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      alert('Brauzer joylashuvni qo\'llab-quvvatlamaydi');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => handleMapSelect(pos.coords.latitude, pos.coords.longitude),
+      () => alert('Joylashuvga ruxsat berilmadi'),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   return (
     <div className="app-shell">
@@ -169,6 +212,34 @@ export default function SettingsPage() {
                   <label className="label">Manzil</label>
                   <input className="input" value={form.address} onChange={(e) => set('address', e.target.value)} />
                 </div>
+
+                {/* MANZIL XARITASI — sotuvchi aniq joylashuvini belgilaydi */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <label className="label" style={{ marginBottom: 0 }}>
+                      Xaritadagi joylashuv {form.lat == null && <span style={{ color: '#ef4444' }}>— belgilanmagan</span>}
+                    </label>
+                    <button type="button" className="btn ghost sm" onClick={useMyLocation}>
+                      📍 Mening joylashuvim
+                    </button>
+                  </div>
+                  <div style={{ height: 300, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    <LocationPickerMap
+                      selected={form.lat != null && form.lng != null ? [form.lat, form.lng] : null}
+                      onSelect={handleMapSelect}
+                    />
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                    Xaritani bosib do&apos;koningiz aniq joyini belgilang. Bu kuryerga yo&apos;l va
+                    mijozga masofani to&apos;g&apos;ri ko&apos;rsatadi.
+                    {form.lat != null && form.lng != null && (
+                      <span style={{ marginLeft: 6, color: '#10b981', fontWeight: 600 }}>
+                        ✓ {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label className="label">Do'kon tavsifi</label>
                   <textarea

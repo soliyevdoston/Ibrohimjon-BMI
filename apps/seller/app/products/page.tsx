@@ -69,6 +69,19 @@ export default function ProductsPage() {
     } catch (e) { alert((e as Error).message); }
   };
 
+  // Holat belgisini bosganda Faol ↔ Nofaol almashtiradi (optimistik yangilash).
+  const handleToggleActive = async (id: string, current: boolean) => {
+    const next = !current;
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, isActive: next } : p)));
+    try {
+      await api(`/products/${id}`, { method: 'PATCH', body: { isActive: next }, token });
+    } catch (e) {
+      // Xato bo'lsa eski holatga qaytaramiz
+      setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, isActive: current } : p)));
+      alert((e as Error).message);
+    }
+  };
+
   const filtered = products.filter((p) =>
     p.title.toLowerCase().includes(search.toLowerCase())
   );
@@ -174,9 +187,15 @@ export default function ProductsPage() {
                           </span>
                         </td>
                         <td>
-                          <span className={`chip ${p.isActive ? 'green' : 'gray'}`}>
+                          <button
+                            type="button"
+                            className={`chip ${p.isActive ? 'green' : 'gray'}`}
+                            onClick={() => handleToggleActive(p.id, p.isActive)}
+                            title="Bosib Faol/Nofaol holatini almashtiring"
+                            style={{ cursor: 'pointer', border: 'none' }}
+                          >
                             {p.isActive ? 'Faol' : 'Nofaol'}
-                          </span>
+                          </button>
                         </td>
                         <td>
                           <div className="hstack" style={{ gap: 6 }}>

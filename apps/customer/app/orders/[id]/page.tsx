@@ -7,8 +7,18 @@ import { DeliveryTracker } from '@/components/map/DeliveryTracker';
 import { Timeline, type TimelineStatus } from '@/components/Timeline';
 import { api, money } from '@/lib/api';
 
-const SELLER_POS: [number, number] = [40.3834, 71.7833]; // Farg'ona shahar markazi
-const CUSTOMER_POS: [number, number] = [40.3960, 71.8100]; // Farg'ona, Do'stlik ko'chasi
+// Ma'lumot kelmaganda neytral fallback (Toshkent markazi). Real pozitsiyalar
+// buyurtmadan olinadi: sotuvchi koordinatasi (olib ketish), yetkazish
+// koordinatasi (manzil) va kuryerning jonli GPS pozitsiyasi.
+const TASHKENT: [number, number] = [41.2995, 69.2401];
+
+// Decimal (string) yoki number'dan [lat, lng] ga — bo'sh/0 bo'lsa null qaytaradi.
+function toPos(lat?: number | string | null, lng?: number | string | null): [number, number] | null {
+  if (lat == null || lng == null) return null;
+  const a = Number(lat), b = Number(lng);
+  if (!Number.isFinite(a) || !Number.isFinite(b) || (a === 0 && b === 0)) return null;
+  return [a, b];
+}
 
 type OrderItem = {
   id: string;
@@ -33,10 +43,29 @@ type Order = {
   subtotalAmount?: number;
   deliveryFeeAmount?: number;
   deliveryAddress?: string;
-  deliveryLat?: number;
-  deliveryLng?: number;
+  deliveryLat?: number | string;
+  deliveryLng?: number | string;
   deliveryId?: string;
   items?: OrderItem[];
+  // Sotuvchining (olib ketish nuqtasi) aniq koordinatasi
+  seller?: {
+    id: string;
+    brandName?: string;
+    addressText?: string;
+    addressLat?: number | string | null;
+    addressLng?: number | string | null;
+  };
+  // Tayinlangan kuryer + uning jonli pozitsiyasi
+  delivery?: {
+    id?: string;
+    courier?: {
+      id: string;
+      vehicleType?: string;
+      currentLat?: number | string | null;
+      currentLng?: number | string | null;
+      user?: { fullName?: string | null; phone?: string | null };
+    } | null;
+  } | null;
   courier?: {
     id: string;
     name?: string;
@@ -88,12 +117,16 @@ export default function OrderTrackingPage() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [courierPos, setCourierPos] = useState<[number, number]>(SELLER_POS);
+  const [courierPos, setCourierPos] = useState<[number, number]>(TASHKENT);
+  const [sellerPos, setSellerPos] = useState<[number, number]>(TASHKENT);
   const [eta, setEta] = useState<number | null>(null);
   const deliveryIdRef = useRef<string | null>(null);
 
   const simulationRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressRef = useRef(0);
+  // Simulyatsiya uchun real boshlanish/tugash nuqtalari (ref — closure yangiligini ushlaydi)
+  const sellerPosRef = useRef<[number, number]>(TASHKENT);
+  const destPosRef = useRef<[number, number]>(TASHKENT);
 
   // Auth guard
   useEffect(() => {
@@ -108,7 +141,19 @@ export default function OrderTrackingPage() {
     try {
       const data = await api<Order>(`/orders/${id}`, { token });
       setOrder(data);
-      if (data.deliveryId) deliveryIdRef.current = data.deliveryId;
+
+      // Real pozitsiyalarni o'rnatamiz: sotuvchi (olib ketish), manzil, kuryer
+      const sPos = toPos(data.seller?.addressLat, data.seller?.addressLng) ?? TASHKENT;
+      const dPos = toPos(data.deliveryLat, data.deliveryLng) ?? TASHKENT;
+      sellerPosRef.current = sPos;
+      destPosRef.current = dPos;
+      setSellerPos(sPos);
+      // Kuryer jonli pozitsiyasi bo'lsa — o'shani, bo'lmasa olib ketish nuqtasini
+      const cPos = toPos(data.delivery?.courier?.currentLat, data.delivery?.courier?.currentLng);
+      setCourierPos(cPos ?? sPos);
+
+      if (data.delivery?.id) deliveryIdRef.current = data.delivery.id;
+      else if (data.deliveryId) deliveryIdRef.current = data.deliveryId;
       setLoading(false);
     } catch {
       // Use demo order
@@ -178,10 +223,7 @@ export default function OrderTrackingPage() {
       if (!data.lat || !data.lng) return;
       const pos: [number, number] = [data.lat, data.lng];
       setCourierPos(pos);
-      const dest: [number, number] = [
-        (order?.deliveryLat as number | undefined) ?? CUSTOMER_POS[0],
-        (order?.deliveryLng as number | undefined) ?? CUSTOMER_POS[1],
-      ];
+      const dest = destPosRef.current;
       const remainKm = haversineKm(pos, dest);
       setEta(Math.round(remainKm / (30 / 3600)));
       if (simulationRef.current) {
@@ -207,12 +249,15 @@ export default function OrderTrackingPage() {
   const startSimulation = useCallback(() => {
     if (simulationRef.current) return; // already running
     progressRef.current = 0;
-    const totalDistKm = haversineKm(SELLER_POS, CUSTOMER_POS);
+    // Real sotuvchi → manzil yo'nalishi bo'yicha simulyatsiya (jonli GPS yo'q paytda)
+    const from = sellerPosRef.current;
+    const to = destPosRef.current;
+    const totalDistKm = haversineKm(from, to);
     const speedKmPerSec = 30 / 3600; // 30 km/h in km/s
 
     simulationRef.current = setInterval(() => {
       progressRef.current = Math.min(progressRef.current + 0.003, 1);
-      const pos = lerp(SELLER_POS, CUSTOMER_POS, progressRef.current);
+      const pos = lerp(from, to, progressRef.current);
       setCourierPos(pos);
 
       const remainingKm = totalDistKm * (1 - progressRef.current);
@@ -241,11 +286,20 @@ export default function OrderTrackingPage() {
   };
 
   const getDestination = (): [number, number] => {
-    if (order?.deliveryLat && order?.deliveryLng) {
-      return [order.deliveryLat, order.deliveryLng];
-    }
-    return CUSTOMER_POS;
+    return toPos(order?.deliveryLat, order?.deliveryLng) ?? destPosRef.current;
   };
+
+  // Kuryer ma'lumotini normallashtiramiz: demo buyurtmada `courier`, real
+  // buyurtmada `delivery.courier` keladi — ikkalasini bitta shaklga keltiramiz.
+  const courierInfo = order?.courier ?? (order?.delivery?.courier
+    ? {
+        id: order.delivery.courier.id,
+        name: order.delivery.courier.user?.fullName ?? undefined,
+        phone: order.delivery.courier.user?.phone ?? undefined,
+        vehicle: order.delivery.courier.vehicleType,
+        rating: undefined as number | undefined,
+      }
+    : undefined);
 
   const total = Number(order?.total ?? order?.totalAmount ?? 0);
   const itemsSubtotal = order?.items?.reduce((acc, it) => {
@@ -315,7 +369,7 @@ export default function OrderTrackingPage() {
           <DeliveryTracker
             courierPos={courierPos}
             destination={getDestination()}
-            sellerPos={SELLER_POS}
+            sellerPos={sellerPos}
           />
         </div>
       )}
@@ -461,7 +515,7 @@ export default function OrderTrackingPage() {
       </div>
 
       {/* Courier info bar — shown when courier is on the way */}
-      {isActiveOrder && order?.courier && (
+      {isActiveOrder && courierInfo && (
         <div className="courier-bar" style={{
           position: 'sticky',
           bottom: 0,
@@ -470,19 +524,19 @@ export default function OrderTrackingPage() {
           <div className="courier-avatar">🧑</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 700 }}>
-              {order.courier.name ?? 'Kuryer'}
+              {courierInfo.name ?? 'Kuryer'}
             </div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              {order.courier.vehicle && (
-                <span>🛵 {order.courier.vehicle}</span>
+              {courierInfo.vehicle && (
+                <span>🛵 {courierInfo.vehicle}</span>
               )}
-              {order.courier.rating && (
-                <span>⭐ {order.courier.rating.toFixed(1)}</span>
+              {courierInfo.rating && (
+                <span>⭐ {courierInfo.rating.toFixed(1)}</span>
               )}
             </div>
           </div>
-          {order.courier.phone && (
-            <a href={`tel:${order.courier.phone.replace(/\s/g, '')}`}>
+          {courierInfo.phone && (
+            <a href={`tel:${courierInfo.phone.replace(/\s/g, '')}`}>
               <button className="btn" style={{ width: 48, height: 48, padding: 0, flexShrink: 0 }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11 19.79 19.79 0 01.01 2.34 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.9z" />

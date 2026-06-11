@@ -74,6 +74,14 @@ export default function OrdersPage() {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
 
+  // Dashboard'dan kelgan ?filter=... query'sini o'qib, mos tabni ochamiz
+  // (masalan "Faol buyurtmalar" → ?filter=pending). useSearchParams o'rniga
+  // window.location ishlatamiz — Suspense talab qilmaydi.
+  useEffect(() => {
+    const f = new URLSearchParams(window.location.search).get('filter');
+    if (f && TABS.some((t) => t.id === f)) setTab(f as Tab);
+  }, []);
+
   const loadOrders = useCallback(async () => {
     try {
       const res = await api<Order[] | { items?: Order[] }>('/orders/seller', { token });

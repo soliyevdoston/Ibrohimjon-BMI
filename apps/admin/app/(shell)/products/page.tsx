@@ -141,7 +141,7 @@ export default function AdminProductsPage() {
                   <td>
                     <strong>{p.title}</strong>
                     <div className="muted" style={{ fontSize: 11 }}>
-                      {new Date(p.createdAt).toLocaleDateString('uz-UZ')}
+                      {new Date(p.createdAt).toLocaleString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </td>
                   <td>{p.seller?.brandName ?? '—'}</td>

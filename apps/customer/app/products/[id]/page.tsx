@@ -149,7 +149,7 @@ function ReviewsSection({ productId }: { productId: string }) {
               <div className="hstack" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <strong style={{ fontSize: 13 }}>{r.user.fullName ?? r.user.email ?? 'Foydalanuvchi'}</strong>
                 <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  {new Date(r.createdAt).toLocaleDateString('uz-UZ')}
+                  {new Date(r.createdAt).toLocaleString('uz-UZ', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
               <div style={{ color: '#f59e0b', fontSize: 14, marginTop: 2 }}>

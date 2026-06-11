@@ -52,6 +52,37 @@ export function money(value: number) {
   return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY ?? '';
+
+type MapTilerFeature = { place_name?: string };
+
+// Coordinatadan manzil matnini olish — sotuvchi xaritada nuqta belgilaganda
+// manzil maydonini avtomatik to'ldirish uchun (mijoz ilovasidagi bilan bir xil).
+export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  if (MAPTILER_KEY) {
+    try {
+      const res = await fetch(
+        `https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${MAPTILER_KEY}&language=uz`,
+      );
+      if (res.ok) {
+        const data = (await res.json()) as { features?: MapTilerFeature[] };
+        const place = data.features?.[0]?.place_name;
+        if (place) return place;
+      }
+    } catch {/* fall through to Nominatim */}
+  }
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=uz,en`,
+      { headers: { 'User-Agent': 'IbrohimjonBMI/1.0' } },
+    );
+    const data = (await res.json()) as { display_name?: string };
+    return data.display_name ?? `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  } catch {
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  }
+}
+
 export function timeAgo(date: string | Date): string {
   const now = Date.now();
   const d = new Date(date).getTime();

@@ -76,7 +76,7 @@ export default function AdminLivePage() {
                       {o.customerId.slice(0, 6)} · {o.sellerId.slice(0, 6)}
                     </span>
                     <span className="muted" style={{ fontSize: 12 }}>
-                      {new Date(o.createdAt).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(o.createdAt).toLocaleString('uz-UZ', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </button>

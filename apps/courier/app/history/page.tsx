@@ -28,17 +28,19 @@ export default function HistoryPage() {
   const [filter, setFilter] = useState<'all' | 'delivered' | 'cancelled'>('all');
   const [items, setItems] = useState<ApiDelivery[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(false);
     try {
-      const res = await api<ApiDelivery[] | { items: ApiDelivery[] }>('/courier/profile/history').catch(() =>
-        api<ApiDelivery[] | { items: ApiDelivery[] }>('/courier/deliveries'),
-      );
+      const res = await api<ApiDelivery[] | { items: ApiDelivery[] }>('/deliveries/history');
       const list = Array.isArray(res) ? res : (res?.items ?? []);
       setItems(list);
     } catch {
+      // So'rov muvaffaqiyatsiz — bo'sh ro'yxatni xatodan ajratamiz
       setItems([]);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -177,7 +179,25 @@ export default function HistoryPage() {
               border: '1px solid var(--border)', textAlign: 'center',
               color: 'var(--text-muted)', fontSize: 13,
             }}>
-              {loading ? 'Yuklanmoqda…' : "Hozircha yetkazib berishlar yo'q"}
+              {loading ? (
+                'Yuklanmoqda…'
+              ) : error ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                  <span>Tarixni yuklab bo&apos;lmadi. Internetni tekshiring.</span>
+                  <button
+                    onClick={load}
+                    style={{
+                      padding: '8px 18px', borderRadius: 9, border: '1px solid var(--border)',
+                      background: 'var(--surface-2)', color: 'var(--text)', fontSize: 13,
+                      fontWeight: 600, cursor: 'pointer',
+                    }}
+                  >
+                    Qayta urinish
+                  </button>
+                </div>
+              ) : (
+                "Hozircha yetkazib berishlar yo'q"
+              )}
             </div>
           )}
         </div>

@@ -155,6 +155,27 @@ export class DeliveriesService {
     });
   }
 
+  // Kuryerning yakunlangan yetkazishlar tarixi (DELIVERED / FAILED / CANCELED).
+  // History sahifasi ro'yxat va statistikani shu yerdan oladi.
+  async myHistory(courierUserId: string) {
+    const courier = await this.ensureCourierProfile(courierUserId);
+    return this.prisma.delivery.findMany({
+      where: {
+        courierId: courier.id,
+        status: {
+          in: [DeliveryStatus.DELIVERED, DeliveryStatus.FAILED, DeliveryStatus.CANCELED],
+        },
+      },
+      include: {
+        order: {
+          include: { seller: { select: { brandName: true } } },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+  }
+
   async updateStatus(deliveryId: string, courierUserId: string, dto: UpdateDeliveryStatusDto) {
     const courier = await this.ensureCourierProfile(courierUserId);
     const delivery = await this.prisma.delivery.findUnique({ where: { id: deliveryId } });

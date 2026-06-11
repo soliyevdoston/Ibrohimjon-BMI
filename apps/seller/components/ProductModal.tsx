@@ -232,6 +232,41 @@ export function ProductModal({ product, onClose, onSaved }: Props) {
             </select>
           </div>
 
+          {/* ACTIVE / INACTIVE TOGGLE — sotuvchi mahsulotni o'chirmasdan yashira oladi */}
+          <div
+            onClick={() => setForm((p) => ({ ...p, isActive: !p.isActive }))}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 12, padding: '10px 14px', borderRadius: 10,
+              border: '1px solid var(--border)', background: 'var(--surface-2)',
+              cursor: 'pointer',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                {form.isActive ? 'Faol — mijozlarga ko’rinadi' : 'Nofaol — yashirilgan'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                Nofaol mahsulot katalogda ko&apos;rinmaydi va sotib olib bo&apos;lmaydi.
+              </div>
+            </div>
+            <span
+              role="switch"
+              aria-checked={form.isActive}
+              style={{
+                flexShrink: 0, width: 44, height: 26, borderRadius: 13,
+                background: form.isActive ? '#10b981' : '#cbd5e1',
+                position: 'relative', transition: 'background 150ms ease',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3, left: form.isActive ? 21 : 3,
+                width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                transition: 'left 150ms ease', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+              }} />
+            </span>
+          </div>
+
           {/* IMAGE UPLOAD */}
           <div>
             <label className="label">Rasm</label>

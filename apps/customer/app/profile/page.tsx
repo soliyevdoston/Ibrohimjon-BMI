@@ -22,9 +22,6 @@ const DEMO: Profile = {
 export default function ProfilePage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile>(DEMO);
-  const [editName, setEditName] = useState('');
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
   const cartClear = useCartStore((s) => s.clear);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') ?? '' : '';
@@ -45,25 +42,12 @@ export default function ProfilePage() {
           totalSpent: data.totalSpent ?? DEMO.totalSpent,
         };
         setProfile(normalized);
-        setEditName(normalized.name);
       } catch {
-        setEditName(DEMO.name);
+        /* keep demo profile */
       }
     };
     load();
   }, [router, token]);
-
-  const handleSaveName = async () => {
-    if (!editName.trim()) return;
-    setSaving(true);
-    try {
-      await api('/users/me', { method: 'PATCH', body: { name: editName }, token });
-      setProfile((p) => ({ ...p, name: editName }));
-    } catch { /* ignore */ } finally {
-      setSaving(false);
-      setEditing(false);
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -91,44 +75,12 @@ export default function ProfilePage() {
         <div className="avatar avatar-lg">
           {initials(profile.name)}
         </div>
-        {editing ? (
-          <div className="hstack" style={{ gap: 8 }}>
-            <input
-              className="input"
-              style={{ textAlign: 'center', maxWidth: 200 }}
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
-            />
-            <button
-              className="btn"
-              style={{ height: 40, padding: '0 14px' }}
-              onClick={handleSaveName}
-              disabled={saving}
-            >
-              {saving ? '…' : '✓'}
-            </button>
-            <button
-              className="btn-ghost"
-              style={{ height: 40, padding: '0 14px', fontSize: 15, fontWeight: 600, borderRadius: 12 }}
-              onClick={() => { setEditing(false); setEditName(profile.name); }}
-            >
-              ✕
-            </button>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 20, fontWeight: 700 }}>
+            {profile.name}
           </div>
-        ) : (
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{ fontSize: 20, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              onClick={() => setEditing(true)}
-            >
-              {profile.name}
-              <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>✎</span>
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 2 }}>{profile.phone}</div>
-          </div>
-        )}
+          <div style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 2 }}>{profile.phone}</div>
+        </div>
 
         {/* Stats */}
         <div style={{ display: 'flex', gap: 10, marginTop: 8, width: '100%', maxWidth: 360 }}>

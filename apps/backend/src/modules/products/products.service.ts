@@ -219,7 +219,10 @@ export class ProductsService {
         },
       },
     });
-    if (!product) {
+    // Nofaol mahsulot mijozga ko'rinmasligi kerak — this is the public detail
+    // endpoint, so an inactive product is treated as not found. Sellers manage
+    // their own products through /products/mine, which is unaffected.
+    if (!product || !product.isActive) {
       throw new NotFoundException('Mahsulot topilmadi');
     }
     const agg = await this.prisma.review.aggregate({

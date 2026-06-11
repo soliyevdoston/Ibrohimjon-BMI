@@ -351,7 +351,26 @@ export class OrdersService {
       where: { id: orderId },
       include: {
         items: true,
-        delivery: true,
+        // Sotuvchining aniq koordinatasi — kuzatish xaritasi olib ketish
+        // (pickup) nuqtasini real ko'rsatishi uchun.
+        seller: {
+          select: {
+            id: true, brandName: true, addressText: true,
+            addressLat: true, addressLng: true,
+          },
+        },
+        // Kuryer joriy joylashuvi + bog'lanish ma'lumotlari (tayinlangan bo'lsa).
+        delivery: {
+          include: {
+            courier: {
+              select: {
+                id: true, vehicleType: true,
+                currentLat: true, currentLng: true,
+                user: { select: { fullName: true, phone: true } },
+              },
+            },
+          },
+        },
         statusHistory: { orderBy: { createdAt: 'asc' } },
       },
     });
